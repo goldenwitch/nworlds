@@ -81,6 +81,7 @@ pub trait Event<S> {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Context<S, R> {
     initial_state: S,
+    initial_logical_time: LogicalTime,
     rules: Vec<R>,
 }
 
@@ -89,14 +90,30 @@ impl<S, R> Context<S, R> {
     where
         I: IntoIterator<Item = R>,
     {
+        Self::with_initial_logical_time(initial_state, rules, LogicalTime::zero())
+    }
+
+    pub fn with_initial_logical_time<I>(
+        initial_state: S,
+        rules: I,
+        initial_logical_time: LogicalTime,
+    ) -> Self
+    where
+        I: IntoIterator<Item = R>,
+    {
         Self {
             initial_state,
+            initial_logical_time,
             rules: rules.into_iter().collect(),
         }
     }
 
     pub fn initial_state(&self) -> &S {
         &self.initial_state
+    }
+
+    pub fn initial_logical_time(&self) -> LogicalTime {
+        self.initial_logical_time
     }
 
     pub fn rules(&self) -> &[R] {
@@ -239,6 +256,7 @@ impl<E> Journal<E> {
 pub struct Worldline<S, R, E> {
     context: Arc<Context<S, R>>,
     journal: Journal<E>,
+    fork_time: Option<LogicalTime>,
 }
 
 impl<S, R, E> Worldline<S, R, E> {
@@ -246,6 +264,7 @@ impl<S, R, E> Worldline<S, R, E> {
         Self {
             context: Arc::new(context),
             journal,
+            fork_time: None,
         }
     }
 
@@ -265,9 +284,19 @@ impl<S, R, E> Worldline<S, R, E> {
     where
         E: Clone,
     {
+        if let Some(fork_time) = self.fork_time {
+            if time <= fork_time {
+                return Err(JournalError::EventAtOrBeforeFork {
+                    fork: fork_time,
+                    attempted: time,
+                });
+            }
+        }
+
         Ok(Self {
             context: Arc::clone(&self.context),
             journal: self.journal.append(time, event)?,
+            fork_time: self.fork_time,
         })
     }
 
@@ -290,6 +319,7 @@ impl<S, R, E> Worldline<S, R, E> {
         Ok(Self {
             context: Arc::clone(&self.context),
             journal,
+            fork_time: Some(fork_time),
         })
     }
 }
@@ -328,7 +358,7 @@ where
     E: Event<S>,
 {
     let mut state = worldline.context().initial_state().clone();
-    let mut cursor = LogicalTime::zero();
+    let mut cursor = worldline.context().initial_logical_time();
     let mut entries: Vec<_> = worldline
         .journal()
         .iter()

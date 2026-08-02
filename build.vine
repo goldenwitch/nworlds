@@ -12,6 +12,7 @@ prefix: caravan
 -> replay-persistence
 -> performance
 -> productization
+-> purity-hardening
 Files:
 build.vine
 spec/initial.md (read-only semantic source)
@@ -38,8 +39,12 @@ Each gate has a user-reviewed resolution or an explicit deferred status, and no 
 The contract has executable conformance checks for pure evaluation, pure presentation, and reconstructible animation.
 Dependencies: none
 > Gate: Choose the representation, arithmetic, precision, and range policy for continuous LogicalTime.
-> Gate: Define event-boundary inclusion, shared-time ordering, and autonomous evolution across journal events.
-> Gate: Define Context identity, version compatibility, canonical ordering, and deterministic equality.
+> Ruling: Include an event at the evaluation target and apply equal-time events in journal append order.
+> Ruling: Temporal definitions are direct indexed lookups at `t_`, not interval mutation from a previous state.
+> Ruling: Exact deterministic equality is required; no approximate equality is part of the authoritative model.
+> Ruling: Context identity/versioning is deferred unless persistence, compatibility, or networking requires it.
+> Gate: Define the closed temporal DSL/index representation and typed out-of-domain results.
+> Note: Compiler-checked purity enforcement is deferred to the late purity-hardening stage; early stages record behavioral limitations and executable evidence.
 > Gate: Define journal horizon, append, prefix, fork, and invalid-input rules at the contract level.
 > Gate: Review the minimum domain-neutral reference fixture before kernel implementation begins.
 @guidance text/markdown spec/initial.md
@@ -52,11 +57,11 @@ crates/engine-core/src/lib.rs
 crates/reference-demo/src/main.rs
 Do:
 Implement the reference state(worldline, logical_time) evaluator against the approved contract without owning journal construction or presentation behavior.
-Exercise one autonomous continuous rule and one timestamped authoritative event, including evaluation on both sides of the event boundary.
+Exercise one time-indexed definition and one timestamped authoritative journal fact, including lookup on both sides of the event boundary.
 Keep evaluation read-only and make identical immutable inputs produce the same complete GameState.
 Accept:
 Repeated evaluation of the same worldline and LogicalTime is equal and includes that LogicalTime in the state.
-The reference trace demonstrates continuous logical time, event-driven discontinuity, autonomous evolution, no input mutation, and distinct states for distinct LogicalTime values.
+The reference trace demonstrates continuous logical time, event-driven discontinuity, direct indexed lookup, no input mutation, and distinct states for distinct LogicalTime values.
 The reference evaluator is the comparison oracle for later optimized implementations.
 @artifact text/rust crates/reference-demo/src/main.rs
 > Gate: Use only the time arithmetic, boundary semantics, event ordering, and reference fixture approved by semantic-contract; this task must not choose them locally.
@@ -70,14 +75,15 @@ crates/reference-demo/src/main.rs
 Do:
 Implement validated append-only journals, horizon tracking, immutable Context plus journal branches, prefix extraction, and fork construction.
 Keep branch creation and event storage separate from state evaluation, and prove parent and child inputs cannot be mutated through either API.
-Expose the approved shared-time ordering and validation behavior to the kernel tests without adding correction, merge, or networking semantics.
+Expose the approved shared-time ordering, journal-owned timestamp assignment, and corrected-branch behavior to the kernel tests without adding merge or networking semantics.
 Accept:
 Valid append, prefix, and fork operations produce immutable values; invalid timestamps, contexts, and event sequences fail explicitly under the approved contract.
 Tests cover equal-time ordering, horizon behavior, prefix agreement before fork, post-fork divergence, parent/child isolation, and unchanged actual journals.
 An evaluated branch can be replayed by the deterministic kernel without hidden mutable state.
 @artifact text/rust crates/reference-demo/src/main.rs
-> Gate: Resolve whether late events are rejected, inserted, or represented as a new branch, and whether append-only means physical append or logical event insertion.
-> Gate: Resolve branch identity and Context compatibility rules; do not assume merge, correction, or network synchronization.
+> Ruling: Normal journal writing owns timestamp assignment through a monotonic time cursor; late facts create an explicit corrected branch from a prefix and never mutate the actual journal.
+> Gate: Define the journal-writer and corrected-branch construction API; networking, reconciliation, and merge remain out of scope.
+> Gate: Resolve branch identity and Context compatibility rules; do not assume merge or network synchronization.
 ---
 [playback-presentation] Playback and presentation boundary (reviewing)
 -> semantic-contract
@@ -98,7 +104,9 @@ The first visual demo can be hosted without making a graphics framework part of 
 @artifact text/rust crates/presentation/tests/presentation.rs
 @artifact text/rust crates/reference-demo/src/main.rs
 > Gate: Choose the presentation host and graphics API only after the renderer boundary and reference evidence are reviewed.
-> Gate: Define playback mapping, rate, bounds, extrapolation, and behavior at the journal horizon; do not invent a default.
+> Ruling: Reverse playback and arbitrary scrubbing are legal; playback need not be monotonic.
+> Ruling: Beyond the journal horizon, indexed temporal definitions answer without invented authoritative events.
+> Gate: Decide whether looping or bounds are product-level controls; neither is implicit engine behavior.
 ---
 [lookahead-counterfactuals] Lookahead and counterfactual histories (reviewing)
 -> semantic-contract
@@ -110,7 +118,7 @@ crates/engine-core/src/counterfactual.rs
 crates/engine-core/tests/lookahead_counterfactual.rs
 crates/reference-demo/src/main.rs
 Do:
-Evaluate future state against the current Worldline with its Journal fixed, allowing only approved autonomous rules to continue beyond the recorded horizon.
+Evaluate future state as the same direct indexed query against the current Worldline with its Journal fixed; no unrecorded future event is introduced.
 Construct immutable counterfactual forks from a fork time using the approved journal prefix and alternate events, then expose them through the same worldline interface.
 Verify that later parent events cannot alter an existing lookahead result or counterfactual and that both actual and alternate branches remain replayable.
 Accept:
@@ -119,7 +127,7 @@ Counterfactuals agree with their parent before fork_t, can diverge afterward, pr
 Tests cover fork boundaries, alternate event validation, fixed-journal lookahead, branch isolation, and playback over either worldline.
 @artifact text/rust crates/engine-core/tests/lookahead_counterfactual.rs
 @artifact text/rust crates/reference-demo/src/main.rs
-> Gate: Define behavior beyond the journal horizon for autonomous rules and identify which future inputs are legal for a counterfactual.
+> Gate: Define how indexed temporal definitions answer beyond the journal horizon and identify which future inputs are legal for a counterfactual.
 > Gate: Define fork-time boundary semantics and alternate-event validation without assuming a merge policy.
 ---
 [canonical-game-slice] Canonical Caravan game slice (notstarted)
@@ -135,7 +143,7 @@ crates/caravan/tests/canonical_trace.rs
 crates/caravan/assets/
 Do:
 Choose and implement the smallest recognizable Caravan of Seasons slice as a client of the generic contracts.
-Exercise one continuous autonomous quantity, one authoritative player event, playback over actual history, fixed-worldline lookahead, and one meaningful counterfactual choice from input through presentation.
+Exercise one continuous indexed quantity, one authoritative player event, playback over actual history, fixed-worldline lookahead, and one meaningful counterfactual choice from input through presentation.
 Keep game rules, content, input, and assets in the slice; add no game-specific exception to the domain-neutral core.
 Accept:
 A short fixed trace is deterministic on the reference evaluator and produces the same visible outcomes when scrubbed, projected into the future, or forked counterfactually.
@@ -204,3 +212,21 @@ The release path can reproduce the canonical trace and measured target regime wi
 > Gate: Choose production targets, packaging and distribution, content tooling, and audio/input integration only when the slice and measurements show they bind.
 > Gate: Decide whether networking, synchronization, or merge semantics are required; no architecture is presumed here.
 > Gate: Decide final renderer and GPU architecture from the measured workload, preserving the GameState plus Tau boundary.
+---
+[purity-hardening] Compiler-checked purity hardening (notstarted)
+-> canonical-game-slice
+-> replay-persistence
+-> performance
+-> productization
+Files:
+crates/engine-core/
+crates/presentation/
+crates/purity-tests/
+Do:
+Narrow the public authoritative and presentation boundaries after the behavior, game slice, proof package, persistence, and performance regime are known.
+Use closed DSL values, private constructors, forbidden unsafe code, and compiler-checked negative tests to make prohibited mutation and callback injection ill-typed.
+Keep any remaining limitations of admitted code explicit; a lint is supplementary and does not replace the data-only boundary.
+Accept:
+trybuild or equivalent compiler tests prove that callers cannot obtain mutable authoritative state, assign event timestamps outside the journal writer, inject hidden transition callbacks, or mutate published journals and branches.
+The hardened API preserves the conformance results and measured behavior established by earlier stages.
+> Gate: Choose the final public crate boundaries and compile-fail test policy after the actual DSL, game, and workload are known.

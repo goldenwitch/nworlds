@@ -1,5 +1,6 @@
 use engine_core::{
-    evaluate, AutonomousRule, Context, Event, GameState, LogicalTime, Tau, Worldline,
+    evaluate, fork_counterfactual, AutonomousRule, Context, Event, GameState, LogicalTime, Tau,
+    Worldline,
 };
 use presentation::{present, Animation, LinearPlayback, Playback, Renderer};
 
@@ -57,6 +58,16 @@ impl Animation<Scalar> for TestAnimation {
     }
 }
 
+struct AbsentAnimation;
+
+impl Animation<Scalar> for AbsentAnimation {
+    type Sample = f64;
+
+    fn sample(&self, _state: &GameState<Scalar>, _tau: Tau) -> Option<Self::Sample> {
+        None
+    }
+}
+
 fn worldline() -> Worldline<Scalar, ConstantRate, Add> {
     Worldline::from_context(Context::new(Scalar { value: 0.0 }, [ConstantRate(1.0)]))
         .append(LogicalTime::new(4.0), Add(10.0))
@@ -91,6 +102,37 @@ fn present_is_deterministic_and_does_not_mutate_the_worldline() {
 }
 
 #[test]
+fn present_renders_an_immutable_counterfactual_worldline_through_the_renderer() {
+    let parent = worldline();
+    let parent_before = parent.clone();
+    let counterfactual = fork_counterfactual(
+        &parent,
+        LogicalTime::new(3.0),
+        [(LogicalTime::new(4.0), Add(3.0))],
+    )
+    .unwrap();
+    let counterfactual_before = counterfactual.clone();
+    let playback = LinearPlayback::new(LogicalTime::zero(), 1.0);
+    let renderer = TestRenderer;
+    let tau = Tau::new(4.0);
+
+    let parent_frame = present(&parent, &playback, &renderer, tau);
+    let first_counterfactual_frame = present(&counterfactual, &playback, &renderer, tau);
+    let second_counterfactual_frame = present(&counterfactual, &playback, &renderer, tau);
+
+    assert_eq!(parent_frame.value, 14.0);
+    assert_eq!(
+        first_counterfactual_frame.logical_time,
+        LogicalTime::new(4.0)
+    );
+    assert_eq!(first_counterfactual_frame.value, 7.0);
+    assert_eq!(first_counterfactual_frame.tau, tau);
+    assert_eq!(first_counterfactual_frame, second_counterfactual_frame);
+    assert_eq!(parent, parent_before);
+    assert_eq!(counterfactual, counterfactual_before);
+}
+
+#[test]
 fn renderer_and_animation_read_a_selected_state_without_mutating_it() {
     let worldline = worldline();
     let state = evaluate(&worldline, LogicalTime::new(2.0));
@@ -107,4 +149,18 @@ fn renderer_and_animation_read_a_selected_state_without_mutating_it() {
     assert_eq!(first_sample, Some(4.0));
     assert_eq!(first_sample, second_sample);
     assert_eq!(state, before);
+}
+
+#[test]
+fn animation_can_return_none_deterministically() {
+    let worldline = worldline();
+    let state = evaluate(&worldline, LogicalTime::new(2.0));
+    let animation = AbsentAnimation;
+    let tau = Tau::new(2.0);
+
+    let first_sample = animation.sample(&state, tau);
+    let second_sample = animation.sample(&state, tau);
+
+    assert_eq!(first_sample, None);
+    assert_eq!(first_sample, second_sample);
 }

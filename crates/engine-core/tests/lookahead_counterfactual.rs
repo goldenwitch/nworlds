@@ -1,6 +1,6 @@
 use engine_core::{
-    evaluate, evaluate_future, fork_counterfactual, AutonomousRule, Context, Event, LogicalTime,
-    Worldline,
+    evaluate, evaluate_future, fork_counterfactual, AutonomousRule, Context, Event, JournalError,
+    LogicalTime, Worldline,
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -35,19 +35,43 @@ fn parent_worldline() -> Worldline<Scalar, ConstantRate, Add> {
 }
 
 #[test]
+fn context_new_uses_a_zero_time_origin() {
+    let context = Context::new(Scalar { value: 0.0 }, std::iter::empty::<ConstantRate>());
+
+    assert_eq!(context.initial_logical_time(), LogicalTime::zero());
+}
+
+#[test]
+fn evaluation_starts_at_the_configured_origin_in_either_direction() {
+    let origin = LogicalTime::new(5.0);
+    let context =
+        Context::with_initial_logical_time(Scalar { value: 10.0 }, [ConstantRate(2.0)], origin);
+    assert_eq!(context.initial_logical_time(), origin);
+    let worldline = Worldline::<Scalar, ConstantRate, Add>::from_context(context);
+
+    assert_eq!(
+        evaluate(&worldline, LogicalTime::new(7.0)).state().value,
+        14.0
+    );
+    assert_eq!(
+        evaluate(&worldline, LogicalTime::new(3.0)).state().value,
+        6.0
+    );
+}
+
+#[test]
 fn future_evaluation_keeps_the_journal_fixed() {
     let parent = parent_worldline();
     let future_time = LogicalTime::new(8.0);
     let future = evaluate_future(&parent, future_time);
-    let parent_with_later_event = parent.append(LogicalTime::new(10.0), Add(100.0)).unwrap();
+    let parent_with_later_event = parent.append(LogicalTime::new(7.0), Add(100.0)).unwrap();
+    let reevaluated_future = evaluate_future(&parent_with_later_event, future_time);
 
     assert_eq!(future, evaluate(&parent, future_time));
     assert_eq!(future.state().value, 20.0);
     assert_eq!(future, evaluate_future(&parent, future_time));
-    assert_eq!(
-        future,
-        evaluate_future(&parent_with_later_event, future_time)
-    );
+    assert_ne!(future, reevaluated_future);
+    assert_eq!(reevaluated_future.state().value, 120.0);
 }
 
 #[test]
@@ -61,9 +85,28 @@ fn counterfactual_agrees_before_the_fork() {
     .unwrap();
 
     assert_eq!(
-        evaluate_future(&parent, LogicalTime::new(3.0)),
-        evaluate_future(&branch, LogicalTime::new(3.0))
+        evaluate_future(&parent, LogicalTime::new(2.5)),
+        evaluate_future(&branch, LogicalTime::new(2.5))
     );
+}
+
+#[test]
+fn empty_counterfactual_rejects_events_at_or_before_the_fork() {
+    let parent = parent_worldline();
+    let fork_time = LogicalTime::new(1.0);
+    let branch =
+        fork_counterfactual(&parent, fork_time, std::iter::empty::<(LogicalTime, Add)>()).unwrap();
+
+    assert!(branch.journal().is_empty());
+    for attempted in [LogicalTime::new(0.5), fork_time] {
+        assert_eq!(
+            branch.append(attempted, Add(1.0)),
+            Err(JournalError::EventAtOrBeforeFork {
+                fork: fork_time,
+                attempted,
+            })
+        );
+    }
 }
 
 #[test]
@@ -92,6 +135,21 @@ fn counterfactual_diverges_after_the_fork() {
             .value,
         9.0
     );
+}
+
+#[test]
+fn counterfactual_excludes_parent_suffix_at_a_later_target() {
+    let parent = parent_worldline();
+    let branch = fork_counterfactual(
+        &parent,
+        LogicalTime::new(3.0),
+        [(LogicalTime::new(4.0), Add(3.0))],
+    )
+    .unwrap();
+    let target = LogicalTime::new(6.0);
+
+    assert_eq!(evaluate_future(&parent, target).state().value, 18.0);
+    assert_eq!(evaluate_future(&branch, target).state().value, 11.0);
 }
 
 #[test]
