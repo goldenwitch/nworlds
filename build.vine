@@ -1,0 +1,206 @@
+vine 1.2.0
+title: Caravan of Seasons build graph
+prefix: caravan
+---
+[root] Caravan of Seasons implementation (planning)
+-> semantic-contract
+-> deterministic-kernel
+-> journal-worldline
+-> playback-presentation
+-> lookahead-counterfactuals
+-> canonical-game-slice
+-> replay-persistence
+-> performance
+-> productization
+Files:
+build.vine
+spec/initial.md (read-only semantic source)
+Do:
+Execute the stages through their dependency gates and keep each stage responsible for one boundary only.
+Do not treat an unresolved decision as an implementation default; record its resolution or its explicit deferral at the owning gate.
+Accept:
+All stage nodes are reachable from this root, the graph remains acyclic, and every stage has reviewed evidence before the root is completed.
+The source specification remains unchanged by this planning graph.
+@guidance text/markdown spec/initial.md
+---
+[semantic-contract] Semantic contract (reviewing)
+Files:
+spec/initial.md (read-only source)
+proposals/semantic-contract.md
+crates/engine-core/src/lib.rs
+Do:
+Translate the vocabulary, pure-function equations, and invariants into typed Rust-facing contracts for LogicalTime, Tau, Context, Journal, Worldline, GameState, Playback, Frame, and Animation.
+Define ownership and mutation boundaries so evaluation and presentation cannot mutate authoritative inputs.
+Make each unresolved choice below a review gate before downstream implementation begins.
+Accept:
+The contract preserves distinct LogicalTime and Tau types, state-owned logical time, continuous logical time, immutable worldlines, and render inputs limited to GameState plus Tau.
+Each gate has a user-reviewed resolution or an explicit deferred status, and no later task requires an unstated semantic default.
+The contract has executable conformance checks for pure evaluation, pure presentation, and reconstructible animation.
+Dependencies: none
+> Gate: Choose the representation, arithmetic, precision, and range policy for continuous LogicalTime.
+> Gate: Define event-boundary inclusion, shared-time ordering, and autonomous evolution across journal events.
+> Gate: Define Context identity, version compatibility, canonical ordering, and deterministic equality.
+> Gate: Define journal horizon, append, prefix, fork, and invalid-input rules at the contract level.
+> Gate: Review the minimum domain-neutral reference fixture before kernel implementation begins.
+@guidance text/markdown spec/initial.md
+@artifact text/markdown proposals/semantic-contract.md
+---
+[deterministic-kernel] Deterministic state kernel (reviewing)
+-> semantic-contract
+Files:
+crates/engine-core/src/lib.rs
+crates/reference-demo/src/main.rs
+Do:
+Implement the reference state(worldline, logical_time) evaluator against the approved contract without owning journal construction or presentation behavior.
+Exercise one autonomous continuous rule and one timestamped authoritative event, including evaluation on both sides of the event boundary.
+Keep evaluation read-only and make identical immutable inputs produce the same complete GameState.
+Accept:
+Repeated evaluation of the same worldline and LogicalTime is equal and includes that LogicalTime in the state.
+The reference trace demonstrates continuous logical time, event-driven discontinuity, autonomous evolution, no input mutation, and distinct states for distinct LogicalTime values.
+The reference evaluator is the comparison oracle for later optimized implementations.
+@artifact text/rust crates/reference-demo/src/main.rs
+> Gate: Use only the time arithmetic, boundary semantics, event ordering, and reference fixture approved by semantic-contract; this task must not choose them locally.
+---
+[journal-worldline] Journal and immutable worldlines (reviewing)
+-> semantic-contract
+-> deterministic-kernel
+Files:
+crates/engine-core/src/lib.rs
+crates/reference-demo/src/main.rs
+Do:
+Implement validated append-only journals, horizon tracking, immutable Context plus journal branches, prefix extraction, and fork construction.
+Keep branch creation and event storage separate from state evaluation, and prove parent and child inputs cannot be mutated through either API.
+Expose the approved shared-time ordering and validation behavior to the kernel tests without adding correction, merge, or networking semantics.
+Accept:
+Valid append, prefix, and fork operations produce immutable values; invalid timestamps, contexts, and event sequences fail explicitly under the approved contract.
+Tests cover equal-time ordering, horizon behavior, prefix agreement before fork, post-fork divergence, parent/child isolation, and unchanged actual journals.
+An evaluated branch can be replayed by the deterministic kernel without hidden mutable state.
+@artifact text/rust crates/reference-demo/src/main.rs
+> Gate: Resolve whether late events are rejected, inserted, or represented as a new branch, and whether append-only means physical append or logical event insertion.
+> Gate: Resolve branch identity and Context compatibility rules; do not assume merge, correction, or network synchronization.
+---
+[playback-presentation] Playback and presentation boundary (reviewing)
+-> semantic-contract
+-> deterministic-kernel
+Files:
+crates/presentation/src/playback.rs
+crates/presentation/src/renderer.rs
+crates/presentation/tests/presentation.rs
+crates/reference-demo/src/main.rs
+Do:
+Implement pure playback(Tau) -> LogicalTime and the present composition from a Worldline, Playback, and Tau.
+Define a renderer boundary that receives only the selected GameState and Tau; keep the core independent of a graphics API.
+Test scrub, reverse, past selection, and future selection through the approved playback mapping, with animation reconstructed from immutable definitions and Tau rather than frame history.
+Accept:
+For fixed inputs, playback, render, animation, and present are deterministic and side-effect free.
+The presentation tests prove that no renderer path mutates Context, Journal, Worldline, or GameState and that a future or past selection uses the same state path.
+The first visual demo can be hosted without making a graphics framework part of the engine contract.
+@artifact text/rust crates/presentation/tests/presentation.rs
+@artifact text/rust crates/reference-demo/src/main.rs
+> Gate: Choose the presentation host and graphics API only after the renderer boundary and reference evidence are reviewed.
+> Gate: Define playback mapping, rate, bounds, extrapolation, and behavior at the journal horizon; do not invent a default.
+---
+[lookahead-counterfactuals] Lookahead and counterfactual histories (reviewing)
+-> semantic-contract
+-> deterministic-kernel
+-> journal-worldline
+Files:
+crates/engine-core/src/lookahead.rs
+crates/engine-core/src/counterfactual.rs
+crates/engine-core/tests/lookahead_counterfactual.rs
+crates/reference-demo/src/main.rs
+Do:
+Evaluate future state against the current Worldline with its Journal fixed, allowing only approved autonomous rules to continue beyond the recorded horizon.
+Construct immutable counterfactual forks from a fork time using the approved journal prefix and alternate events, then expose them through the same worldline interface.
+Verify that later parent events cannot alter an existing lookahead result or counterfactual and that both actual and alternate branches remain replayable.
+Accept:
+Future evaluation is exactly state(actual_worldline, future_t) under the approved horizon semantics and records no unrecorded future action.
+Counterfactuals agree with their parent before fork_t, can diverge afterward, preserve the actual journal, and remain independently evaluable and presentable.
+Tests cover fork boundaries, alternate event validation, fixed-journal lookahead, branch isolation, and playback over either worldline.
+@artifact text/rust crates/engine-core/tests/lookahead_counterfactual.rs
+@artifact text/rust crates/reference-demo/src/main.rs
+> Gate: Define behavior beyond the journal horizon for autonomous rules and identify which future inputs are legal for a counterfactual.
+> Gate: Define fork-time boundary semantics and alternate-event validation without assuming a merge policy.
+---
+[canonical-game-slice] Canonical Caravan game slice (notstarted)
+-> semantic-contract
+-> deterministic-kernel
+-> journal-worldline
+-> playback-presentation
+-> lookahead-counterfactuals
+Files:
+crates/caravan/src/rules.rs
+crates/caravan/src/content.rs
+crates/caravan/tests/canonical_trace.rs
+crates/caravan/assets/
+Do:
+Choose and implement the smallest recognizable Caravan of Seasons slice as a client of the generic contracts.
+Exercise one continuous autonomous quantity, one authoritative player event, playback over actual history, fixed-worldline lookahead, and one meaningful counterfactual choice from input through presentation.
+Keep game rules, content, input, and assets in the slice; add no game-specific exception to the domain-neutral core.
+Accept:
+A short fixed trace is deterministic on the reference evaluator and produces the same visible outcomes when scrubbed, projected into the future, or forked counterfactually.
+The trace reaches input, journal event, worldline evaluation, playback, and rendered frame in a repeatable playable demo.
+The slice is recognizable as the first game loop and any insufficiency in the generic contracts is recorded as a concrete contract gap.
+> Gate: The user chooses the canonical slice, minimum playable loop, and first meaningful alternate choice; this task must not invent final game content.
+> Gate: Choose the minimum input, asset, and presentation set only within the approved renderer and playback contracts.
+---
+[replay-persistence] Replay and persistence (notstarted)
+-> semantic-contract
+-> journal-worldline
+-> canonical-game-slice
+Files:
+crates/persistence/src/format.rs
+crates/persistence/src/save.rs
+crates/persistence/src/replay.rs
+crates/persistence/tests/round_trip.rs
+Do:
+Define versioned serialization for Context identity, Journals, Worldline branches, and the presentation inputs needed to reproduce a trace.
+Add save/load, deterministic replay, timeline and branch inspection, and comparison of reference evaluation with captured presentation inputs.
+Keep snapshots and caches derived and discardable unless a measured requirement promotes one into an explicit contract.
+Accept:
+The canonical trace round-trips through save/load with identical events, branch identity, evaluated states, and visible presentation inputs.
+Unsupported or incompatible versions fail explicitly, and replay can scrub, fork, and reproduce the saved result without hidden frame history.
+Any promoted snapshot or cache has an identity, invalidation, and compatibility rule backed by a measured need.
+> Gate: Choose the serialization format, schema/version policy, and compatibility guarantees.
+> Gate: Decide which snapshots and caches are derived; do not make persistence of presentation history a default.
+> Gate: Defer network synchronization and merge semantics until a concrete product requirement activates them.
+---
+[performance] Measurement and performance hardening (notstarted)
+-> deterministic-kernel
+-> playback-presentation
+-> canonical-game-slice
+Files:
+crates/benchmarks/benches/engine.rs
+crates/benchmarks/fixtures/
+crates/benchmarks/reports/
+Do:
+Measure journal length, evaluation cost, scrub latency, branch count, frame production, and animation workload on fixed canonical traces.
+Optimize only behind the approved pure contracts, keeping the deterministic evaluator as an oracle and isolating benchmark and cache policy from game rules.
+Cross-check every optimized evaluator or presentation path against the reference evaluator and record benchmark conditions, data, and regime limits.
+Accept:
+The benchmark suite reports reproducible measurements for the target regime and identifies the cost of each accepted optimization.
+Optimized and reference outputs agree on deterministic fixtures and representative traces, including state-owned LogicalTime and state-plus-Tau presentation.
+No optimization depends on unrecorded previous frames or changes a semantic gate without reopening its owning contract task.
+> Gate: Define the target scale, workload, hardware, and latency budget from canonical evidence before selecting optimizations.
+> Gate: Decide whether memoization or materialization is lawful and specify identity and invalidation from the approved contracts.
+> Gate: Keep final GPU architecture stage-gated; persistent simulation driven by unrecorded frame history is outside the current model.
+---
+[productization] Productization and deferred platform decisions (notstarted)
+-> canonical-game-slice
+-> replay-persistence
+-> performance
+Files:
+product/
+crates/tools/
+crates/release/
+Do:
+Use the playable slice, replay evidence, and measured performance regime to define only the production concerns that concretely bind.
+Give each activated concern its own contract and owner for content tooling, packaging, audio/input integration, synchronization, release targets, or other platform work.
+Keep deferred concerns visible as gates rather than allowing them to reshape the kernel, worldline model, or renderer implicitly.
+Accept:
+There is a reviewed product scope with explicit target platforms, packaging, content workflow, and integration boundaries for every concern that was activated.
+Each activated platform feature has a contract, dependency, owner, and acceptance evidence; deferred networking, merge, large-scale authoring, and final GPU choices remain explicitly deferred.
+The release path can reproduce the canonical trace and measured target regime without weakening the semantic or deterministic contracts.
+> Gate: Choose production targets, packaging and distribution, content tooling, and audio/input integration only when the slice and measurements show they bind.
+> Gate: Decide whether networking, synchronization, or merge semantics are required; no architecture is presumed here.
+> Gate: Decide final renderer and GPU architecture from the measured workload, preserving the GameState plus Tau boundary.
