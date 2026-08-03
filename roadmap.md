@@ -31,6 +31,9 @@ present(worldline, playback, tau) =
 - A late fact creates an explicit corrected branch from a prefix. The actual
   journal is never rewritten.
 - Actual, counterfactual, and corrected branches are immutable values.
+- Engine SDK objects remain separate from game-domain objects; `GameState` and
+  journal entries carry game-specific values without defining them as engine
+  primitives.
 - Reverse playback and arbitrary scrubbing are legal.
 - Networking, reconciliation, merging, looping, bounds, and final graphics
   architecture are deferred until a concrete requirement activates them.
@@ -42,6 +45,10 @@ remain in repository history, but there is currently no implementation or
 Cargo workspace. The repository is intentionally at a design-to-implementation
 boundary: the next code is the direct indexed DSL, not a migration of the old
 callback engine.
+
+The packet-level delegation plan is maintained in `build.vine`: each packet
+owns a disjoint path set and can be assigned to one Luna agent. The graph makes
+the parallel frontier explicit; this roadmap keeps the higher-level sequence.
 
 ## Stages
 

@@ -1,223 +1,165 @@
 vine 1.2.0
-title: Caravan of Seasons build graph
 prefix: caravan
+title: Caravan of Seasons build graph
 ---
-[root] Caravan of Seasons implementation (planning)
--> semantic-contract
--> deterministic-kernel
--> journal-worldline
--> playback-presentation
--> lookahead-counterfactuals
--> canonical-game-slice
--> replay-persistence
--> performance
+[root] Caravan anchor implementation (packet plan) (planning)
+Execute the independent packets below. Keep SDK objects separate from Caravan game objects, use direct indexed queries rather than interval stepping, and dispatch packets only after their dependencies are reviewed. The cellular automata anchor proposal is the shared behavior target. Files: proposals/cellular-automata-anchor.md; proposals/semantic-contract.md; roadmap.md; spec/initial.md
+-> anchor-demo
+-> benchmarks
+-> branch-model
+-> contract-gate
+-> domain-model
+-> hazard-rules
+-> indexed-query
+-> journal-writer
+-> lookahead
+-> persistence
+-> presentation
 -> productization
+-> proof-package
 -> purity-hardening
-Files:
-build.vine
-spec/initial.md (read-only semantic source)
-Do:
-Execute the stages through their dependency gates and keep each stage responsible for one boundary only.
-Do not treat an unresolved decision as an implementation default; record its resolution or its explicit deferral at the owning gate.
-Accept:
-All stage nodes are reachable from this root, the graph remains acyclic, and every stage has reviewed evidence before the root is completed.
-The source specification remains unchanged by this planning graph.
+-> reference-oracle
+-> sdk-envelopes
+-> seeded-journal
+-> vegetation-rules
+-> workspace-time
 @guidance text/markdown spec/initial.md
 ---
-[semantic-contract] Semantic contract (reviewing)
-Files:
-spec/initial.md (read-only source)
-proposals/semantic-contract.md
-Do:
-Translate the vocabulary, pure-function equations, and invariants into typed Rust-facing contracts for LogicalTime, Tau, Context, Journal, Worldline, GameState, Playback, Frame, and Animation.
-Define ownership and mutation boundaries so evaluation and presentation cannot mutate authoritative inputs.
-Make each unresolved choice below a review gate before downstream implementation begins.
-Accept:
-The contract preserves distinct LogicalTime and Tau types, state-owned logical time, continuous logical time, immutable worldlines, and render inputs limited to GameState plus Tau.
-Each gate has a user-reviewed resolution or an explicit deferred status, and no later task requires an unstated semantic default.
-The contract has executable conformance checks for pure evaluation, pure presentation, and reconstructible animation.
-Dependencies: none
-> Gate: Choose the representation, arithmetic, precision, and range policy for continuous LogicalTime.
-> Ruling: Include an event at the evaluation target and apply equal-time events in journal append order.
-> Ruling: Temporal definitions are direct indexed lookups at `t_`, not interval mutation from a previous state.
-> Ruling: Exact deterministic equality is required; no approximate equality is part of the authoritative model.
-> Ruling: Context identity/versioning is deferred unless persistence, compatibility, or networking requires it.
-> Gate: Define the closed temporal DSL/index representation and typed out-of-domain results.
-> Note: Compiler-checked purity enforcement is deferred to the late purity-hardening stage; early stages record behavioral limitations and executable evidence.
-> Gate: Define journal horizon, append, prefix, fork, and invalid-input rules at the contract level.
-> Gate: Review the minimum domain-neutral reference fixture before kernel implementation begins.
-@guidance text/markdown spec/initial.md
-@artifact text/markdown proposals/semantic-contract.md
+[contract-gate] Anchor contract gate (reviewing)
+Files: proposals/semantic-contract.md; proposals/cellular-automata-anchor.md; spec/initial.md
+Do: Freeze the anchor decisions that are already settled: one-second game ticks, arbitrary continuous t_ sampling, empty journal as empty set, journal-owned saucer creation, postdated entries, three layers, direct indexed queries, and SDK/game-object separation. Record only the remaining implementation-level choices.
+Accept: The implementation packets can consume one coherent contract without importing the removed interval-fold model.
 ---
-[deterministic-kernel] Deterministic state kernel (notstarted)
--> semantic-contract
-Files:
-proposals/cellular-automata-anchor.md
-crates/
-Do:
-Implement the reference state(worldline, logical_time) evaluator against the approved contract without owning journal construction or presentation behavior.
-Exercise one time-indexed definition and one timestamped authoritative journal fact, including lookup on both sides of the event boundary.
-Keep evaluation read-only and make identical immutable inputs produce the same complete GameState.
-Accept:
-Repeated evaluation of the same worldline and LogicalTime is equal and includes that LogicalTime in the state.
-The reference trace demonstrates continuous logical time, event-driven discontinuity, direct indexed lookup, no input mutation, and distinct states for distinct LogicalTime values.
-The reference evaluator is the comparison oracle for later optimized implementations.
-@artifact text/markdown proposals/cellular-automata-anchor.md
-> Gate: Use only the time arithmetic, boundary semantics, event ordering, and reference fixture approved by semantic-contract; this task must not choose them locally.
+[workspace-time] Workspace and time module (notstarted)
+Files: Cargo.toml; crates/engine-time/**
+Do: Bootstrap the Rust workspace and implement distinct LogicalTime and Tau wrappers with the approved signed i64 representation, one-second anchor game-tick relation, checked arithmetic, ordering, and exact equality. Keep raw time arithmetic in this crate.
+Accept: Boundary and overflow tests pass; no game-domain types or evaluator logic are owned here.
+-> contract-gate
 ---
-[journal-worldline] Journal and immutable worldlines (notstarted)
--> semantic-contract
--> deterministic-kernel
-Files:
-crates/
-Do:
-Implement validated append-only journals, horizon tracking, immutable Context plus journal branches, prefix extraction, and fork construction.
-Keep branch creation and event storage separate from state evaluation, and prove parent and child inputs cannot be mutated through either API.
-Expose the approved shared-time ordering, journal-owned timestamp assignment, and corrected-branch behavior to the kernel tests without adding merge or networking semantics.
-Accept:
-Valid append, prefix, and fork operations produce immutable values; invalid timestamps, contexts, and event sequences fail explicitly under the approved contract.
-Tests cover equal-time ordering, horizon behavior, prefix agreement before fork, post-fork divergence, parent/child isolation, and unchanged actual journals.
-An evaluated branch can be replayed by the deterministic kernel without hidden mutable state.
-@artifact text/markdown proposals/cellular-automata-anchor.md
-> Ruling: Normal journal writing owns timestamp assignment through a monotonic time cursor; late facts create an explicit corrected branch from a prefix and never mutate the actual journal.
-> Gate: Define the journal-writer and corrected-branch construction API; networking, reconciliation, and merge remain out of scope.
-> Gate: Resolve branch identity and Context compatibility rules; do not assume merge or network synchronization.
+[sdk-envelopes] SDK envelopes and query contracts (notstarted)
+Files: crates/engine-sdk/**
+Do: Define generic SDK objects and traits for Context, JournalEntry, Journal, Worldline, GameState, Playback, Frame, and typed query results without admitting interval callbacks or game-domain primitives. Keep game payloads opaque to the SDK.
+Accept: SDK/game ownership is visible in types; immutable inputs and owned query outputs are expressible; no actor, terrain, saucer, or resource type is introduced.
+-> contract-gate
+-> workspace-time
 ---
-[playback-presentation] Playback and presentation boundary (notstarted)
--> semantic-contract
--> deterministic-kernel
-Files:
-crates/
-Do:
-Implement pure playback(Tau) -> LogicalTime and the present composition from a Worldline, Playback, and Tau.
-Define a renderer boundary that receives only the selected GameState and Tau; keep the core independent of a graphics API.
-Test scrub, reverse, past selection, and future selection through the approved playback mapping, with animation reconstructed from immutable definitions and Tau rather than frame history.
-Accept:
-For fixed inputs, playback, render, animation, and present are deterministic and side-effect free.
-The presentation tests prove that no renderer path mutates Context, Journal, Worldline, or GameState and that a future or past selection uses the same state path.
-The first visual demo can be hosted without making a graphics framework part of the engine contract.
-@artifact text/markdown proposals/cellular-automata-anchor.md
-> Gate: Choose the presentation host and graphics API only after the renderer boundary and reference evidence are reviewed.
-> Ruling: Reverse playback and arbitrary scrubbing are legal; playback need not be monotonic.
-> Ruling: Beyond the journal horizon, indexed temporal definitions answer without invented authoritative events.
-> Gate: Decide whether looping or bounds are product-level controls; neither is implicit engine behavior.
+[domain-model] Saucer geometry and game layers (notstarted)
+Files: crates/caravan-domain/**
+Do: Define axial radius-5 geometry, the 91-tile set, fixed neighbor order, terrain, actor, effect, resource, identifiers, and compact game journal entry payloads. Own game meaning only; do not implement journal storage or evaluation.
+Accept: Geometry and layer tests establish 91 tiles, six neighbors, valid tile identities, and the three-layer representation.
+-> contract-gate
+-> workspace-time
 ---
-[lookahead-counterfactuals] Lookahead and counterfactual histories (notstarted)
--> semantic-contract
--> deterministic-kernel
--> journal-worldline
-Files:
-crates/
-Do:
-Evaluate future state as the same direct indexed query against the current Worldline with its Journal fixed; no unrecorded future event is introduced.
-Construct immutable counterfactual forks from a fork time using the approved journal prefix and alternate events, then expose them through the same worldline interface.
-Verify that later parent events cannot alter an existing lookahead result or counterfactual and that both actual and alternate branches remain replayable.
-Accept:
-Future evaluation is exactly state(actual_worldline, future_t) under the approved horizon semantics and records no unrecorded future action.
-Counterfactuals agree with their parent before fork_t, can diverge afterward, preserve the actual journal, and remain independently evaluable and presentable.
-Tests cover fork boundaries, alternate event validation, fixed-journal lookahead, branch isolation, and playback over either worldline.
-@artifact text/markdown proposals/cellular-automata-anchor.md
-> Gate: Define how indexed temporal definitions answer beyond the journal horizon and identify which future inputs are legal for a counterfactual.
-> Gate: Define fork-time boundary semantics and alternate-event validation without assuming a merge policy.
+[journal-writer] Journal writer and entries (notstarted)
+Files: crates/engine-journal/**
+Do: Implement immutable journal values and a journal-owned monotonic writer that can postdate entries before evaluation, preserve equal-time append order, and publish typed game entries without caller-owned timestamps.
+Accept: Writer tests cover advance_to, record, postdated visibility, backward rejection, empty journals, and exact target-time inclusion. No branch correction logic is owned here.
+-> domain-model
+-> sdk-envelopes
 ---
-[canonical-game-slice] Canonical Caravan game slice (notstarted)
--> semantic-contract
--> deterministic-kernel
--> journal-worldline
--> playback-presentation
--> lookahead-counterfactuals
-Files:
-crates/caravan/src/rules.rs
-crates/caravan/src/content.rs
-crates/caravan/tests/canonical_trace.rs
-crates/caravan/assets/
-Do:
-Choose and implement the smallest recognizable Caravan of Seasons slice as a client of the generic contracts.
-Exercise one continuous indexed quantity, one authoritative player event, playback over actual history, fixed-worldline lookahead, and one meaningful counterfactual choice from input through presentation.
-Keep game rules, content, input, and assets in the slice; add no game-specific exception to the domain-neutral core.
-Accept:
-A short fixed trace is deterministic on the reference evaluator and produces the same visible outcomes when scrubbed, projected into the future, or forked counterfactually.
-The trace reaches input, journal event, worldline evaluation, playback, and rendered frame in a repeatable playable demo.
-The slice is recognizable as the first game loop and any insufficiency in the generic contracts is recorded as a concrete contract gap.
-> Gate: The user chooses the canonical slice, minimum playable loop, and first meaningful alternate choice; this task must not invent final game content.
-> Gate: Choose the minimum input, asset, and presentation set only within the approved renderer and playback contracts.
-@guidance text/markdown proposals/cellular-automata-anchor.md
+[branch-model] Counterfactual and corrected branches (notstarted)
+Files: crates/engine-branches/**
+Do: Implement immutable inclusive-prefix branch construction for counterfactual and corrected suffixes. Preserve parent journals, retain fork boundaries, and expose one branch value to the query layer.
+Accept: Tests prove prefix agreement, suffix replacement, late-entry correction, parent/child isolation, and nested branch behavior without merge or networking.
+-> journal-writer
+-> sdk-envelopes
 ---
-[replay-persistence] Replay and persistence (notstarted)
--> semantic-contract
--> journal-worldline
--> canonical-game-slice
-Files:
-crates/persistence/src/format.rs
-crates/persistence/src/save.rs
-crates/persistence/src/replay.rs
-crates/persistence/tests/round_trip.rs
-Do:
-Define versioned serialization for Context identity, Journals, Worldline branches, and the presentation inputs needed to reproduce a trace.
-Add save/load, deterministic replay, timeline and branch inspection, and comparison of reference evaluation with captured presentation inputs.
-Keep snapshots and caches derived and discardable unless a measured requirement promotes one into an explicit contract.
-Accept:
-The canonical trace round-trips through save/load with identical events, branch identity, evaluated states, and visible presentation inputs.
-Unsupported or incompatible versions fail explicitly, and replay can scrub, fork, and reproduce the saved result without hidden frame history.
-Any promoted snapshot or cache has an identity, invalidation, and compatibility rule backed by a measured need.
-> Gate: Choose the serialization format, schema/version policy, and compatibility guarantees.
-> Gate: Decide which snapshots and caches are derived; do not make persistence of presentation history a default.
-> Gate: Defer network synchronization and merge semantics until a concrete product requirement activates them.
+[indexed-query] Direct indexed query kernel (notstarted)
+Files: crates/engine-index/**
+Do: Implement the generic direct query boundary: select the game-tick index from t_, expose journal entries visible at t_, and return a new GameState without prior-state input, stepping API, or evaluator-owned RNG.
+Accept: Empty journal, saucer creation, postdated entries, arbitrary query order, within-tick stability under a fixed journal, and journal-time discontinuities are testable.
+-> domain-model
+-> journal-writer
+-> sdk-envelopes
 ---
-[performance] Measurement and performance hardening (notstarted)
--> deterministic-kernel
--> playback-presentation
--> canonical-game-slice
-Files:
-crates/benchmarks/benches/engine.rs
-crates/benchmarks/fixtures/
-crates/benchmarks/reports/
-Do:
-Measure journal length, evaluation cost, scrub latency, branch count, frame production, and animation workload on fixed canonical traces.
-Optimize only behind the approved pure contracts, keeping the deterministic evaluator as an oracle and isolating benchmark and cache policy from game rules.
-Cross-check every optimized evaluator or presentation path against the reference evaluator and record benchmark conditions, data, and regime limits.
-Accept:
-The benchmark suite reports reproducible measurements for the target regime and identifies the cost of each accepted optimization.
-Optimized and reference outputs agree on deterministic fixtures and representative traces, including state-owned LogicalTime and state-plus-Tau presentation.
-No optimization depends on unrecorded previous frames or changes a semantic gate without reopening its owning contract task.
-> Gate: Define the target scale, workload, hardware, and latency budget from canonical evidence before selecting optimizations.
-> Gate: Decide whether memoization or materialization is lawful and specify identity and invalidation from the approved contracts.
-> Gate: Keep final GPU architecture stage-gated; persistent simulation driven by unrecorded frame history is outside the current model.
+[vegetation-rules] Vegetation rule definitions (notstarted)
+Files: crates/caravan-vegetation/**
+Do: Implement pure indexed definitions for Farmer, Wheat, Forest, and Forester, including fixed neighbor selection, destination wheat placement, wheat totals, and wood production. Return values; do not mutate snapshots.
+Accept: Isolated rule traces cover each definition and use stable identifiers/order only.
+-> domain-model
+-> indexed-query
 ---
-[productization] Productization and deferred platform decisions (notstarted)
--> canonical-game-slice
--> replay-persistence
--> performance
-Files:
-product/
-crates/tools/
-crates/release/
-Do:
-Use the playable slice, replay evidence, and measured performance regime to define only the production concerns that concretely bind.
-Give each activated concern its own contract and owner for content tooling, packaging, audio/input integration, synchronization, release targets, or other platform work.
-Keep deferred concerns visible as gates rather than allowing them to reshape the kernel, worldline model, or renderer implicitly.
-Accept:
-There is a reviewed product scope with explicit target platforms, packaging, content workflow, and integration boundaries for every concern that was activated.
-Each activated platform feature has a contract, dependency, owner, and acceptance evidence; deferred networking, merge, large-scale authoring, and final GPU choices remain explicitly deferred.
-The release path can reproduce the canonical trace and measured target regime without weakening the semantic or deterministic contracts.
-> Gate: Choose production targets, packaging and distribution, content tooling, and audio/input integration only when the slice and measurements show they bind.
-> Gate: Decide whether networking, synchronization, or merge semantics are required; no architecture is presumed here.
-> Gate: Decide final renderer and GPU architecture from the measured workload, preserving the GameState plus Tau boundary.
+[hazard-rules] Hazard and conflict definitions (notstarted)
+Files: crates/caravan-hazards/**
+Do: Implement pure indexed definitions for Arsonist, Fire, Fighter, and Arborist, including target selection, fire ages/spread/destruction, collision, and three-tick conversion.
+Accept: Isolated deterministic traces cover each rule, layer interactions, and conflict outcomes without actor execution order.
+-> domain-model
+-> indexed-query
 ---
-[purity-hardening] Compiler-checked purity hardening (notstarted)
--> canonical-game-slice
--> replay-persistence
--> performance
+[seeded-journal] Deterministic seeded journal fixture (notstarted)
+Files: crates/caravan-seeded/**
+Do: Generate the finite postdated spawn schedule from a fixed seed before evaluation: three actors every ten game ticks, valid unoccupied tiles, deterministic retries, and a hand-authored behavior trace alongside the generated trace.
+Accept: Same seed yields identical ordered journal entries on every supported run; evaluator never owns the RNG.
+-> domain-model
+-> journal-writer
+---
+[reference-oracle] Anchor state oracle (notstarted)
+Files: crates/caravan-reference/**
+Do: Compose the game-domain definitions into the reference state(worldline, t_) oracle over terrain, actors, effects, and resources. Keep all derived results as query outputs.
+Accept: The full anchor behavior is reproducible at arbitrary t_, in non-monotonic query order, over actual/counterfactual/corrected branches, with exact GameState logical time.
+-> branch-model
+-> hazard-rules
+-> indexed-query
+-> seeded-journal
+-> vegetation-rules
+---
+[lookahead] Indexed lookahead and branch views (notstarted)
+Files: crates/engine-lookahead/**
+Do: Expose future queries and branch selection through the same direct oracle while keeping the journal fixed. No future entries are generated.
+Accept: Earlier lookahead values remain unchanged when new values are authored on another branch; actual and alternate worlds use identical query machinery.
+-> branch-model
+-> reference-oracle
+---
+[presentation] Playback and presentation adapter (notstarted)
+Files: crates/engine-presentation/**
+Do: Implement reusable Playback, direct present composition, and renderer/animation value boundaries over SDK GameState and Tau. Keep the presentation adapter generic over game payloads and independent of game rules.
+Accept: Forward, reverse, arbitrary scrub, repeated samples, and branch presentation are deterministic and do not mutate authoritative inputs.
+-> reference-oracle
+-> sdk-envelopes
+-> workspace-time
+---
+[anchor-demo] Runnable anchor demonstration (notstarted)
+Files: crates/caravan-demo/**
+Do: Build the first runnable terminal or minimal-host demonstration for the fixed cellular automata trace, showing empty set, saucer creation, layer queries, tick/sample decoupling, seeded entries, lookahead, and branch views.
+Accept: One deterministic command reproduces the documented trace without hidden state or a mutable current board.
+-> lookahead
+-> presentation
+-> reference-oracle
+-> seeded-journal
+---
+[proof-package] Conformance and proof package (notstarted)
+Files: tests/conformance/**; evidence/**
+Do: Map every initial-spec invariant and anchor acceptance condition to executable tests, generated query-order cases, branch cases, and a machine-readable report.
+Accept: Skeptical readers can distinguish executable evidence, explicit limitations, and deferred product decisions.
+-> anchor-demo
+-> presentation
+-> reference-oracle
+---
+[persistence] Replay and persistence (notstarted)
+Files: crates/engine-persistence/**
+Do: Serialize SDK envelopes, game entries, context definitions, journals, and branch lineage; add save/load and deterministic replay without persisting frame history.
+Accept: Anchor journals and branches round-trip exactly, incompatible versions fail explicitly, and replay preserves query results.
+-> anchor-demo
+-> branch-model
+-> domain-model
+---
+[benchmarks] Reference measurements (notstarted)
+Files: crates/engine-benchmarks/**; evidence/benchmarks/**
+Do: Measure direct query cost, journal length, branch count, scrub latency, and frame production on fixed anchor traces. Do not optimize yet.
+Accept: Conditions and results are reproducible; any proposed cache or index has measured motivation and reference-output comparison.
+-> anchor-demo
+-> reference-oracle
+---
+[productization] Conditional productization (notstarted)
+Files: product/**; crates/tools/**; crates/release/**
+Do: Add only platform, packaging, content, audio/input, or tooling work shown to bind after the anchor evidence. Keep networking, merge, and final GPU choices deferred unless activated.
+Accept: Each activated concern has an owner, contract, dependency, and reproducible acceptance evidence.
+-> benchmarks
+-> persistence
+-> proof-package
+---
+[purity-hardening] Late compiler-checked purity (notstarted)
+Files: crates/purity-tests/**; crates/engine-api/**
+Do: After behavior and workload are known, narrow public boundaries with data-only DSL values, private constructors, forbid unsafe code, and trybuild compile-fail tests.
+Accept: Prohibited mutation, callback injection, caller timestamps, and published-branch mutation are ill-typed while earlier conformance and benchmark evidence still passes.
 -> productization
-Files:
-crates/engine-core/
-crates/presentation/
-crates/purity-tests/
-Do:
-Narrow the public authoritative and presentation boundaries after the behavior, game slice, proof package, persistence, and performance regime are known.
-Use closed DSL values, private constructors, forbidden unsafe code, and compiler-checked negative tests to make prohibited mutation and callback injection ill-typed.
-Keep any remaining limitations of admitted code explicit; a lint is supplementary and does not replace the data-only boundary.
-Accept:
-trybuild or equivalent compiler tests prove that callers cannot obtain mutable authoritative state, assign event timestamps outside the journal writer, inject hidden transition callbacks, or mutate published journals and branches.
-The hardened API preserves the conformance results and measured behavior established by earlier stages.
-> Gate: Choose the final public crate boundaries and compile-fail test policy after the actual DSL, game, and workload are known.

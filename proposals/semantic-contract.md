@@ -22,12 +22,18 @@ been removed. No canonical Rust implementation exists yet.
   a domain and its derived tiles.
 - Journal timestamps are assigned by a monotonic writer. A late entry creates an
   explicit corrected branch; it never rewrites the actual journal.
+- The writer may postdate entries by advancing its cursor into the future before
+  evaluation. Queries ignore entries after their requested `t_`; evaluation
+  never generates those entries.
 - Actual, counterfactual, and corrected branches are immutable values evaluated
   through the same query path.
 - Target-time entries are included, and equal-time entries use append order.
 - Reverse playback and arbitrary scrubbing are legal.
 - Seeded randomness constructs a concrete journal before evaluation. The
   evaluator never owns or advances an RNG.
+- Engine SDK objects (`Worldline`, `Journal`, `GameState`, `Playback`, and
+  related envelopes) remain distinct from game objects such as saucers, tiles,
+  terrain, actors, effects, and resources.
 
 ## Cellular Automata Anchor
 
@@ -49,10 +55,11 @@ The intended boundary is:
 state(context_definitions, journal, t_) -> GameState
 ```
 
-A returned `GameState` owns the exact sampled `t_` and contains derived layers
-and resources for the corresponding automaton tick and visible journal entries.
-All intermediate values are disposable query results. No authoritative value
-is updated in place.
+A returned `GameState` owns the exact sampled `t_` and contains a game-specific
+snapshot of derived layers and resources for the corresponding automaton tick
+and visible journal entries. It is an SDK result envelope, not a replacement
+for the game object's domain model. All intermediate values are disposable
+query results. No authoritative value is updated in place.
 
 Presentation remains:
 
