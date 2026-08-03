@@ -37,14 +37,11 @@ present(worldline, playback, tau) =
 
 ## Current Position
 
-The repository has a tested prototype: `f64` time, value-producing journals and
-forks, an interval-fold evaluator, callback-based rules/events, compositional
-presentation, lookahead, counterfactual tests, and a terminal demo.
-
-That prototype is evidence for the shape of the model, not the final engine.
-The next implementation work replaces the evaluator with direct indexed DSL
-queries. Do not grow the callback-based interval prototype or add game-specific
-exceptions to it.
+The former Rust interval-fold prototype has been removed. Its tests and demo
+remain in repository history, but there is currently no implementation or
+Cargo workspace. The repository is intentionally at a design-to-implementation
+boundary: the next code is the direct indexed DSL, not a migration of the old
+callback engine.
 
 ## Stages
 

@@ -28,7 +28,6 @@ The source specification remains unchanged by this planning graph.
 Files:
 spec/initial.md (read-only source)
 proposals/semantic-contract.md
-crates/engine-core/src/lib.rs
 Do:
 Translate the vocabulary, pure-function equations, and invariants into typed Rust-facing contracts for LogicalTime, Tau, Context, Journal, Worldline, GameState, Playback, Frame, and Animation.
 Define ownership and mutation boundaries so evaluation and presentation cannot mutate authoritative inputs.
@@ -50,11 +49,11 @@ Dependencies: none
 @guidance text/markdown spec/initial.md
 @artifact text/markdown proposals/semantic-contract.md
 ---
-[deterministic-kernel] Deterministic state kernel (reviewing)
+[deterministic-kernel] Deterministic state kernel (notstarted)
 -> semantic-contract
 Files:
-crates/engine-core/src/lib.rs
-crates/reference-demo/src/main.rs
+proposals/cellular-automata-anchor.md
+crates/
 Do:
 Implement the reference state(worldline, logical_time) evaluator against the approved contract without owning journal construction or presentation behavior.
 Exercise one time-indexed definition and one timestamped authoritative journal fact, including lookup on both sides of the event boundary.
@@ -63,15 +62,14 @@ Accept:
 Repeated evaluation of the same worldline and LogicalTime is equal and includes that LogicalTime in the state.
 The reference trace demonstrates continuous logical time, event-driven discontinuity, direct indexed lookup, no input mutation, and distinct states for distinct LogicalTime values.
 The reference evaluator is the comparison oracle for later optimized implementations.
-@artifact text/rust crates/reference-demo/src/main.rs
+@artifact text/markdown proposals/cellular-automata-anchor.md
 > Gate: Use only the time arithmetic, boundary semantics, event ordering, and reference fixture approved by semantic-contract; this task must not choose them locally.
 ---
-[journal-worldline] Journal and immutable worldlines (reviewing)
+[journal-worldline] Journal and immutable worldlines (notstarted)
 -> semantic-contract
 -> deterministic-kernel
 Files:
-crates/engine-core/src/lib.rs
-crates/reference-demo/src/main.rs
+crates/
 Do:
 Implement validated append-only journals, horizon tracking, immutable Context plus journal branches, prefix extraction, and fork construction.
 Keep branch creation and event storage separate from state evaluation, and prove parent and child inputs cannot be mutated through either API.
@@ -80,19 +78,16 @@ Accept:
 Valid append, prefix, and fork operations produce immutable values; invalid timestamps, contexts, and event sequences fail explicitly under the approved contract.
 Tests cover equal-time ordering, horizon behavior, prefix agreement before fork, post-fork divergence, parent/child isolation, and unchanged actual journals.
 An evaluated branch can be replayed by the deterministic kernel without hidden mutable state.
-@artifact text/rust crates/reference-demo/src/main.rs
+@artifact text/markdown proposals/cellular-automata-anchor.md
 > Ruling: Normal journal writing owns timestamp assignment through a monotonic time cursor; late facts create an explicit corrected branch from a prefix and never mutate the actual journal.
 > Gate: Define the journal-writer and corrected-branch construction API; networking, reconciliation, and merge remain out of scope.
 > Gate: Resolve branch identity and Context compatibility rules; do not assume merge or network synchronization.
 ---
-[playback-presentation] Playback and presentation boundary (reviewing)
+[playback-presentation] Playback and presentation boundary (notstarted)
 -> semantic-contract
 -> deterministic-kernel
 Files:
-crates/presentation/src/playback.rs
-crates/presentation/src/renderer.rs
-crates/presentation/tests/presentation.rs
-crates/reference-demo/src/main.rs
+crates/
 Do:
 Implement pure playback(Tau) -> LogicalTime and the present composition from a Worldline, Playback, and Tau.
 Define a renderer boundary that receives only the selected GameState and Tau; keep the core independent of a graphics API.
@@ -101,22 +96,18 @@ Accept:
 For fixed inputs, playback, render, animation, and present are deterministic and side-effect free.
 The presentation tests prove that no renderer path mutates Context, Journal, Worldline, or GameState and that a future or past selection uses the same state path.
 The first visual demo can be hosted without making a graphics framework part of the engine contract.
-@artifact text/rust crates/presentation/tests/presentation.rs
-@artifact text/rust crates/reference-demo/src/main.rs
+@artifact text/markdown proposals/cellular-automata-anchor.md
 > Gate: Choose the presentation host and graphics API only after the renderer boundary and reference evidence are reviewed.
 > Ruling: Reverse playback and arbitrary scrubbing are legal; playback need not be monotonic.
 > Ruling: Beyond the journal horizon, indexed temporal definitions answer without invented authoritative events.
 > Gate: Decide whether looping or bounds are product-level controls; neither is implicit engine behavior.
 ---
-[lookahead-counterfactuals] Lookahead and counterfactual histories (reviewing)
+[lookahead-counterfactuals] Lookahead and counterfactual histories (notstarted)
 -> semantic-contract
 -> deterministic-kernel
 -> journal-worldline
 Files:
-crates/engine-core/src/lookahead.rs
-crates/engine-core/src/counterfactual.rs
-crates/engine-core/tests/lookahead_counterfactual.rs
-crates/reference-demo/src/main.rs
+crates/
 Do:
 Evaluate future state as the same direct indexed query against the current Worldline with its Journal fixed; no unrecorded future event is introduced.
 Construct immutable counterfactual forks from a fork time using the approved journal prefix and alternate events, then expose them through the same worldline interface.
@@ -125,8 +116,7 @@ Accept:
 Future evaluation is exactly state(actual_worldline, future_t) under the approved horizon semantics and records no unrecorded future action.
 Counterfactuals agree with their parent before fork_t, can diverge afterward, preserve the actual journal, and remain independently evaluable and presentable.
 Tests cover fork boundaries, alternate event validation, fixed-journal lookahead, branch isolation, and playback over either worldline.
-@artifact text/rust crates/engine-core/tests/lookahead_counterfactual.rs
-@artifact text/rust crates/reference-demo/src/main.rs
+@artifact text/markdown proposals/cellular-automata-anchor.md
 > Gate: Define how indexed temporal definitions answer beyond the journal horizon and identify which future inputs are legal for a counterfactual.
 > Gate: Define fork-time boundary semantics and alternate-event validation without assuming a merge policy.
 ---
@@ -151,6 +141,7 @@ The trace reaches input, journal event, worldline evaluation, playback, and rend
 The slice is recognizable as the first game loop and any insufficiency in the generic contracts is recorded as a concrete contract gap.
 > Gate: The user chooses the canonical slice, minimum playable loop, and first meaningful alternate choice; this task must not invent final game content.
 > Gate: Choose the minimum input, asset, and presentation set only within the approved renderer and playback contracts.
+@guidance text/markdown proposals/cellular-automata-anchor.md
 ---
 [replay-persistence] Replay and persistence (notstarted)
 -> semantic-contract

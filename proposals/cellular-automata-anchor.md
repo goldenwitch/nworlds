@@ -1,0 +1,317 @@
+# Cellular Automata Anchor Case
+
+This proposal defines the first concrete test case for the engine. It is a
+small cellular automaton on a hexagonal saucer with radius 5, giving 91 tiles
+including the center.
+
+## Model
+
+A worldline is:
+
+```text
+worldline = immutable context + immutable journal branch
+```
+
+The journal contains authoritative entries. The state query interprets those
+entries at an arbitrary continuous logical time:
+
+```text
+state(worldline, t_) -> game_state
+```
+
+The automaton progresses at a discrete game-tick rate that is independent of
+the rate at which `t_` is sampled. For this anchor, one game tick is one unit
+of logical time and the tick phase is zero.
+
+```text
+game_tick_period = 1 t_
+tick_phase = 0 t_
+tick_index(t_) = floor(t_ / game_tick_period)
+```
+
+All comparisons in this proposal hold one immutable worldline, including its
+journal, fixed while queries are made. For that fixed worldline, the
+automaton-derived portion of the state is constant between game-tick
+boundaries when no journal-entry timestamp lies between the samples. A journal
+entry may occur at any continuous `t_` and can cause its own exact-time
+discontinuity; journal immutability means the entry is not added or changed by
+the query. The `GameState` still contains the exact sampled `t_`, so two
+samples in one game tick have equal automaton data but distinct authoritative
+logical times when no journal boundary is crossed.
+
+Sampling forward, backward, repeatedly, or in an arbitrary order performs the
+same pure query. No current board, previous frame, mutable actor, or mutable
+RNG is an input to evaluation.
+
+## Journal
+
+The context supplies only the general definitions needed to interpret saucers
+and tiles; it does not contain this saucer's geometry. An empty journal is a
+valid worldline whose state is the empty set: no tiles, actors, effects, or
+resources.
+
+The journal creates the saucer:
+
+```text
+CreateSaucer { radius: 5 }
+```
+
+That entry establishes the 91 tiles, each with `Void` terrain. The entry is a
+compact authoritative description; the 91 tiles are its indexed result. The
+seed used to generate the deterministic journal is test input, not hidden
+context or evaluator state.
+
+The anchor journal contains exactly one `CreateSaucer` entry, at `t_=0`, and it
+is the first entry. All later entries reference or modify those established
+tiles; no later entry creates additional tiles.
+
+Later authoritative entries add entities or other externally chosen inputs:
+
+```text
+SpawnActor { id, kind, tile }
+SetTerrain { tile, terrain }
+```
+
+The event payload does not choose its own timestamp. A journal writer assigns
+timestamps through its monotonic time cursor:
+
+```text
+writer.advance_to(0 t_)
+writer.record(CreateSaucer { radius: 5 })
+writer.advance_to(10 t_)
+writer.record(SpawnActor { id: 1, kind: Farmer, tile: ... })
+```
+
+The seeded spawn fixture is constructed before evaluation:
+
+```text
+journal = generate_spawn_journal(fixed_seed, test_horizon)
+```
+
+The state evaluator sees the immutable context definitions and the immutable
+journal. It does not see the seed generator or an RNG.
+
+Derived consequences are not separate journal entries. The journal does not record
+"farmer deleted itself", "fire spread", or "wheat resource increased". Those
+are results of the indexed state definition.
+
+## Spatial Layers
+
+Every saucer tile has three independent spatial layers.
+
+### Terrain layer
+
+```text
+Terrain = Void | Wheat | Forest
+```
+
+`Void` is an empty terrain cell. `Forest` is a marker terrain. `Wheat` is a
+resource-producing terrain.
+
+### Actor layer
+
+The actor layer contains actor identity, kind, tile, and any behavior-local
+value needed by the indexed definition.
+
+```text
+Actor = Farmer | Forester | Arsonist | Fighter | Arborist
+```
+
+The first fixture should use one actor per tile. If a later rule requires
+co-location, that is a change to the actor-layer representation, not an
+implicit exception.
+
+### Effects layer
+
+```text
+Effect = None | Fire { age_in_game_ticks }
+```
+
+Fire is an effect, not terrain and not an actor. It can coexist with an actor
+and with the terrain it is burning. Its effect on terrain is represented in the
+state returned at the relevant later tick.
+
+Global resources are not a spatial layer:
+
+```text
+Resources {
+    wheat: integer,
+    wood: integer,
+}
+```
+
+## Tick Semantics
+
+For each requested tick, the indexed definitions jointly determine one
+automaton snapshot from the context definitions and journal. There is no
+observation phase, actor-by-actor execution order, current snapshot, or
+mutable stepping function exposed by the engine. A query at any tick is
+independent of prior queries.
+
+The anchor uses axial coordinates `(q, r)`. A tile belongs to the saucer when:
+
+```text
+max(abs(q), abs(r), abs(-q-r)) <= 5
+```
+
+The six neighbors are the fixed offsets:
+
+```text
+(1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1)
+```
+
+These rules produce exactly 91 tiles. Neighbor traversal uses the listed
+order. Axial coordinates are ordered lexicographically by `(q, r)`. Actor
+identifiers are unique positive integers; lower identifiers win
+destination conflicts and are used as the final deterministic tie-breaker.
+Movement losers retain the tile selected for their own indexed result. A fighter collision with
+an arsonist resolves as a destruction of the arsonist, with the fighter's
+resulting tile retained.
+
+## Actors
+
+These are the first behavior definitions. "Moves", "destroys", "ignites", and
+"converts" describe differences between indexed results, not mutations of
+actor or tile objects.
+
+### Farmer
+
+A farmer selects the first eligible adjacent destination in the fixed neighbor
+order. An eligible tile is inside the saucer, has `Void` terrain, has no actor,
+and has no effect. After that one movement result, the farmer is absent from
+the next indexed state and every eligible neighbor of its destination becomes
+`Wheat`. If no destination is eligible, its current tile is used as the
+terminal location. The surrounding tiles are therefore unambiguously based on
+the destination result.
+
+### Wheat
+
+Every tile whose terrain is wheat contributes one unit to the global wheat
+resource for each game tick in which it exists. For nonnegative tick `n`, the
+indexed resource value is:
+
+```text
+wheat_resource(n) = sum(wheat_tile_count(k) for k in 0 ..= n)
+```
+
+Wood uses the same rule with foresters on forest terrain. Before tick zero,
+both resources are zero. These are indexed totals, not mutable counters
+carried between queries.
+
+### Forest
+
+Forest is a terrain marker. It has no production by itself.
+
+### Forester
+
+If the forester is not on forest terrain, it selects the first unoccupied
+adjacent tile in the fixed neighbor order each game turn; if none is available,
+it remains in place. If it is on forest terrain, it remains in place and
+produces one unit of wood per game tick.
+
+### Arsonist
+
+The arsonist selects the occupied actor tile with the lowest axial coordinate,
+then the lowest actor identifier as a tie-breaker, excluding itself. It
+explodes at that target: the arsonist is absent from the next indexed state and
+each adjacent tile with `Wheat` or `Forest` terrain receives a fire effect with
+age zero. If no other actor exists, the arsonist remains and creates no fire.
+The selected target actor remains; only the arsonist is removed by this rule.
+Target selection and adjacency resolution are part of the pure query, not an
+imperative collision operation.
+
+### Fire
+
+Fire is created with age zero. Ages zero, one, and two burn the current terrain
+without changing it. At age three, the fire removes `Wheat` or `Forest` terrain
+from its tile, creates age-zero fire on adjacent burnable tiles, and then is
+absent from its source tile. A newly created adjacent fire starts its own
+three-tick interval at age zero.
+
+### Fighter
+
+If an arsonist exists, the fighter selects the one with the lowest actor
+identifier and moves one tile toward it each game turn. The selected move is
+the legal neighbor that minimizes axial distance, with the fixed neighbor order
+as the tie-breaker. The fighter may enter the selected arsonist's tile; that
+collision removes the arsonist from the resulting actor layer.
+
+### Arborist
+
+An arborist remains on its current tile while its indexed conversion age is
+zero, one, or two. At age three, the current tile becomes `Forest`. The
+arborist remains present and its conversion age remains complete; terrain and
+actor results remain separate layers.
+
+## Seeded Spawning
+
+The initial seeded fixture uses the following test parameters:
+
+```text
+saucer radius: 5
+game spawn period: 10 game ticks
+actors per spawn: 3
+seed: fixed literal recorded by the test
+```
+
+The journal writer first records the saucer entry at `t_=0`. It records three
+spawn entries at each multiple of ten game ticks, beginning at `t_=10`. Spawn
+placement is deterministic from the fixed seed, stays inside the 91-tile
+saucer, and chooses an unoccupied actor tile; deterministic candidate retries
+handle collisions in the generated schedule. The seed generator produces
+concrete `SpawnActor` journal entries for a finite test horizon before
+evaluation. The evaluator does not generate new future entries when queried
+beyond the journal horizon.
+
+The generator algorithm and its expected journal output are part of the test
+fixture. Repeating the same seed must reproduce the same ordered entries on
+every supported run; platform RNG behavior is not part of the contract.
+
+The behavior fixture should also contain a hand-authored deterministic trace
+for each actor. Random placement is useful for testing reproducibility, but it
+must not be the only way to reach a particular behavior such as fire spread or
+fighter collision.
+
+## Required Queries
+
+The anchor test must query the same worldline at times that demonstrate:
+
+1. an empty journal producing a valid empty set;
+2. the `CreateSaucer` entry producing 91 `Void` terrain tiles;
+3. immediately before and after a journaled spawn;
+4. multiple `t_` values inside one game tick with no crossed journal entry,
+   proving constant automaton data;
+5. exactly on a game-tick boundary, proving the discrete automaton change;
+6. past and future times in non-monotonic query order;
+7. a farmer transformation;
+8. wheat resource production;
+9. forester movement and wood production on forest;
+10. arsonist ignition and fire aging/spread/destruction;
+11. fighter movement and arsonist collision;
+12. arborist three-turn forest conversion;
+13. a later corrected or counterfactual branch without changing the parent;
+14. repeated seeded journal construction, proving identical seeds produce
+    identical journal entries and states.
+
+## Acceptance
+
+The anchor is successful when:
+
+- the saucer geometry is exactly 91 tiles;
+- terrain, actors, and effects are separate and independently inspectable;
+- all authoritative additions arrive through immutable journal entries;
+- the state query accepts arbitrary forward and backward `t_` values;
+- sampling order cannot change a result;
+- no query mutates the journal, branch, prior `GameState`, or RNG;
+- with a fixed journal and no crossed journal entry, automaton-derived data
+    changes only at game-tick boundaries;
+- journal entries may cause exact-time discontinuities at arbitrary `t_` values;
+- exact `t_` remains in every returned `GameState`;
+- actual, counterfactual, and corrected branches use the same query path;
+- the fixed seed reproduces the same journal and results;
+- every actor rule is tested as a pure difference between indexed snapshots.
+
+This proposal does not choose a rendering host, persistence format, network
+protocol, merge policy, or compiler-enforced purity boundary. Those remain
+later concerns. It does establish the first behavior fixture that the direct
+indexed engine must explain.

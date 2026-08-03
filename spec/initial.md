@@ -12,7 +12,9 @@ All vocabulary terms are bold as is tradition.
 >
 > **context**: The immutable rules, configuration, assets, and definitions of the game.
 >
-> **journal**: An append-only sequence of authoritative events, each associated with a value of **t_**.
+> **void**: The absence of populated world content before authoritative journal facts establish a world or add its contents.
+>
+> **journal**: An append-only sequence of authoritative facts, each associated with a value of **t_**. The journal populates the void; it does not record mutations to a hidden initial game state.
 >
 > **worldline**: An immutable **context** together with a journal branch. A branch may be the actual history or an immutable counterfactual fork.
 >
@@ -27,6 +29,9 @@ All vocabulary terms are bold as is tradition.
 ## Invariants
 
 - A **game state** is a pure function of its **worldline** and **t_**.
+- A **game state** is an indexed interpretation of the **context** and the
+    journal facts visible at **t_**. It does not require a stored initial game
+    state or a mutable state carried forward from an earlier query.
 - Distinct values of **t_** select distinct game states, because logical time is authoritative state.
 - The logical-time domain is continuous. State fields may nevertheless change discontinuously at journal events.
 - A **playback** may select any logical time, including a time beyond the current journal horizon or a time in the past.
@@ -56,15 +61,37 @@ present(worldline, playback, tau) =
 
 `LogicalTime` and `Tau` are distinct static types even if they share a numeric representation.
 
+## Authority and population
+
+The **context** supplies immutable definitions, configuration, and the rules for
+interpreting a worldline. Authoritative instance content is introduced through
+journal facts. There is no implicit creation phase, mutable current board,
+hidden random source, or evaluator side channel that can create authoritative
+content outside the journal.
+
+## Journal-populated worlds
+
+A **worldline** is interpreted from the **void** and its journal. A
+**world-creation fact** may establish the world domain at a value of **t_**;
+before that fact, a lookup may return an absent or out-of-domain result. At the
+creation fact, the domain exists with empty contents. Later journal facts add
+authoritative entities or other world facts.
+
+The function `state(worldline, t_)` directly determines the authoritative
+result for the requested time. It does not advance a current board, rewind a
+previous result, or depend on the order in which times were queried. Derived
+consequences of journal facts are part of the indexed result and need not be
+recorded as additional mutations.
+
 ## Lookahead
 
-Lookahead evaluates the current **worldline** at a future value of **t_** while holding its **journal** fixed. No unrecorded future action is assumed. Autonomous rules continue to evolve the state.
+Lookahead evaluates the current **worldline** at a future value of **t_** while holding its **journal** fixed. No unrecorded future action is assumed.
 
 ```text
 future_state = state(actual_worldline, future_t)
 ```
 
-A later authoritative event produces a new journal or branch; it does not mutate a previously evaluated lookahead.
+A later authoritative event produces a new journal or branch; it does not mutate a previously evaluated lookahead. The same journal remains fixed while temporal definitions determine the result at the requested future value of **t_**.
 
 ## Counterfactual pasts
 
