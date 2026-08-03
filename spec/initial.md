@@ -12,7 +12,8 @@ All vocabulary terms are bold as is tradition.
 >
 > **context**: The immutable rules, configuration, assets, and definitions of the game.
 >
-> **void**: The absence of populated world content before authoritative journal facts establish a world or add its contents.
+> **void**: The ordinary default absence of populated world content in a
+> domain result. It is a value, not an out-of-domain or uninitialized state.
 >
 > **journal**: An append-only sequence of authoritative facts, each associated with a value of **t_**. The journal populates the void; it does not record mutations to a hidden initial game state.
 >
@@ -71,11 +72,15 @@ content outside the journal.
 
 ## Journal-populated worlds
 
-A **worldline** is interpreted from the **void** and its journal. A
-**world-creation fact** may establish the world domain at a value of **t_**;
-before that fact, a lookup may return an absent or out-of-domain result. At the
-creation fact, the domain exists with empty contents. Later journal facts add
-authoritative entities or other world facts.
+A **worldline** is interpreted from its context and journal. `state` is a total
+query over every journal value, including the empty journal. An empty journal
+is the ordinary zero-fact input: the query evaluates the domain's default
+values and returns its ordinary empty result at the requested **t_** through
+the same evaluation path used for every visible-entry prefix.
+
+Authoritative journal facts add domain content to that default result. In the
+Caravan anchor, `CreateSaucer` is an ordinary fact that adds the saucer's
+tiles; later facts add actors, terrain, and other values.
 
 The function `state(worldline, t_)` directly determines the authoritative
 result for the requested time. It does not advance a current board, rewind a

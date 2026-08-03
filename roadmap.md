@@ -42,10 +42,12 @@ present(worldline, playback, tau) =
 ## Current Position
 
 The indexed anchor implementation exists and is covered by the demo,
-conformance report, persistence, benchmarks, and compiler-boundary tests. Its
-public query is direct, but the reference oracle still contains a private
-tick-fold calculation. The next step is to replace that calculation with an
-explicit discontinuity index and piecewise projection.
+conformance report, persistence, benchmarks, compiler-boundary tests, and an
+independent frozen projection corpus. Its public query is direct, the retired
+tick-fold calculation is absent, and the reference oracle selects immutable
+discontinuity pieces before doing query-local rule calculation. The remaining
+roadmap work is the later closed temporal definition language and broader
+domain-composition decisions.
 
 The packet-level delegation plan is maintained in `build.vine`: each packet
 owns a disjoint path set and can be assigned to one Luna agent. The graph makes
@@ -94,16 +96,17 @@ not change states or frames.
 ### 5. Discontinuity index and piecewise projection
 
 Extract journal timestamps, game-tick boundaries, and actor/rule thresholds as
-an immutable ordered discontinuity index. Project terrain, actors, effects, and
-resources from the selected piece and requested `t_`; do not fold a current
-board through ticks. Compare the new path with the existing oracle, then delete
-the private fold after parity is proven.
+an immutable ordered discontinuity index. Select a piece carrying immutable
+visible-entry inputs and a projection regime, then calculate terrain, actors,
+effects, and resources from that piece and requested `t_`; do not fold a
+current board through ticks. The historical fold remains available only as a
+test baseline when a comparison is meaningful.
 
 See [discontinuity-projection.md](proposals/discontinuity-projection.md).
 
 **Exit:** the reference oracle has no `WorkingState`/`transition` tick loop,
-and all existing anchor, conformance, demo, persistence, benchmark, and
-presentation evidence still passes.
+malformed anchor entries fail explicitly, and all existing anchor,
+conformance, demo, persistence, benchmark, and presentation evidence passes.
 
 ### 6. Caravan vertical slice
 

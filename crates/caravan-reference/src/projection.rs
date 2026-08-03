@@ -9,11 +9,44 @@ use engine_journal::{Journal, JournalEntry};
 use engine_sdk::{Context, GameState};
 use engine_time::{game_tick_index, LogicalTime, TICKS_PER_LOGICAL_SECOND};
 
-use crate::discontinuities::{DiscontinuityIndex, PieceInput};
+use crate::discontinuities::DiscontinuityIndex;
 use crate::{ReferenceContext, ReferenceWorldline, Snapshot, State};
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ProjectionError {
+    UnsupportedSaucerRadius {
+        append_ordinal: usize,
+        expected: u8,
+        found: u8,
+    },
+}
+
+impl core::fmt::Display for ProjectionError {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::UnsupportedSaucerRadius {
+                append_ordinal,
+                expected,
+                found,
+            } => write!(
+                formatter,
+                "journal entry {append_ordinal} declares saucer radius {found}; anchor radius is {expected}"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for ProjectionError {}
+
 pub fn project(worldline: &ReferenceWorldline, logical_time: LogicalTime) -> State {
-    project_query(worldline.context(), worldline.journal(), logical_time)
+    try_project(worldline, logical_time).expect("reference projection rejected the journal")
+}
+
+pub fn try_project(
+    worldline: &ReferenceWorldline,
+    logical_time: LogicalTime,
+) -> Result<State, ProjectionError> {
+    try_project_query(worldline.context(), worldline.journal(), logical_time)
 }
 
 pub fn project_query(
@@ -21,8 +54,17 @@ pub fn project_query(
     journal: &Journal,
     logical_time: LogicalTime,
 ) -> State {
+    try_project_query(context, journal, logical_time)
+        .expect("reference projection rejected the journal")
+}
+
+pub fn try_project_query(
+    context: &Context<ReferenceContext>,
+    journal: &Journal,
+    logical_time: LogicalTime,
+) -> Result<State, ProjectionError> {
     let index = DiscontinuityIndex::for_sample(journal, logical_time);
-    project_with_index(context, &index, logical_time)
+    try_project_with_index(context, &index, logical_time)
 }
 
 pub fn project_with_index(
@@ -30,17 +72,26 @@ pub fn project_with_index(
     index: &DiscontinuityIndex,
     logical_time: LogicalTime,
 ) -> State {
+    try_project_with_index(context, index, logical_time)
+        .expect("reference projection rejected the journal")
+}
+
+pub fn try_project_with_index(
+    context: &Context<ReferenceContext>,
+    index: &DiscontinuityIndex,
+    logical_time: LogicalTime,
+) -> Result<State, ProjectionError> {
     let piece = index.select(logical_time);
-    let piece_input: PieceInput = *piece.payload();
-    let entries = index.entries_for(piece);
-    let facts = JournalFacts::from_entries(*context.payload(), entries);
+    let piece_input = piece.payload();
+    let entries = piece_input.visible_entries();
+    let facts = JournalFacts::from_entries(*context.payload(), entries)?;
     let snapshot = if piece_input.is_tick_indexed() {
         project_tick(&facts, logical_time)
     } else {
         project_journal(&facts, logical_time)
     };
 
-    GameState::new(logical_time, snapshot)
+    Ok(GameState::new(logical_time, snapshot))
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -54,7 +105,6 @@ struct TerrainFact {
     logical_time: LogicalTime,
     tile: TileId,
     terrain: Terrain,
-    append_ordinal: usize,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -66,15 +116,26 @@ struct JournalFacts {
 }
 
 impl JournalFacts {
-    fn from_entries(context: ReferenceContext, entries: &[JournalEntry]) -> Self {
+    fn from_entries(
+        context: ReferenceContext,
+        entries: &[JournalEntry],
+    ) -> Result<Self, ProjectionError> {
         let mut facts = Self::default();
+        let saucer = Saucer::new();
 
         for (append_ordinal, entry) in entries.iter().enumerate() {
             match *entry.payload() {
+                GameJournalEntry::CreateSaucer { radius } if radius != context.saucer_radius() => {
+                    return Err(ProjectionError::UnsupportedSaucerRadius {
+                        append_ordinal,
+                        expected: context.saucer_radius(),
+                        found: radius,
+                    });
+                }
                 GameJournalEntry::CreateSaucer { radius }
-                    if radius == context.saucer().radius() && facts.saucer.is_none() =>
+                    if radius == context.saucer_radius() && facts.saucer.is_none() =>
                 {
-                    facts.saucer = Some(context.saucer());
+                    facts.saucer = Some(saucer);
                 }
                 GameJournalEntry::CreateSaucer { .. } => {}
                 GameJournalEntry::SpawnActor { id, kind, tile } if facts.saucer.is_some() => {
@@ -93,21 +154,20 @@ impl JournalFacts {
                 }
                 GameJournalEntry::SpawnActor { .. } => {}
                 GameJournalEntry::SetTerrain { tile, terrain }
-                    if facts.saucer.is_some() && context.saucer().tiles().contains(&tile) =>
+                    if facts.saucer.is_some() && saucer.tiles().contains(&tile) =>
                 {
                     facts.terrain.insert(tile, terrain);
                     facts.terrain_facts.push(TerrainFact {
                         logical_time: entry.logical_time(),
                         tile,
                         terrain,
-                        append_ordinal,
                     });
                 }
                 GameJournalEntry::SetTerrain { .. } => {}
             }
         }
 
-        facts
+        Ok(facts)
     }
 }
 
@@ -150,7 +210,6 @@ fn project_tick(facts: &JournalFacts, logical_time: LogicalTime) -> Snapshot {
     }
 
     let actor_facts = facts.actors.values().copied().collect::<Vec<_>>();
-    let journal_terrain = journal_terrain(facts);
     let farmer_actions = farmer_actions(facts, &actor_facts, target_tick);
     let conversions = arborist_conversions(&actor_facts, target_tick);
     let fire_ignitions = fire_ignitions(facts, &actor_facts, target_tick);
@@ -163,11 +222,18 @@ fn project_tick(facts: &JournalFacts, logical_time: LogicalTime) -> Snapshot {
     );
     let terrain = terrain_at_target(facts, &terrain_events, target_tick);
     let effects = fire_effects(&fire_ignitions, target_tick);
-    let actors = actors_at_tick(&actor_facts, &journal_terrain, &farmer_actions, target_tick);
+    let actors = actors_at_tick(
+        &actor_facts,
+        &terrain_events,
+        &farmer_actions,
+        target_tick,
+        logical_time,
+    );
     let resources = resources_at_tick(
         facts,
         &terrain_events,
         &actor_facts,
+        &farmer_actions,
         target_tick,
         logical_time,
     );
@@ -320,14 +386,14 @@ fn terrain_events(
         })
         .unwrap_or_default();
 
-    for fact in &facts.terrain_facts {
+    for (authored_order, fact) in facts.terrain_facts.iter().enumerate() {
         let Some(tick) = journal_activation_tick(fact.logical_time, target_tick) else {
             continue;
         };
         if let Some(tile_events) = events.get_mut(&fact.tile) {
             tile_events.push(TerrainEvent {
                 tick,
-                order: fact.append_ordinal,
+                order: authored_order,
                 terrain: fact.terrain,
             });
         }
@@ -422,41 +488,125 @@ fn fire_effects(
 
 fn actors_at_tick(
     actors: &[ActorFact],
-    terrain: &BTreeMap<TileId, Terrain>,
+    terrain_events: &BTreeMap<TileId, Vec<TerrainEvent>>,
     farmer_actions: &[FarmerAction],
     target_tick: i64,
+    logical_time: LogicalTime,
 ) -> Vec<Actor> {
-    let removed = actors
+    let facts_by_id = actors
         .iter()
-        .filter_map(|fact| match fact.actor.kind() {
-            ActorKind::Farmer => farmer_actions
-                .iter()
-                .find(|action| action.actor_id == fact.actor.id())
-                .filter(|action| action.activation_tick <= target_tick)
-                .map(|_| fact.actor.id()),
-            ActorKind::Arsonist => {
-                let activation_tick = first_active_tick(fact.spawn_time);
-                let has_target = actors
-                    .iter()
-                    .any(|other| other.actor.id() != fact.actor.id());
-                (activation_tick <= target_tick && has_target).then_some(fact.actor.id())
-            }
-            _ => None,
-        })
+        .map(|fact| (fact.actor.id(), *fact))
+        .collect::<BTreeMap<_, _>>();
+    let mut positions = facts_by_id
+        .iter()
+        .map(|(actor_id, fact)| (*actor_id, fact.actor.tile()))
+        .collect::<BTreeMap<_, _>>();
+    let mut live = facts_by_id
+        .iter()
+        .filter(|(_, fact)| fact.spawn_time <= LogicalTime::zero())
+        .map(|(actor_id, _)| *actor_id)
         .collect::<BTreeSet<_>>();
+    let mut removed = BTreeSet::new();
 
+    for transition_tick in 1..=target_tick {
+        let boundary = LogicalTime::from_game_ticks(transition_tick)
+            .expect("selected actor transition time is representable");
+        for (actor_id, fact) in &facts_by_id {
+            if fact.spawn_time <= boundary && !removed.contains(actor_id) {
+                live.insert(*actor_id);
+            }
+        }
+        transition_actor_layer(
+            &facts_by_id,
+            &mut positions,
+            &mut live,
+            &mut removed,
+            terrain_events,
+            farmer_actions,
+            transition_tick,
+        );
+    }
+
+    for (actor_id, fact) in &facts_by_id {
+        if fact.spawn_time <= logical_time && !removed.contains(actor_id) {
+            live.insert(*actor_id);
+        }
+    }
+
+    actors
+        .iter()
+        .filter(|fact| live.contains(&fact.actor.id()))
+        .map(|fact| {
+            Actor::new(
+                fact.actor.id(),
+                fact.actor.kind(),
+                positions[&fact.actor.id()],
+            )
+        })
+        .collect()
+}
+
+fn transition_actor_layer(
+    facts_by_id: &BTreeMap<ActorId, ActorFact>,
+    positions: &mut BTreeMap<ActorId, TileId>,
+    live: &mut BTreeSet<ActorId>,
+    removed: &mut BTreeSet<ActorId>,
+    terrain_events: &BTreeMap<TileId, Vec<TerrainEvent>>,
+    farmer_actions: &[FarmerAction],
+    transition_tick: i64,
+) {
+    let pre_live = live.clone();
+    let mut removed_this_tick = BTreeSet::new();
+
+    for actor_id in &pre_live {
+        let fact = facts_by_id[actor_id];
+        if fact.actor.kind() == ActorKind::Farmer
+            && farmer_actions.iter().any(|action| {
+                action.actor_id == *actor_id && action.activation_tick == transition_tick
+            })
+        {
+            removed_this_tick.insert(*actor_id);
+        }
+        if fact.actor.kind() == ActorKind::Arsonist
+            && first_active_tick(fact.spawn_time) <= transition_tick
+            && pre_live.iter().any(|other_id| other_id != actor_id)
+        {
+            removed_this_tick.insert(*actor_id);
+        }
+    }
+
+    let occupied = pre_live
+        .iter()
+        .map(|actor_id| positions[actor_id])
+        .collect::<BTreeSet<_>>();
     let mut desired = BTreeMap::new();
-    for fact in actors {
-        if removed.contains(&fact.actor.id()) {
+    let mut fighter_targets = BTreeMap::new();
+
+    for actor_id in &pre_live {
+        if removed_this_tick.contains(actor_id) {
             continue;
         }
-
-        let tile = match fact.actor.kind() {
-            ActorKind::Forester => forester_position(fact, actors, terrain, target_tick),
-            ActorKind::Fighter => fighter_position(fact, actors, target_tick),
-            _ => fact.actor.tile(),
+        let fact = facts_by_id[actor_id];
+        let current = positions[actor_id];
+        let destination = match fact.actor.kind() {
+            ActorKind::Forester if first_active_tick(fact.spawn_time) <= transition_tick => {
+                forester_destination(current, terrain_events, transition_tick, &occupied)
+            }
+            ActorKind::Fighter if first_active_tick(fact.spawn_time) <= transition_tick => {
+                let target = pre_live
+                    .iter()
+                    .filter(|target_id| facts_by_id[target_id].actor.kind() == ActorKind::Arsonist)
+                    .min();
+                if let Some(target_id) = target {
+                    fighter_targets.insert(*actor_id, *target_id);
+                    advance_towards(current, positions[target_id], 1)
+                } else {
+                    current
+                }
+            }
+            _ => current,
         };
-        desired.insert(fact.actor.id(), tile);
+        desired.insert(*actor_id, destination);
     }
 
     let mut winners = BTreeMap::<TileId, ActorId>::new();
@@ -467,112 +617,53 @@ fn actors_at_tick(
             .or_insert(*actor_id);
     }
 
-    actors
-        .iter()
-        .filter_map(|fact| {
-            if removed.contains(&fact.actor.id()) {
-                return None;
-            }
-            let candidate = desired
-                .get(&fact.actor.id())
-                .copied()
-                .unwrap_or(fact.actor.tile());
-            let tile = if winners.get(&candidate) == Some(&fact.actor.id()) {
-                candidate
-            } else {
-                fact.actor.tile()
-            };
-            Some(Actor::new(fact.actor.id(), fact.actor.kind(), tile))
-        })
-        .collect()
-}
-
-fn forester_position(
-    fact: &ActorFact,
-    actors: &[ActorFact],
-    terrain: &BTreeMap<TileId, Terrain>,
-    target_tick: i64,
-) -> TileId {
-    let activation_tick = first_active_tick(fact.spawn_time);
-    if activation_tick > target_tick {
-        return fact.actor.tile();
+    let mut final_positions = BTreeMap::new();
+    for (actor_id, candidate) in desired {
+        let tile = if winners.get(&candidate) == Some(&actor_id) {
+            candidate
+        } else {
+            positions[&actor_id]
+        };
+        final_positions.insert(actor_id, tile);
     }
 
-    let occupied = actors
-        .iter()
-        .filter(|other| other.actor.id() != fact.actor.id())
-        .map(|other| other.actor.tile())
-        .collect::<BTreeSet<_>>();
-    let turns = target_tick
-        .saturating_sub(activation_tick)
-        .saturating_add(1);
+    for (fighter_id, target_id) in fighter_targets {
+        if final_positions.get(&fighter_id).copied() == positions.get(&target_id).copied() {
+            removed_this_tick.insert(target_id);
+        }
+    }
 
-    forester_after_turns(fact.actor.tile(), turns, terrain, &occupied)
+    for actor_id in removed_this_tick {
+        live.remove(&actor_id);
+        removed.insert(actor_id);
+    }
+    for (actor_id, tile) in final_positions {
+        if live.contains(&actor_id) {
+            positions.insert(actor_id, tile);
+        }
+    }
 }
 
-fn forester_after_turns(
-    origin: TileId,
-    turns: i64,
-    terrain: &BTreeMap<TileId, Terrain>,
+fn forester_destination(
+    current: TileId,
+    terrain_events: &BTreeMap<TileId, Vec<TerrainEvent>>,
+    transition_tick: i64,
     occupied: &BTreeSet<TileId>,
 ) -> TileId {
-    let mut positions = Vec::new();
-    let mut seen = BTreeMap::<TileId, usize>::new();
-    let mut position = origin;
-
-    loop {
-        if turns < positions.len() as i64 {
-            return positions[turns as usize];
-        }
-        if let Some(cycle_start) = seen.get(&position).copied() {
-            let cycle_length = positions.len() - cycle_start;
-            let cycle_offset = (turns - cycle_start as i64).rem_euclid(cycle_length as i64);
-            return positions[cycle_start + cycle_offset as usize];
-        }
-
-        seen.insert(position, positions.len());
-        positions.push(position);
-
-        if terrain.get(&position).copied().unwrap_or_default() == Terrain::Forest {
-            return position;
-        }
-        let Some(destination) = position
-            .neighbors()
-            .into_iter()
-            .flatten()
-            .find(|tile| !occupied.contains(tile))
-        else {
-            return position;
-        };
-        position = destination;
-    }
-}
-
-fn fighter_position(fact: &ActorFact, actors: &[ActorFact], target_tick: i64) -> TileId {
-    let fighter_activation = first_active_tick(fact.spawn_time);
-    if fighter_activation > target_tick {
-        return fact.actor.tile();
+    let current_events = terrain_events
+        .get(&current)
+        .map(Vec::as_slice)
+        .unwrap_or(&[]);
+    if terrain_at_tick(current_events, transition_tick) == Terrain::Forest {
+        return current;
     }
 
-    let Some(target) = actors
-        .iter()
-        .filter(|other| other.actor.kind() == ActorKind::Arsonist)
-        .min_by_key(|other| other.actor.id())
-    else {
-        return fact.actor.tile();
-    };
-
-    let target_activation = first_active_tick(target.spawn_time);
-    let movement_start = fighter_activation.max(target_activation);
-    let last_movement_tick = target_tick.min(target_activation);
-    if movement_start > last_movement_tick {
-        return fact.actor.tile();
-    }
-
-    let steps = last_movement_tick
-        .saturating_sub(movement_start)
-        .saturating_add(1);
-    advance_towards(fact.actor.tile(), target.actor.tile(), steps)
+    current
+        .neighbors()
+        .into_iter()
+        .flatten()
+        .find(|tile| !occupied.contains(tile))
+        .unwrap_or(current)
 }
 
 fn advance_towards(mut current: TileId, target: TileId, steps: i64) -> TileId {
@@ -597,6 +688,7 @@ fn resources_at_tick(
     facts: &JournalFacts,
     terrain_events: &BTreeMap<TileId, Vec<TerrainEvent>>,
     actors: &[ActorFact],
+    farmer_actions: &[FarmerAction],
     target_tick: i64,
     logical_time: LogicalTime,
 ) -> Resources {
@@ -615,78 +707,51 @@ fn resources_at_tick(
             .checked_add(produced)
             .expect("indexed wheat total overflowed u64")
     });
-    let wood = actors
-        .iter()
-        .filter(|fact| fact.actor.kind() == ActorKind::Forester)
-        .fold(0_u64, |total, fact| {
-            let produced = forester_wood(fact, actors, terrain_events, target_tick, logical_time);
-            total
-                .checked_add(produced)
-                .expect("indexed wood total overflowed u64")
-        });
+    let wood = wood_at_ticks(
+        actors,
+        terrain_events,
+        farmer_actions,
+        target_tick,
+        logical_time,
+    );
 
     Resources::new(wheat, wood)
 }
 
-fn forester_wood(
-    fact: &ActorFact,
+fn wood_at_ticks(
     actors: &[ActorFact],
     terrain_events: &BTreeMap<TileId, Vec<TerrainEvent>>,
+    farmer_actions: &[FarmerAction],
     target_tick: i64,
     logical_time: LogicalTime,
 ) -> u64 {
-    let Some(visible_tick) = resource_tick(fact.spawn_time, logical_time, target_tick) else {
-        return 0;
-    };
-    if visible_tick > target_tick {
+    if target_tick < 0 {
         return 0;
     }
 
-    let activation_tick = first_active_tick(fact.spawn_time);
-    let origin = fact.actor.tile();
-    let origin_events = terrain_events
-        .get(&origin)
-        .map(Vec::as_slice)
-        .unwrap_or(&[]);
-    if activation_tick > target_tick {
-        return count_terrain_ticks(origin_events, Terrain::Forest, visible_tick, target_tick);
-    }
-
-    if terrain_at_tick(origin_events, target_tick) == Terrain::Forest {
-        return count_terrain_ticks(origin_events, Terrain::Forest, visible_tick, target_tick);
-    }
-
-    if terrain_at_tick(origin_events, activation_tick - 1) == Terrain::Forest {
-        return count_terrain_ticks(origin_events, Terrain::Forest, visible_tick, target_tick);
-    }
-
-    let occupied = actors
-        .iter()
-        .filter(|other| other.actor.id() != fact.actor.id())
-        .map(|other| other.actor.tile())
-        .collect::<BTreeSet<_>>();
-    let Some(destination) = origin
-        .neighbors()
-        .into_iter()
-        .flatten()
-        .find(|tile| !occupied.contains(tile))
-    else {
-        return 0;
-    };
-    let destination_events = terrain_events
-        .get(&destination)
-        .map(Vec::as_slice)
-        .unwrap_or(&[]);
-    if terrain_at_tick(destination_events, activation_tick - 1) != Terrain::Forest {
-        return 0;
-    }
-
-    count_terrain_ticks(
-        destination_events,
-        Terrain::Forest,
-        activation_tick,
-        target_tick,
-    )
+    (0..=target_tick).fold(0_u64, |total, tick| {
+        let sample_time = if tick == target_tick {
+            logical_time
+        } else {
+            LogicalTime::from_game_ticks(tick).expect("indexed resource time is representable")
+        };
+        let actors_at_sample =
+            actors_at_tick(actors, terrain_events, farmer_actions, tick, sample_time);
+        let produced = actors_at_sample
+            .iter()
+            .filter(|actor| actor.kind() == ActorKind::Forester)
+            .filter(|actor| {
+                terrain_events
+                    .get(&actor.tile())
+                    .map(Vec::as_slice)
+                    .map(|events| terrain_at_tick(events, tick) == Terrain::Forest)
+                    .unwrap_or(false)
+            })
+            .count() as u64;
+        total
+            .checked_add(produced)
+            .expect("indexed wood total overflowed u64")
+    })
 }
 
 fn count_terrain_ticks(
@@ -806,20 +871,6 @@ fn journal_activation_tick(logical_time: LogicalTime, target_tick: i64) -> Optio
     }
     let remainder = logical_time.ticks().rem_euclid(TICKS_PER_LOGICAL_SECOND);
     entry_tick.checked_add(i64::from(remainder != 0))
-}
-
-fn resource_tick(
-    logical_time: LogicalTime,
-    target_time: LogicalTime,
-    target_tick: i64,
-) -> Option<i64> {
-    if logical_time > target_time {
-        return None;
-    }
-    if logical_time.ticks() <= 0 {
-        return Some(0);
-    }
-    journal_activation_tick(logical_time, target_tick)
 }
 
 fn first_active_tick(spawn_time: LogicalTime) -> i64 {

@@ -37,9 +37,9 @@ pub fn cases() -> &'static [Case] {
         Case {
             id: "empty-journal",
             clause: "Initial spec: void and empty journal; exact sampled t_",
-            test: "empty_journal_is_empty_and_owns_exact_time",
+            test: "empty_journal_uses_ordinary_zero_fact_evaluation",
             artifact: "tests/conformance/src/checks.rs",
-            run: checks::empty_journal_is_empty_and_owns_exact_time,
+            run: checks::empty_journal_uses_ordinary_zero_fact_evaluation,
         },
         Case {
             id: "create-saucer",

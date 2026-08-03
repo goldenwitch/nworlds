@@ -1,6 +1,8 @@
 use std::{fmt, fs, path::Path};
 
-use caravan_domain::{ActorId, ActorKind, GameJournalEntry, Saucer, Terrain, TileId};
+use caravan_domain::{
+    ActorId, ActorKind, GameJournalEntry, Saucer, Terrain, TileId, SAUCER_RADIUS,
+};
 use caravan_reference::{ReferenceContext, ReferenceWorldline};
 use engine_branches::{BranchError, BranchKind};
 use engine_journal::{Journal, JournalEntry, JournalWriter, JournalWriterError};
@@ -157,7 +159,7 @@ pub fn encode(worldline: &ReferenceWorldline) -> Vec<u8> {
     writer.u8(WORLDLINE_RECORD);
 
     writer.u8(REFERENCE_CONTEXT);
-    writer.u8(worldline.context_payload().saucer().radius());
+    writer.u8(worldline.context_payload().saucer_radius());
 
     let lineage = BranchLineage::from_worldline(worldline);
     writer.u8(branch_kind_tag(lineage.kind));
@@ -275,6 +277,7 @@ fn decode_journal(reader: &mut Reader<'_>) -> Result<Journal, PersistenceError> 
         let logical_time = LogicalTime::from_ticks(reader.i64()?);
         writer.advance_to(logical_time)?;
         let payload = decode_payload(reader)?;
+        validate_payload(&payload)?;
         writer.record(payload);
     }
     Ok(writer.finish())
@@ -326,8 +329,20 @@ fn split_at_boundary(
 }
 
 fn append_entry(writer: &mut JournalWriter, entry: &JournalEntry) -> Result<(), PersistenceError> {
+    validate_payload(entry.payload())?;
     writer.advance_to(entry.logical_time())?;
     writer.record(*entry.payload());
+    Ok(())
+}
+
+fn validate_payload(payload: &GameJournalEntry) -> Result<(), PersistenceError> {
+    if let GameJournalEntry::CreateSaucer { radius } = *payload {
+        if radius != SAUCER_RADIUS {
+            return Err(PersistenceError::InvalidValue {
+                field: "journal saucer radius",
+            });
+        }
+    }
     Ok(())
 }
 

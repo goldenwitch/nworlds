@@ -80,7 +80,7 @@ impl JournalWriter {
 
     /// Records a game payload at the current writer time.
     pub fn record(&mut self, payload: GameJournalEntry) -> JournalEntry {
-        let entry = JournalEntry::new(self.current_time, payload);
+        let entry = JournalEntry::from_assigned_time(self.current_time, payload);
         self.entries.push(entry.clone());
         entry
     }

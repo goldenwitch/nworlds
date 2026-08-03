@@ -1,10 +1,12 @@
 #![forbid(unsafe_code)]
 
 mod discontinuities;
+#[cfg(test)]
+mod legacy_evaluator;
 mod projection;
 mod snapshot;
 
-use caravan_domain::Saucer;
+use caravan_domain::SAUCER_RADIUS;
 use engine_branches::Worldline as BranchWorldline;
 use engine_journal::Journal;
 use engine_sdk::{Context, GameState};
@@ -15,23 +17,22 @@ pub use discontinuities::{
     discontinuity_index, ActorThreshold, CaravanBreakpointSource, DiscontinuityIndex, PieceInput,
     RuleThreshold,
 };
-pub use projection::{project, project_query, project_with_index};
+pub use projection::{
+    project, project_query, project_with_index, try_project, try_project_query,
+    try_project_with_index, ProjectionError,
+};
 pub use snapshot::Snapshot;
 
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
-pub struct ReferenceContext {
-    saucer: Saucer,
-}
+pub struct ReferenceContext;
 
 impl ReferenceContext {
     pub const fn new() -> Self {
-        Self {
-            saucer: Saucer::new(),
-        }
+        Self
     }
 
-    pub const fn saucer(self) -> Saucer {
-        self.saucer
+    pub const fn saucer_radius(self) -> u8 {
+        SAUCER_RADIUS
     }
 }
 
@@ -49,6 +50,13 @@ pub fn actual(journal: Journal) -> ReferenceWorldline {
 
 pub fn state(worldline: &ReferenceWorldline, logical_time: LogicalTime) -> State {
     project(worldline, logical_time)
+}
+
+pub fn try_state(
+    worldline: &ReferenceWorldline,
+    logical_time: LogicalTime,
+) -> Result<State, ProjectionError> {
+    try_project(worldline, logical_time)
 }
 
 pub fn query(

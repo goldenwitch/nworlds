@@ -5,7 +5,8 @@ pub use caravan_domain::{
     TileLayers,
 };
 pub use caravan_reference::{
-    actual, context, state, ReferenceContext, ReferenceWorldline, Snapshot, State, Worldline,
+    actual, context, state, try_state, ProjectionError, ReferenceContext, ReferenceWorldline,
+    Snapshot, State, Worldline,
 };
 pub use engine_branches::{BranchError, BranchKind};
 pub use engine_journal::{Journal, JournalWriter, JournalWriterError};

@@ -15,7 +15,7 @@ use crate::fixtures::{
     tau, terrain, tile, time, worldline, ParityAnimation, RenderValue, TraceRenderer,
 };
 
-pub fn empty_journal_is_empty_and_owns_exact_time() {
+pub fn empty_journal_uses_ordinary_zero_fact_evaluation() {
     let actual = actual(Journal::empty());
     let future = state(&actual, 7);
     let past = state(&actual, -3);
@@ -29,8 +29,8 @@ pub fn empty_journal_is_empty_and_owns_exact_time() {
     assert_eq!(future.payload().resources().wood(), 0);
     assert_ne!(future, past);
     assert_eq!(
-        caravan_reference::context().payload().saucer().tile_count(),
-        91
+        caravan_reference::context().payload().saucer_radius(),
+        Saucer::new().radius()
     );
 }
 

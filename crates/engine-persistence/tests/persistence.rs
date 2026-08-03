@@ -61,7 +61,7 @@ fn anchor_journal_round_trips_and_encoding_is_deterministic() {
     assert_eq!(decoded, original);
     assert_eq!(encode(&decoded), encoded);
     assert_eq!(decoded.journal().len(), 4);
-    assert_eq!(decoded.context_payload().saucer().tile_count(), 91);
+    assert_eq!(decoded.context_payload().saucer_radius(), 5);
 }
 
 #[test]
@@ -121,6 +121,21 @@ fn incompatible_versions_fail_explicitly() {
             found,
             supported: FORMAT_VERSION,
         }) if found == incompatible
+    ));
+}
+
+#[test]
+fn unsupported_saucer_radius_fails_during_decode() {
+    let worldline = actual(journal([(0, GameJournalEntry::create_saucer())]));
+    let mut encoded = encode(&worldline);
+
+    encoded[28] = 4;
+
+    assert!(matches!(
+        decode(&encoded),
+        Err(PersistenceError::InvalidValue {
+            field: "journal saucer radius"
+        })
     ));
 }
 

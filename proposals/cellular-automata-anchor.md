@@ -69,8 +69,9 @@ around a game entry.
 
 The context supplies only the general definitions needed to interpret saucers
 and tiles; it does not contain this saucer's geometry. An empty journal is a
-valid worldline whose state is the empty set: no tiles, actors, effects, or
-resources.
+valid ordinary zero-fact query: its state is the default empty set with no
+tiles, actors, effects, or resources. The same evaluation path handles it as
+any other visible-entry prefix.
 
 The journal creates the saucer:
 
@@ -86,6 +87,11 @@ context or evaluator state.
 The anchor journal contains exactly one `CreateSaucer` entry, at `t_=0`, and it
 is the first entry. All later entries reference or modify those established
 tiles; no later entry creates additional tiles.
+
+The anchor supports radius 5 only. A visible `CreateSaucer` entry with any
+other radius is an invalid journal fact: the fallible query returns an explicit
+projection error and persistence rejects the record rather than silently
+ignoring it.
 
 Later authoritative entries add entities or other externally chosen inputs:
 
@@ -123,6 +129,12 @@ journal. It does not see the seed generator or an RNG.
 Derived consequences are not separate journal entries. The journal does not record
 "farmer deleted itself", "fire spread", or "wheat resource increased". Those
 are results of the indexed state definition.
+
+At one activation tick on one tile, authored `SetTerrain` entries are applied
+in journal append order before derived terrain events. Derived events follow a
+fixed source order: farmer wheat placement, arborist forest conversion, then
+fire terrain destruction. Actor identifiers and lexicographic tile order are
+the stable tie-breakers within those sources.
 
 ## Spatial Layers
 
@@ -176,6 +188,11 @@ automaton snapshot from the context definitions and journal. There is no
 observation phase, actor-by-actor execution order, current snapshot, or
 mutable stepping function exposed by the engine. A query at any tick is
 independent of prior queries.
+
+Foresters use the shared actor occupancy at the start of each tick. They all
+propose from that same occupancy, destination conflicts are resolved by the
+lower actor identifier, and losing foresters retain their pre-tick tile. The
+resolved actor layer is the occupancy input for the next tick.
 
 The anchor uses axial coordinates `(q, r)`. A tile belongs to the saucer when:
 
@@ -321,6 +338,8 @@ The anchor test must query the same worldline at times that demonstrate:
 13. a later corrected or counterfactual branch without changing the parent;
 14. repeated seeded journal construction, proving identical seeds produce
     identical journal entries and states.
+15. two foresters sharing pre-tick occupancy and deterministic destination
+    conflict resolution.
 
 ## Acceptance
 

@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, sync::Arc};
 
 use caravan_domain::{ActorId, ActorKind, GameJournalEntry};
 use engine_index::{
@@ -44,9 +44,9 @@ pub enum CaravanBreakpointSource {
     },
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct PieceInput {
-    visible_entry_count: usize,
+    visible_entries: Arc<[JournalEntry]>,
     tick_index_at_start: Option<i64>,
     projection: PieceProjection,
 }
@@ -58,22 +58,25 @@ enum PieceProjection {
 }
 
 impl PieceInput {
-    pub const fn visible_entry_count(self) -> usize {
-        self.visible_entry_count
+    pub fn visible_entries(&self) -> &[JournalEntry] {
+        &self.visible_entries
     }
 
-    pub const fn tick_index_at_start(self) -> Option<i64> {
+    pub fn visible_entry_count(&self) -> usize {
+        self.visible_entries.len()
+    }
+
+    pub const fn tick_index_at_start(&self) -> Option<i64> {
         self.tick_index_at_start
     }
 
-    pub(crate) const fn is_tick_indexed(self) -> bool {
+    pub(crate) const fn is_tick_indexed(&self) -> bool {
         matches!(self.projection, PieceProjection::TickIndexed)
     }
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct DiscontinuityIndex {
-    entries: Vec<JournalEntry>,
     index: EngineDiscontinuityIndex<CaravanBreakpointSource, PieceInput>,
 }
 
@@ -115,11 +118,6 @@ impl DiscontinuityIndex {
 
     pub(crate) fn for_sample(journal: &Journal, logical_time: LogicalTime) -> Self {
         Self::build(journal, Some(logical_time))
-    }
-
-    pub(crate) fn entries_for(&self, piece: &Piece<PieceInput>) -> &[JournalEntry] {
-        let count = piece.payload().visible_entry_count();
-        &self.entries[..count]
     }
 
     fn build(journal: &Journal, sample_time: Option<LogicalTime>) -> Self {
@@ -242,7 +240,7 @@ impl DiscontinuityIndex {
                 });
 
                 PieceInput {
-                    visible_entry_count,
+                    visible_entries: Arc::from(entries[..visible_entry_count].to_vec()),
                     tick_index_at_start: start_t.map(game_tick_index),
                     projection: match start_t.map(game_tick_index) {
                         Some(tick_index) if tick_index >= 0 => PieceProjection::TickIndexed,
@@ -255,7 +253,7 @@ impl DiscontinuityIndex {
         let index = EngineDiscontinuityIndex::from_breakpoints(breakpoints, piece_inputs)
             .expect("Caravan breakpoint construction supplies one input per piece");
 
-        Self { entries, index }
+        Self { index }
     }
 }
 

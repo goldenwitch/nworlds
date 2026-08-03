@@ -1,5 +1,5 @@
 use caravan_domain::{ActorId, ActorKind, Effect, GameJournalEntry, Terrain, TileId};
-use caravan_reference::{actual, state, Snapshot};
+use caravan_reference::{actual, state, try_state, ProjectionError, Snapshot};
 use caravan_seeded::generate_spawn_journal;
 use engine_branches::BranchKind;
 use engine_journal::{Journal, JournalWriter};
@@ -49,7 +49,7 @@ fn snapshot_at(entries: &[(i64, GameJournalEntry)], ticks: i64) -> Snapshot {
 }
 
 #[test]
-fn empty_journal_is_an_empty_set_with_exact_time() {
+fn empty_journal_uses_the_ordinary_zero_fact_result() {
     let state = state(&actual(Journal::empty()), time(7));
     let snapshot = state.payload();
 
@@ -59,6 +59,23 @@ fn empty_journal_is_an_empty_set_with_exact_time() {
     assert!(snapshot.actors().is_empty());
     assert_eq!(snapshot.resources().wheat(), 0);
     assert_eq!(snapshot.resources().wood(), 0);
+}
+
+#[test]
+fn unsupported_saucer_radius_is_rejected_explicitly() {
+    let worldline = actual(journal(&[(
+        0,
+        GameJournalEntry::CreateSaucer { radius: 4 },
+    )]));
+
+    assert_eq!(
+        try_state(&worldline, time(0)),
+        Err(ProjectionError::UnsupportedSaucerRadius {
+            append_ordinal: 0,
+            expected: 5,
+            found: 4,
+        })
+    );
 }
 
 #[test]

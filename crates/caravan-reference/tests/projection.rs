@@ -157,6 +157,124 @@ fn projection_preserves_exact_inside_tick_journal_visibility_and_order() {
 }
 
 #[test]
+fn projection_applies_authored_terrain_before_derived_terrain_at_one_tick() {
+    let worldline = actual(journal(&[
+        (0, GameJournalEntry::create_saucer()),
+        (0, spawn(1, ActorKind::Farmer, TileId::origin())),
+        (500, terrain(tile(2, 0), Terrain::Forest)),
+    ]));
+
+    assert_eq!(
+        project(&worldline, game_time(1))
+            .payload()
+            .terrain_at(tile(2, 0)),
+        Some(Terrain::Wheat)
+    );
+}
+
+#[test]
+fn projection_moves_foresters_from_shared_pre_tick_occupancy() {
+    let worldline = actual(journal(&[
+        (0, GameJournalEntry::create_saucer()),
+        (0, spawn(1, ActorKind::Forester, TileId::origin())),
+        (0, spawn(2, ActorKind::Forester, tile(0, 1))),
+        (0, spawn(3, ActorKind::Arborist, tile(1, 1))),
+    ]));
+
+    let at_one = project(&worldline, game_time(1));
+    assert_eq!(
+        at_one
+            .payload()
+            .actors()
+            .iter()
+            .find(|actor| actor.id() == actor_id(1))
+            .expect("first forester remains present")
+            .tile(),
+        tile(1, 0)
+    );
+    assert_eq!(
+        at_one
+            .payload()
+            .actors()
+            .iter()
+            .find(|actor| actor.id() == actor_id(2))
+            .expect("second forester remains present")
+            .tile(),
+        tile(0, 1)
+    );
+
+    let at_two = project(&worldline, game_time(2));
+    assert_eq!(
+        at_two
+            .payload()
+            .actors()
+            .iter()
+            .find(|actor| actor.id() == actor_id(1))
+            .expect("first forester remains present")
+            .tile(),
+        tile(2, 0)
+    );
+    assert_eq!(
+        at_two
+            .payload()
+            .actors()
+            .iter()
+            .find(|actor| actor.id() == actor_id(2))
+            .expect("second forester remains present")
+            .tile(),
+        TileId::origin()
+    );
+}
+
+#[test]
+fn projection_updates_occupancy_after_a_farmer_leaves() {
+    let worldline = actual(journal(&[
+        (0, GameJournalEntry::create_saucer()),
+        (0, terrain(tile(1, 0), Terrain::Forest)),
+        (0, spawn(1, ActorKind::Forester, TileId::origin())),
+        (0, spawn(2, ActorKind::Farmer, tile(1, 0))),
+        (0, spawn(3, ActorKind::Arborist, tile(1, -1))),
+        (0, spawn(4, ActorKind::Arborist, tile(0, -1))),
+        (0, spawn(5, ActorKind::Arborist, tile(-1, 0))),
+        (0, spawn(6, ActorKind::Arborist, tile(-1, 1))),
+        (0, spawn(7, ActorKind::Arborist, tile(0, 1))),
+        (0, spawn(8, ActorKind::Arborist, tile(2, 0))),
+        (0, spawn(9, ActorKind::Arborist, tile(2, -1))),
+        (0, spawn(10, ActorKind::Arborist, tile(1, 1))),
+    ]));
+
+    let at_one = project(&worldline, game_time(1));
+    assert_eq!(
+        at_one
+            .payload()
+            .actors()
+            .iter()
+            .find(|actor| actor.id() == actor_id(1))
+            .expect("forester remains present")
+            .tile(),
+        TileId::origin()
+    );
+    assert!(at_one
+        .payload()
+        .actors()
+        .iter()
+        .all(|actor| actor.id() != actor_id(2)));
+
+    let at_two = project(&worldline, game_time(2));
+    assert_eq!(
+        at_two
+            .payload()
+            .actors()
+            .iter()
+            .find(|actor| actor.id() == actor_id(1))
+            .expect("forester remains present")
+            .tile(),
+        tile(1, 0)
+    );
+    assert_eq!(at_two.payload().resources().wood(), 1);
+}
+
+#[test]
 fn projection_uses_an_immutable_piece_index_with_caravan_sources() {
     let journal = journal(&[
         (0, GameJournalEntry::create_saucer()),
@@ -195,6 +313,12 @@ fn projection_uses_an_immutable_piece_index_with_caravan_sources() {
     assert!(at_entry.contains(time(500)));
     assert_eq!(before.payload().visible_entry_count(), 1);
     assert_eq!(at_entry.payload().visible_entry_count(), 2);
+    assert_eq!(before.payload().visible_entries().len(), 1);
+    assert_eq!(at_entry.payload().visible_entries().len(), 2);
+    assert_eq!(
+        at_entry.payload().visible_entries()[1].payload(),
+        &spawn(1, ActorKind::Farmer, TileId::origin())
+    );
 
     let context = Context::new(caravan_reference::ReferenceContext::new());
     let projected = project_with_index(&context, &index, time(500));
@@ -253,10 +377,7 @@ fn projection_matches_actual_counterfactual_and_corrected_branches_in_any_order(
     assert_eq!(corrected.kind(), BranchKind::Corrected);
 }
 
-const REMAINING_PROJECTION_GAPS: &[&str] = &[
-    "Forester movement through changing multi-actor occupancy is represented by a direct trajectory form, not a general closed temporal DSL.",
-    "Cross-rule ordering for simultaneous journal overrides and derived terrain events needs a dedicated independent corpus.",
-];
+const REMAINING_PROJECTION_GAPS: &[&str] = &[];
 
 #[test]
 fn projection_corpus_covers_direct_forms_without_a_tautological_baseline() {
@@ -287,7 +408,7 @@ fn projection_corpus_covers_direct_forms_without_a_tautological_baseline() {
 
 #[test]
 fn projection_gaps_are_recorded_as_scope_data() {
-    assert_eq!(REMAINING_PROJECTION_GAPS.len(), 2);
+    assert_eq!(REMAINING_PROJECTION_GAPS.len(), 0);
     assert!(REMAINING_PROJECTION_GAPS
         .iter()
         .all(|gap| !gap.trim().is_empty()));

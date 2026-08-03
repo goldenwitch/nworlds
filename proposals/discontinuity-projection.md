@@ -1,8 +1,9 @@
 # Discontinuity Projection
 
 This proposal freezes the discontinuity index and piecewise projection contract
-for the direct indexed query. It replaces the reference oracle's private
-tick-fold calculation without changing the public query or adding actor rules.
+for the direct indexed query. The reference oracle now uses this path; the
+historical tick fold is retained only as a test baseline where its semantics
+remain comparable. This proposal does not add actor rules.
 All behavior referred to here is already defined by
 [cellular-automata-anchor.md](cellular-automata-anchor.md).
 
@@ -43,9 +44,11 @@ pieces:
 piece_i = [start_t, end_t)
 ```
 
-Each piece contains its immutable projection inputs and its projection
-definition/result definition. The first and last pieces may have an unbounded
-endpoint. For every representable query time `t_`, exactly one piece satisfies:
+Each piece contains immutable visible-entry inputs and a domain-owned
+projection regime. The rule calculation itself remains query-local rather than
+being a callable stored inside the generic engine piece. The first and last
+pieces may have an unbounded endpoint. For every representable query time `t_`,
+exactly one piece satisfies:
 
 ```text
 start_t <= t_ && t_ < end_t
@@ -60,7 +63,7 @@ Projection evaluates the selected piece against the exact requested time:
 
 ```text
 piece = select(index, t_)
-game_state = piece.project(piece.inputs, t_)
+game_state = project(piece.inputs, piece.regime, t_)
 game_state.logical_time = t_
 ```
 
@@ -86,6 +89,12 @@ needs a deterministic tie-breaker. There is no secondary ordering invented
 from actor identifiers, map order, or breakpoint source kind. A tick marker at
 the same timestamp is a separate marker, not an extra journal entry and not an
 imperative operation to order before or after the journal group.
+
+For terrain events that activate on the same tick and tile, authored
+`SetTerrain` entries are ordered by journal append order before derived terrain
+events. Derived events retain the anchor's fixed source order and stable
+actor/tile ordering. This is a Caravan rule, not an ordering imposed by the
+generic breakpoint index.
 
 ## Journal and Tick Breakpoints
 
@@ -228,8 +237,8 @@ packet does not add or alter actor behavior.
     branch isolation.
 4. Compare projection results with the current reference oracle over generated
     traces and the existing anchor cases.
-5. Remove the private `WorkingState`/tick-fold path only after parity evidence is
-    reviewed.
+5. Keep the historical fold, when useful, isolated to a test-only comparison
+   baseline; it is not part of the production query path.
 
 ## Acceptance
 
@@ -241,6 +250,12 @@ packet does not add or alter actor behavior.
 - Journal and tick breakpoints remain distinct, including when timestamps match.
 - Inside-tick entries are visible immediately but activate discrete tick input
    at the next boundary; boundary entries activate at that boundary.
+- Same-tick authored terrain entries precede derived terrain events by the
+   explicit Caravan ordering rule.
+- Collective forester proposals use shared pre-tick occupancy and deterministic
+   destination conflict resolution.
+- Forester resource totals use the resulting collective actor positions at each
+   indexed tick rather than original journal positions.
 - Negative logical times use floor-based tick selection and the same activation
    rule without clamping to zero.
 - Projection has no prior-state, current-board, cursor, or frame-history input;
@@ -248,7 +263,8 @@ packet does not add or alter actor behavior.
 - Query order, repeated samples, and branch choice do not affect results.
 - Existing anchor, conformance, demo, persistence, and presentation tests pass
    against the projection path.
-- The old reference fold is removed only after recorded parity evidence passes.
+- The production query path contains no reference fold. Any historical parity
+   comparison is explicitly labeled as test-only evidence.
 
 The representation may be richer than this first implementation requires, but
 it must preserve this value boundary and remain an internal representation

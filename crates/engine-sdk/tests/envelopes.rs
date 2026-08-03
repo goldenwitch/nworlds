@@ -60,8 +60,8 @@ fn state_owns_the_exact_sampled_logical_time() {
 #[test]
 fn opaque_payloads_remain_generic_across_context_journal_and_worldline() {
     let context = Context::new(Definitions { marker: 5 });
-    let entry = JournalEntry::new(LogicalTime::zero(), Fact { marker: 13 });
-    let journal = Journal::from_entries([entry]);
+    let entry = JournalEntry::from_assigned_time(LogicalTime::zero(), Fact { marker: 13 });
+    let journal = Journal::from_assigned_entries([entry]);
     let worldline = Worldline::new(context, journal);
 
     assert_eq!(worldline.context().payload().marker, 5);
@@ -89,7 +89,7 @@ fn typed_query_results_keep_values_and_domain_reasons_distinct() {
 #[test]
 fn public_payload_access_is_shared_only() {
     let context = Context::new(Definitions { marker: 34 });
-    let entry = JournalEntry::new(LogicalTime::zero(), Fact { marker: 55 });
+    let entry = JournalEntry::from_assigned_time(LogicalTime::zero(), Fact { marker: 55 });
     let state = GameState::new(LogicalTime::zero(), Snapshot { marker: 89 });
     let frame = Frame::new(Tau::zero(), Image { marker: 144 });
 

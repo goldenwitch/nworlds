@@ -45,7 +45,7 @@ impl Journal {
 
     pub(crate) fn from_entries(entries: impl IntoIterator<Item = JournalEntry>) -> Self {
         Self {
-            storage: SdkJournal::from_entries(entries),
+            storage: SdkJournal::from_assigned_entries(entries),
         }
     }
 }

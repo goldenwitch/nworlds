@@ -1,10 +1,9 @@
 # Semantic Contract
 
 This document records the implementation-facing decisions for
-[spec/initial.md](../spec/initial.md). The indexed anchor implementation now
-exists; its public query boundary is correct, while the reference oracle still
-contains a temporary private tick fold that the discontinuity-projection work
-will replace.
+[spec/initial.md](../spec/initial.md). The indexed anchor implementation and
+reference projection path now exist. The remaining work is the later closed
+temporal definition language and broader domain-composition decisions.
 
 ## Settled
 
@@ -21,9 +20,12 @@ will replace.
   timestamps.
 - The context supplies interpretation definitions and configuration, not the
   instance's populated geometry or actors.
-- Journal entries populate the void. An empty journal may validly produce the
-  empty set. A fixture may use a compact entry such as `CreateSaucer` to create
-  a domain and its derived tiles.
+- `ReferenceContext` carries the anchor radius definition only. A visible
+  `CreateSaucer` journal entry adds the instance saucer; an empty journal is
+  evaluated through the same zero-fact/default path and returns the ordinary
+  empty set.
+- Journal entries populate the default empty result. Empty-journal evaluation
+  uses the same evaluation path as every other visible-entry prefix.
 - Journal timestamps are assigned by a monotonic writer. A late entry creates an
   explicit corrected branch; it never rewrites the actual journal.
 - The writer may postdate entries by advancing its cursor into the future before
@@ -32,6 +34,16 @@ will replace.
 - Actual, counterfactual, and corrected branches are immutable values evaluated
   through the same query path.
 - Target-time entries are included, and equal-time entries use append order.
+- At one activation tick on one tile, authored `SetTerrain` entries are
+  ordered by journal append order before derived terrain events. Derived
+  events use the fixed rule order and stable actor/tile order already defined
+  by the anchor.
+- Forester movement uses one shared pre-tick actor occupancy map. Foresters
+  propose simultaneously, lower actor identifiers win destination conflicts,
+  and the resulting positions become the next tick's occupancy inputs.
+- Forester wood totals are sampled from those same collective actor positions
+  and the terrain value at each indexed tick; resources do not use a separate
+  static occupancy calculation.
 - Reverse playback and arbitrary scrubbing are legal.
 - Seeded randomness constructs a concrete journal before evaluation. The
   evaluator never owns or advances an RNG.
@@ -40,8 +52,9 @@ will replace.
   terrain, actors, effects, and resources.
 - A discontinuity is a value-level breakpoint in an indexed result. It is not an
   imperative action and does not authorize mutation of a current state.
-- Piecewise projection is the next implementation direction: select a value
-  function from an immutable discontinuity index and the requested `t_`.
+- Piecewise projection selects immutable visible-entry inputs and a projection
+  regime from a discontinuity index. Rule results remain disposable
+  query-local calculations over those selected inputs and the requested `t_`.
 
 ## Cellular Automata Anchor
 
@@ -84,15 +97,10 @@ The public query is direct:
 state(worldline, t_) -> GameState
 ```
 
-The current Caravan reference oracle satisfies that boundary behaviorally, but
-its private implementation still folds a mutable local working value through
-game ticks. That local calculation does not mutate the worldline, yet it is
-still the interval-stepping model this project is leaving behind.
-
-The next implementation must derive an immutable discontinuity index and use
-piecewise projection. It may allocate disposable local calculation values while
-answering one query, but it must not accept a previous `GameState`, current
-board, actor object, cursor, or frame history.
+The Caravan reference oracle satisfies that boundary through an immutable
+discontinuity index and piecewise projection. It may allocate disposable local
+calculation values while answering one query, but it must not accept a previous
+`GameState`, current board, actor object, cursor, or frame history.
 
 ## Historical callback prototype
 
@@ -120,9 +128,6 @@ is not an implementation target.
   including fire, movement, collision, and conversion dependencies.
 3. Decide which compact journal entries expand into indexed domain elements and
   how their deterministic identity is represented.
-4. Define the discontinuity index and piecewise projection contract, including
-  breakpoint ownership, half-open pieces, and parity evidence against the
-  current reference oracle.
 
 Compiler-checked purity hardening remains a later stage. The discontinuity
 projection work is a semantic implementation refactor, not a purity-linting

@@ -2,7 +2,7 @@ vine 1.2.0
 prefix: caravan
 title: Caravan of Seasons build graph
 ---
-[root] Caravan anchor implementation (packet plan) (planning)
+[root] Caravan anchor implementation (packet plan) (complete)
 Execute the independent packets below. Keep SDK objects separate from Caravan game objects, use direct indexed queries rather than interval stepping, and dispatch packets only after their dependencies are reviewed. The cellular automata anchor proposal is the shared behavior target. Files: proposals/cellular-automata-anchor.md; proposals/semantic-contract.md; roadmap.md; spec/initial.md
 -> anchor-demo
 -> benchmarks
@@ -25,41 +25,48 @@ Execute the independent packets below. Keep SDK objects separate from Caravan ga
 -> reference-oracle
 -> reference-projection
 -> sdk-envelopes
+-> sdk-timestamp-boundary
 -> seeded-journal
 -> vegetation-rules
 -> workspace-time
 @guidance text/markdown spec/initial.md
 ---
-[contract-gate] Anchor contract gate (reviewing)
-Files: proposals/semantic-contract.md; proposals/cellular-automata-anchor.md; spec/initial.md
-Do: Freeze the anchor decisions that are already settled: one-second game ticks, arbitrary continuous t_ sampling, empty journal as empty set, journal-owned saucer creation, postdated entries, three layers, direct indexed queries, and SDK/game-object separation. Record only the remaining implementation-level choices.
-Accept: The implementation packets can consume one coherent contract without importing the removed interval-fold model.
+[contract-gate] Anchor contract gate (complete)
+Files: spec/initial.md; roadmap.md; proposals/semantic-contract.md; proposals/cellular-automata-anchor.md; proposals/discontinuity-projection.md
+Do: Keep the empty-journal anchor rule canonical, remove stale fold language, make unsupported CreateSaucer radii explicit failures, and keep the piece contract honest about query-local rule calculation over immutable piece inputs.
+Accept: Canonical spec, roadmap, proposals, and public query/error behavior agree; no malformed radius is silently ignored.
 > Decision: LogicalTime and Tau use signed i64 milliseconds (1,000 ticks per logical second); the automaton game tick remains one logical second.
 > Anchor game tick period is one second of logical time; LogicalTime/Tau may use finer fixed-point resolution independently of the game tick.
 > An entry is visible at its exact timestamp. A journal entry inside a game tick participates in automaton behavior at the next tick boundary; an entry exactly on a tick boundary participates in that tick.
-> Before CreateSaucer is visible, the journal query returns the empty set. CreateSaucer at t_=0 establishes the 91-tile saucer.
+> Empty-journal and pre-CreateSaucer queries use the ordinary zero-fact/default path and return the empty set; CreateSaucer at t_=0 adds the 91-tile saucer.
 > A postdated entry may be authored into the immutable journal before evaluation; queries ignore entries after their requested t_.
 > Acts, moves, destroys, ignites, and converts are indexed differences between returned values, never mutation or actor execution.
+> ReferenceContext carries the anchor radius definition only; a visible CreateSaucer entry materializes the instance saucer.
+> At one activation tick on one tile, authored SetTerrain entries precede derived terrain events by journal append order; derived events use the fixed anchor rule order and stable actor/tile order.
+> Unsupported visible CreateSaucer radii are explicit ProjectionError values on try_state and invalid persistence records.
 ---
-[discontinuity-contract] Discontinuity and piecewise contract (reviewing)
-Do: Freeze the discontinuity index and piecewise projection contract for the direct query path. Keep engine selection generic and immutable; keep threshold and visibility definitions in Caravan.
-Accept: The discontinuity classes, piece boundaries, exact-time rules, and engine/game ownership boundary are explicit enough for indexed selection and reference projection.
+[discontinuity-contract] Discontinuity and piecewise contract (complete)
+Do: Keep immutable half-open selection generic while making Caravan piece payloads carry immutable visible journal inputs and a projection regime. Document query-local rule calculation, same-tick terrain precedence, and collective live actor occupancy.
+Accept: Selected pieces expose their immutable visible inputs; the proposal does not claim callable projection functions are stored in generic pieces.
 -> contract-gate
 > Indexed pieces are half-open intervals [start_t,end_t).
 > Exact journal timestamps and game-tick boundaries remain distinct discontinuities; entries inside a tick affect the next tick-boundary behavior, while entries on a tick boundary participate in that tick.
 > The discontinuity index is an immutable derived value built from immutable worldline and journal inputs.
 > Breakpoint and piece selection is generic and engine-neutral; the engine does not own Caravan game primitives.
 > Caravan owns definition-specific thresholds and visibility rules, including actor, fire, and resource thresholds.
+> Same-tick terrain precedence is Caravan-owned: authored SetTerrain entries retain journal append order and precede derived terrain events on the same tile; derived events retain fixed source and actor/tile order.
+> The selected Caravan piece owns immutable visible journal inputs and a projection regime; rule calculation remains query-local.
+> The actor layer uses shared live occupancy across transitions, including spawn visibility, removals, movement, conflicts, and collisions.
 @guidance text/markdown proposals/discontinuity-projection.md
 ---
-[workspace-time] Workspace and time module (reviewing)
+[workspace-time] Workspace and time module (complete)
 Files: Cargo.toml; crates/engine-time/**
 Do: Bootstrap the Rust workspace and implement distinct LogicalTime and Tau wrappers with the approved signed i64 representation, one-second anchor game-tick relation, checked arithmetic, ordering, and exact equality. Keep raw time arithmetic in this crate.
 Accept: Boundary and overflow tests pass; no game-domain types or evaluator logic are owned here.
 -> contract-gate
 @artifact text/plain crates/engine-time/src/lib.rs
 ---
-[sdk-envelopes] SDK envelopes and query contracts (reviewing)
+[sdk-envelopes] SDK envelopes and query contracts (complete)
 Files: crates/engine-sdk/**
 Do: Define generic SDK objects and traits for Context, JournalEntry, Journal, Worldline, GameState, Playback, Frame, and typed query results without admitting interval callbacks or game-domain primitives. Keep game payloads opaque to the SDK.
 Accept: SDK/game ownership is visible in types; immutable inputs and owned query outputs are expressible; no actor, terrain, saucer, or resource type is introduced.
@@ -67,7 +74,7 @@ Accept: SDK/game ownership is visible in types; immutable inputs and owned query
 -> workspace-time
 @artifact text/plain crates/engine-sdk/src/lib.rs
 ---
-[domain-model] Saucer geometry and game layers (reviewing)
+[domain-model] Saucer geometry and game layers (complete)
 Files: crates/caravan-domain/**
 Do: Define axial radius-5 geometry, the 91-tile set, fixed neighbor order, terrain, actor, effect, resource, identifiers, and compact game journal entry payloads. Own game meaning only; do not implement journal storage or evaluation.
 Accept: Geometry and layer tests establish 91 tiles, six neighbors, valid tile identities, and the three-layer representation.
@@ -75,7 +82,7 @@ Accept: Geometry and layer tests establish 91 tiles, six neighbors, valid tile i
 -> workspace-time
 @artifact text/plain crates/caravan-domain/src/lib.rs
 ---
-[journal-writer] Journal writer and entries (reviewing)
+[journal-writer] Journal writer and entries (complete)
 Files: crates/engine-journal/**; consume engine-sdk and caravan-domain APIs
 Do: Implement immutable journal values and a journal-owned monotonic writer that can postdate entries before evaluation, preserve equal-time append order, and publish typed game entries without caller-owned timestamps. Use the SDK envelope types as the storage boundary; identify any constructor visibility gap for the later purity-hardening packet without expanding scope into game evaluation.
 Accept: Writer tests cover advance_to, record, postdated visibility, backward rejection, empty journals, and exact target-time inclusion. No branch correction logic is owned here.
@@ -83,7 +90,7 @@ Accept: Writer tests cover advance_to, record, postdated visibility, backward re
 -> sdk-envelopes
 @artifact text/plain crates/engine-journal/src/lib.rs
 ---
-[branch-model] Counterfactual and corrected branches (reviewing)
+[branch-model] Counterfactual and corrected branches (complete)
 Files: crates/engine-branches/**; consume engine-sdk and engine-journal APIs
 Do: Implement immutable inclusive-prefix branch construction for counterfactual and corrected suffixes. Preserve parent journals, retain fork boundaries, and expose one branch value to the query layer. Keep branch construction value-producing and do not add merge or networking semantics.
 Accept: Tests prove prefix agreement, suffix replacement, late-entry correction, parent/child isolation, and nested branch behavior without mutation. Document any SDK/journal interface gap for a later packet rather than editing unrelated crates.
@@ -91,7 +98,7 @@ Accept: Tests prove prefix agreement, suffix replacement, late-entry correction,
 -> sdk-envelopes
 @artifact text/plain crates/engine-branches/src/lib.rs
 ---
-[indexed-query] Direct indexed query kernel (reviewing)
+[indexed-query] Direct indexed query kernel (complete)
 Files: crates/engine-index/src/lib.rs; crates/engine-index/tests/indexed_query.rs
 Do: Keep the generic direct query boundary: select the game-tick index from t_, expose journal entries visible at t_, and return a new GameState without prior-state input, stepping API, or evaluator-owned RNG. Do not own breakpoint data structures; those belong to discontinuity-index.
 Accept: Empty journal, saucer creation, postdated entries, arbitrary query order, within-tick stability under a fixed journal, and journal-time discontinuities remain tested. No current-state or interval callback API is introduced.
@@ -102,7 +109,7 @@ Accept: Empty journal, saucer creation, postdated entries, arbitrary query order
 > The query never advances a current state, observes a prior query, or causes an actor to act.
 @artifact text/plain crates/engine-index/src/lib.rs
 ---
-[vegetation-rules] Vegetation rule definitions (reviewing)
+[vegetation-rules] Vegetation rule definitions (complete)
 Files: crates/caravan-vegetation/**; consume engine-index and caravan-domain APIs
 Do: Implement pure indexed definitions for Farmer, Wheat, Forest, and Forester, including fixed neighbor selection, destination wheat placement, wheat totals, and wood production. Return values; do not mutate snapshots or expose actor stepping.
 Accept: Isolated rule traces cover each definition and use stable identifiers/order only.
@@ -110,7 +117,7 @@ Accept: Isolated rule traces cover each definition and use stable identifiers/or
 -> indexed-query
 @artifact text/plain crates/caravan-vegetation/src/lib.rs
 ---
-[hazard-rules] Hazard and conflict definitions (reviewing)
+[hazard-rules] Hazard and conflict definitions (complete)
 Files: crates/caravan-hazards/**; consume engine-index and caravan-domain APIs
 Do: Implement pure indexed definitions for Arsonist, Fire, Fighter, and Arborist, including target selection, fire ages/spread/destruction, collision, and three-tick conversion. Return values; do not mutate snapshots or expose actor stepping.
 Accept: Isolated deterministic traces cover each rule, layer interactions, and conflict outcomes without actor execution order.
@@ -118,7 +125,7 @@ Accept: Isolated deterministic traces cover each rule, layer interactions, and c
 -> indexed-query
 @artifact text/plain crates/caravan-hazards/src/lib.rs
 ---
-[seeded-journal] Deterministic seeded journal fixture (reviewing)
+[seeded-journal] Deterministic seeded journal fixture (complete)
 Files: crates/caravan-seeded/**; consume engine-journal and caravan-domain APIs
 Do: Generate the finite postdated spawn schedule from a fixed seed before evaluation: three actors every ten game ticks, valid unoccupied tiles, deterministic retries, and a hand-authored behavior trace alongside the generated trace.
 Accept: Same seed yields identical ordered journal entries on every supported run; evaluator never owns the RNG.
@@ -126,7 +133,7 @@ Accept: Same seed yields identical ordered journal entries on every supported ru
 -> journal-writer
 @artifact text/plain crates/caravan-seeded/src/lib.rs
 ---
-[reference-oracle] Anchor state oracle (reviewing)
+[reference-oracle] Anchor state oracle (complete)
 Files: crates/caravan-reference/src/lib.rs; crates/caravan-reference/src/snapshot.rs; crates/caravan-reference/src/discontinuities.rs; crates/caravan-reference/src/projection.rs; crates/caravan-reference/tests/oracle.rs
 Do: Compose the game-domain definitions into the reference state(worldline, t_) oracle over terrain, actors, effects, and resources. Keep all derived results as query outputs and use one immutable context/journal input path. Do not introduce a mutable current board or interval stepping API.
 Do not edit crates/caravan-reference/src/evaluator.rs; the old fold path is retired only by the dependent retirement task after parity.
@@ -140,22 +147,22 @@ Accept: The full anchor behavior is reproducible at arbitrary t_, in non-monoton
 -> vegetation-rules
 @artifact text/plain crates/caravan-reference/src/lib.rs
 ---
-[discontinuity-parity] Projection parity evidence (blocked)
-Do: Consume the reviewed reference-projection artifacts and compare the discontinuity projection path with the existing reference behavior over generated traces, arbitrary query order, exact journal timestamps, tick boundaries, and actual/counterfactual/corrected branches.
-Accept: Parity evidence records matching public state results before the reference fold can be retired.
-> Decision: The current state() delegates to project(), so parity evidence must use a frozen independent corpus or separate baseline before review.
-@artifact application/json crates/caravan-reference/snapshots/discontinuity-parity.json
+[discontinuity-parity] Projection parity evidence (complete)
+Do: Compare the production projection with the independent frozen corpus and with the recovered historical fold on a fixture where semantics are shared. Keep changed terrain-precedence and collective-occupancy cases explicitly outside the legacy-equivalence claim.
+Accept: The frozen corpus and cfg(test)-only legacy comparison pass, with scope limitations recorded in crates/caravan-reference/snapshots/discontinuity-parity.json and crates/caravan-reference/src/legacy_evaluator.rs.
 -> reference-oracle
 -> reference-projection
+> The public state query uses projection. Frozen expected observations cover the anchor; crates/caravan-reference/src/legacy_evaluator.rs provides a cfg(test)-only historical fold comparison on a shared fixture. No production path depends on the legacy fold.
+@artifact application/json crates/caravan-reference/snapshots/discontinuity-parity.json
 ---
-[reference-fold-retirement] Reference fold retirement (reviewing)
-Files: crates/caravan-reference/src/evaluator.rs
-Do: Remove the private WorkingState and tick-fold path after discontinuity-parity is reviewed. Leave the public state(worldline, t_) API on the projection path and retain no mutable current-board or interval-stepping implementation.
-Accept: evaluator.rs no longer owns the old fold, and the existing anchor, conformance, demo, persistence, and presentation tests pass against projection results.
+[reference-fold-retirement] Reference fold retirement (complete)
+Files: crates/caravan-reference/src/evaluator.rs; crates/caravan-reference/src/legacy_evaluator.rs
+Do: Keep the production reference fold retired. Preserve the recovered historical implementation only as a cfg(test)-isolated baseline for bounded parity comparisons; do not expose it through state() or query().
+Accept: evaluator.rs is absent from production, legacy_evaluator.rs compiles only for tests, the shared-fixture comparison passes, and all anchor, conformance, demo, persistence, presentation, and purity tests pass.
 -> discontinuity-parity
-> Decision: evaluator.rs is already absent, and the caravan-reference test suite passes against the projection path.
+> Decision: evaluator.rs is absent from production; legacy_evaluator.rs is test-only and isolated. The public state query uses projection, and the bounded legacy comparison plus anchor, conformance, demo, persistence, presentation, and purity tests pass.
 ---
-[lookahead] Indexed lookahead and branch views (reviewing)
+[lookahead] Indexed lookahead and branch views (complete)
 Files: crates/engine-lookahead/**; consume caravan-reference and engine-branches APIs
 Do: Expose future queries and branch selection through the same direct oracle while keeping the journal fixed. No future entries are generated; no current state is cached.
 Accept: Earlier lookahead values remain unchanged when new values are authored on another branch; actual, counterfactual, and corrected worlds use identical query machinery.
@@ -163,7 +170,7 @@ Accept: Earlier lookahead values remain unchanged when new values are authored o
 -> reference-oracle
 @artifact text/plain crates/engine-lookahead/src/lib.rs
 ---
-[presentation] Playback and presentation adapter (reviewing)
+[presentation] Playback and presentation adapter (complete)
 Files: crates/engine-presentation/**; consume engine-time, engine-sdk, caravan-reference APIs
 Do: Implement reusable Playback, direct present composition, and renderer/animation value boundaries over SDK GameState and Tau. Keep the presentation adapter generic over game payloads and independent of game rules.
 Accept: Forward, reverse, arbitrary scrub, repeated samples, and branch presentation are deterministic and do not mutate authoritative inputs.
@@ -172,7 +179,7 @@ Accept: Forward, reverse, arbitrary scrub, repeated samples, and branch presenta
 -> workspace-time
 @artifact text/plain crates/engine-presentation/src/lib.rs
 ---
-[anchor-demo] Runnable anchor demonstration (reviewing)
+[anchor-demo] Runnable anchor demonstration (complete)
 Files: crates/caravan-demo/**; consume caravan-reference, engine-lookahead, engine-presentation, caravan-seeded, caravan-domain
 Do: Build the first runnable terminal demonstration for the fixed cellular automata trace, showing empty set, saucer creation, layer queries, tick/sample decoupling, seeded entries, lookahead, and corrected/counterfactual branch views. Keep the output deterministic and do not add a mutable current board.
 Accept: One deterministic command reproduces the documented trace and visibly distinguishes SDK envelopes from game-domain snapshot data.
@@ -182,7 +189,7 @@ Accept: One deterministic command reproduces the documented trace and visibly di
 -> seeded-journal
 @artifact text/plain crates/caravan-demo/snapshots/anchor-trace.txt
 ---
-[proof-package] Conformance and proof package (reviewing)
+[proof-package] Conformance and proof package (complete)
 Files: tests/conformance/**; evidence/**
 Do: Map every initial-spec invariant and anchor acceptance condition to executable tests, generated query-order cases, branch cases, and a machine-readable report.
 Accept: Skeptical readers can distinguish executable evidence, explicit limitations, and deferred product decisions.
@@ -192,7 +199,7 @@ Accept: Skeptical readers can distinguish executable evidence, explicit limitati
 @artifact application/json evidence/conformance-report.json
 @artifact text/markdown evidence/clause-to-test.md
 ---
-[persistence] Replay and persistence (reviewing)
+[persistence] Replay and persistence (complete)
 Files: crates/engine-persistence/**; consume engine-sdk, engine-journal, engine-branches, caravan-domain, caravan-reference, caravan-demo APIs
 Do: Serialize SDK envelopes, game entries, context definitions, journals, and branch lineage; add save/load and deterministic replay without persisting frame history or changing query semantics.
 Accept: Anchor journals and branches round-trip exactly, incompatible versions fail explicitly, and replay preserves direct query results.
@@ -201,7 +208,7 @@ Accept: Anchor journals and branches round-trip exactly, incompatible versions f
 -> domain-model
 @artifact text/plain crates/engine-persistence/src/lib.rs
 ---
-[benchmarks] Reference measurements (reviewing)
+[benchmarks] Reference measurements (complete)
 Files: crates/engine-benchmarks/**; evidence/benchmarks/**; consume caravan-reference and caravan-demo APIs
 Do: Measure direct query cost, journal length, branch count, scrub latency, and frame production on fixed anchor traces. Do not optimize or add caches.
 Accept: Conditions and results are reproducible; any proposed cache or index has measured motivation and reference-output comparison.
@@ -209,7 +216,7 @@ Accept: Conditions and results are reproducible; any proposed cache or index has
 -> reference-oracle
 @artifact application/json evidence/benchmarks/anchor-report.json
 ---
-[productization] Conditional productization (reviewing)
+[productization] Conditional productization (complete)
 Files: proposals/productization-review.md
 Do: Add only platform, packaging, content, audio/input, or tooling work shown to bind after the anchor evidence. Keep networking, merge, and final GPU choices deferred unless activated.
 Accept: Each activated concern has an owner, contract, dependency, and reproducible acceptance evidence.
@@ -218,7 +225,7 @@ Accept: Each activated concern has an owner, contract, dependency, and reproduci
 -> proof-package
 @artifact text/markdown proposals/productization-review.md
 ---
-[purity-hardening] Late compiler-checked purity (reviewing)
+[purity-hardening] Late compiler-checked purity (complete)
 Files: crates/purity-tests/**; crates/engine-api/**
 Do: Consume the conditional productization review before activation. After behavior and workload are known, narrow public boundaries with data-only DSL values, private constructors, forbid unsafe code, and trybuild compile-fail tests; preserve the review's deferred product concerns unless a concrete requirement activates them.
 Accept: Prohibited mutation, callback injection, caller timestamps, and published-branch mutation are ill-typed while earlier conformance and benchmark evidence still passes.
@@ -234,7 +241,7 @@ Accept: Prohibited mutation, callback injection, caller timestamps, and publishe
 @artifact text/plain crates/purity-tests/tests/ui/no_published_mutation.rs
 @artifact text/plain crates/purity-tests/tests/ui/no_published_mutation.stderr
 ---
-[discontinuity-index] Generic discontinuity index (reviewing)
+[discontinuity-index] Generic discontinuity index (complete)
 Files: crates/engine-index/src/discontinuities.rs; crates/engine-index/tests/discontinuities.rs
 Do: Implement immutable, engine-neutral breakpoint and piece selection for the requested t_. Use half-open [start_t,end_t) pieces, preserve exact journal and game-tick breakpoints as distinct sources, and make negative-time selection explicit. Do not own Caravan thresholds or game objects.
 Accept: Tests cover empty indices, before/at/after breakpoints, equal timestamps, negative time, half-open boundaries, query-order independence, and derived-index immutability.
@@ -243,16 +250,29 @@ Accept: Tests cover empty indices, before/at/after breakpoints, equal timestamps
 @artifact text/plain crates/engine-index/src/discontinuities.rs
 @artifact text/plain crates/engine-index/tests/discontinuities.rs
 ---
-[reference-projection] Caravan discontinuity projection (started)
+[reference-projection] Caravan discontinuity projection (complete)
 Files: crates/caravan-reference/src/discontinuities.rs; crates/caravan-reference/src/projection.rs; crates/caravan-reference/tests/projection.rs
-Do: Declare Caravan-specific breakpoint sources and project terrain, actors, effects, and resources from selected pieces and exact t_. Compare outputs with the existing oracle while leaving evaluator.rs untouched. Use disposable query-local values only; do not expose a current board or stepping API.
-Accept: Projection matches the current public oracle over the anchor, arbitrary query order, exact journal timestamps, game-tick boundaries, actual/counterfactual/corrected branches, and sub-tick samples.
-> Decision: This must be a genuine piecewise projection; the current WorkingState/tick fold must be removed rather than renamed.
-> Decision: Remaining gaps are dynamic multi-actor occupancy and simultaneous journal/derived ordering; keep this task started until the contract and tests cover both.
+Do: Project the complete live actor layer collectively across tick transitions: spawn visibility, Farmer removal, Arsonist removal, Forester movement, Fighter pursuit/collision, destination conflicts, and changing occupancy. Use piece-owned visible journal inputs and explicit malformed-radius errors.
+Accept: Existing anchor behavior passes, two-Forester occupancy passes, occupancy-after-Farmer-removal passes, and selected pieces provide immutable visible inputs.
 -> discontinuity-index
 -> hazard-rules
 -> reference-oracle
 -> vegetation-rules
+> Decision: This is a genuine piecewise projection; no production WorkingState/tick fold exists.
+> CreateSaucer geometry is materialized only from a visible journal entry; ReferenceContext carries the fixed radius definition.
+> Unsupported visible CreateSaucer radii return ProjectionError through try_state and are rejected during persistence decoding.
+> Authored same-tick terrain events precede derived events, preserving journal append order before the fixed derived source order.
+> The actor layer is projected collectively across live tick transitions with spawn visibility, removals, movement proposals, conflicts, and collisions.
+> Selected pieces carry immutable visible journal inputs and a projection regime; rule calculation remains query-local.
+> The legacy comparison is owned by discontinuity-parity and is not claimed as universal equivalence.
 @artifact text/plain crates/caravan-reference/src/discontinuities.rs
 @artifact text/plain crates/caravan-reference/src/projection.rs
 @artifact text/plain crates/caravan-reference/tests/projection.rs
+---
+[sdk-timestamp-boundary] Explicit low-level timestamp boundary (complete)
+Files: crates/engine-sdk/src/journal.rs; crates/engine-journal/src/writer.rs; crates/engine-sdk/tests/envelopes.rs; crates/engine-api/src/lib.rs
+Do: Keep timestamp assignment journal-owned on the game-facing path. Rename low-level SDK constructors to explicit assigned-time/import names, document them as interoperability escape hatches, and ensure the public engine API exports only JournalWriter-based authoring plus the explicit fallible reference query.
+Accept: No default-looking SDK constructor remains for caller-assigned timestamps; workspace and purity tests pass, and internal writer/branch/persistence consumers retain behavior.
+-> journal-writer
+-> sdk-envelopes
+> Low-level SDK constructors are explicitly named from_assigned_time and from_assigned_entries and documented as interoperability escape hatches; JournalWriter remains the game-facing timestamp authority.

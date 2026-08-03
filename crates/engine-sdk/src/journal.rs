@@ -8,8 +8,12 @@ pub struct JournalEntry<P> {
 }
 
 impl<P> JournalEntry<P> {
-    /// Wraps an opaque payload at an already selected logical time.
-    pub fn new(logical_time: LogicalTime, payload: P) -> Self {
+    /// Imports an opaque payload at an already assigned logical time.
+    ///
+    /// This is a low-level interoperability escape hatch. Game-facing code
+    /// should use `engine_journal::JournalWriter`, which owns timestamp
+    /// assignment.
+    pub fn from_assigned_time(logical_time: LogicalTime, payload: P) -> Self {
         Self {
             logical_time,
             payload,
@@ -46,8 +50,11 @@ impl<P> Journal<P> {
         }
     }
 
-    /// Creates a journal while preserving the supplied append order.
-    pub fn from_entries(entries: impl IntoIterator<Item = JournalEntry<P>>) -> Self {
+    /// Imports already timestamped entries in the supplied append order.
+    ///
+    /// This is a low-level interoperability escape hatch. Game-facing code
+    /// should publish through a journal writer.
+    pub fn from_assigned_entries(entries: impl IntoIterator<Item = JournalEntry<P>>) -> Self {
         Self {
             entries: entries.into_iter().collect(),
         }

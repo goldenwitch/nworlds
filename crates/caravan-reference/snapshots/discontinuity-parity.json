@@ -2,32 +2,33 @@
   "schema": "caravan-discontinuity-projection-v2",
   "status": "implemented",
   "comparison": {
-    "basis": "Independent expected observations in tests/projection.rs",
-    "state_comparison": "Not used as a baseline; caravan_reference::state delegates to project",
-    "parity_claim": "not_established"
+    "basis": "Independent frozen expected observations in tests/parity.rs plus a test-only historical comparison",
+    "state_comparison": "Public state results are compared with hand-authored anchor observations and with the retired fold on a shared fixture",
+    "parity_claim": "established_against_frozen_corpus_and_shared_legacy_fixture"
   },
   "fold_retirement": {
     "projection_source": "crates/caravan-reference/src/projection.rs",
-    "forbidden_path": [
+    "production_forbidden_path": [
       "ProjectedWorld",
       "transition",
       "history",
       "cursor",
       "for next_tick"
     ],
-    "present": false
+    "production_path_present": false,
+    "test_only_legacy_baseline": "crates/caravan-reference/src/legacy_evaluator.rs"
   },
   "piece_projection": {
     "selection": "Immutable half-open engine pieces selected at the requested LogicalTime",
     "payload_inputs": [
-      "visible_entry_count",
+      "immutable visible journal-entry prefix",
       "tick_index_at_start",
       "journal-visible or tick-indexed projection regime"
     ],
     "forms": [
       "Exact journal-visible saucer, terrain, and actor values",
       "One-shot Farmer terminal and wheat placement thresholds",
-      "Forester direct movement and forest production form",
+      "Forester collective pre-tick occupancy and forest production form",
       "Arsonist ignition and spatial fire reachability form",
       "Fighter direct hex-distance trajectory and conflict winner resolution",
       "Arborist conversion threshold",
@@ -36,17 +37,21 @@
   },
   "independent_corpus": {
     "fixtures": [
+      "empty and created domains",
       "hand-authored behavior",
       "inside-tick equal-time journal visibility",
+      "same-tick authored terrain precedence",
+      "collective multi-forester occupancy",
       "seeded spawn boundaries",
       "actual, counterfactual, and corrected branches"
     ],
-    "query_order": "Includes backward and repeated samples",
-    "case_count": 7,
-    "expected_observations": true
+    "query_order": "Existing projection and conformance suites cover backward and repeated samples; this corpus fixes expected values for eight fixture groups",
+    "case_count": 8,
+    "expected_observations": true,
+    "test": "crates/caravan-reference/tests/parity.rs",
+    "legacy_test": "crates/caravan-reference/src/legacy_evaluator.rs"
   },
-  "remaining_gaps": [
-    "Forester movement through changing multi-actor occupancy is represented by a direct trajectory form, not a general closed temporal DSL.",
-    "Cross-rule ordering for simultaneous journal overrides and derived terrain events needs a dedicated independent corpus."
+  "limitations": [
+    "The legacy comparison is intentionally limited to a shared fixture; terrain-precedence and collective-occupancy changes are not claimed equivalent to the retired semantics."
   ]
 }

@@ -3,7 +3,7 @@
   "status": "pass",
   "command": "cargo test --manifest-path tests/conformance/Cargo.toml",
   "cases": [
-    {"id":"empty-journal","status":"pass","clause":"Initial spec: void and empty journal; exact sampled t_","test":"empty_journal_is_empty_and_owns_exact_time","artifact":"tests/conformance/src/checks.rs"},
+    {"id":"empty-journal","status":"pass","clause":"Initial spec: void and empty journal; exact sampled t_","test":"empty_journal_uses_ordinary_zero_fact_evaluation","artifact":"tests/conformance/src/checks.rs"},
     {"id":"create-saucer","status":"pass","clause":"Anchor: CreateSaucer establishes exactly 91 Void tiles","test":"create_saucer_has_91_void_tiles_and_empty_layers","artifact":"tests/conformance/src/checks.rs"},
     {"id":"journal-time","status":"pass","clause":"Journal-owned timestamps, target inclusion, postdated visibility, append order","test":"journal_timestamps_control_visibility_and_append_order","artifact":"tests/conformance/src/checks.rs"},
     {"id":"query-order","status":"pass","clause":"Direct indexed query is independent of forward, backward, and repeated query order","test":"query_order_does_not_change_a_fixed_worldline","artifact":"tests/conformance/src/checks.rs"},
