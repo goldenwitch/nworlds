@@ -6,7 +6,7 @@ use engine_journal::{Journal, JournalWriter};
 use engine_time::LogicalTime;
 
 fn time(ticks: i64) -> LogicalTime {
-    LogicalTime::from_ticks(ticks)
+    LogicalTime::from_game_ticks(ticks).expect("test game-tick times are representable")
 }
 
 fn tile(q: i32, r: i32) -> TileId {

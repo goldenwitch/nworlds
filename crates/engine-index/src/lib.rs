@@ -3,7 +3,9 @@
 use caravan_domain::GameJournalEntry;
 use engine_journal::Journal as GameJournal;
 use engine_sdk::{Context, GameState, Journal as SdkJournal, JournalEntry};
-use engine_time::{LogicalTime, GAME_TICK_PERIOD};
+use engine_time::LogicalTime;
+
+pub use engine_time::game_tick_index;
 
 /// Supplies immutable journal entries to the direct query boundary.
 pub trait JournalSource {
@@ -90,11 +92,6 @@ pub trait IndexedQuery<C, P> {
 
     /// Produces the indexed result from immutable context and journal inputs.
     fn query(&self, input: QueryInput<'_, C, P>) -> Self::Result;
-}
-
-/// Computes the discrete game-tick index for one logical-time sample.
-pub fn game_tick_index(logical_time: LogicalTime) -> i64 {
-    logical_time.ticks().div_euclid(GAME_TICK_PERIOD.ticks())
 }
 
 /// Evaluates a direct indexed query at the exact requested logical time.

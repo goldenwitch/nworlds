@@ -7,7 +7,7 @@ use engine_journal::{Journal, JournalWriter};
 use engine_lookahead::{branch_view, future, ViewKind};
 use engine_presentation::{present, LinearPlayback, Renderer};
 use engine_sdk::{Frame, GameState};
-use engine_time::{LogicalTime, Tau};
+use engine_time::{LogicalTime, Tau, TICKS_PER_LOGICAL_SECOND};
 
 fn main() {
     let empty = actual(Journal::empty());
@@ -67,6 +67,20 @@ fn main() {
         sample_later_again.payload().tick_index(),
         same_automaton_data(sample_earlier.payload(), sample_later.payload()),
         sample_later == sample_later_again,
+    );
+    let subsecond_first_time = LogicalTime::from_ticks(4 * TICKS_PER_LOGICAL_SECOND);
+    let subsecond_second_time =
+        LogicalTime::from_ticks(subsecond_first_time.ticks() + TICKS_PER_LOGICAL_SECOND / 2);
+    let subsecond_first = state(&authored, subsecond_first_time);
+    let subsecond_second = state(&authored, subsecond_second_time);
+    println!(
+        "sub-second sampling: t_=[{},{}] tick_index=[{},{}] same_automaton_data={} distinct_logical_time={}",
+        subsecond_first.logical_time().ticks(),
+        subsecond_second.logical_time().ticks(),
+        subsecond_first.payload().tick_index(),
+        subsecond_second.payload().tick_index(),
+        same_automaton_data(subsecond_first.payload(), subsecond_second.payload()),
+        subsecond_first.logical_time() != subsecond_second.logical_time(),
     );
 
     let farmer = actual(journal([
@@ -157,13 +171,7 @@ fn main() {
     let playback = LinearPlayback::one_to_one();
     print_frame(
         "actual",
-        present(
-            &authored,
-            &reference_query,
-            &playback,
-            &renderer,
-            Tau::from_ticks(10),
-        ),
+        present(&authored, &reference_query, &playback, &renderer, tau(10)),
     );
     print_frame(
         "counterfactual",
@@ -172,18 +180,12 @@ fn main() {
             &reference_query,
             &playback,
             &renderer,
-            Tau::from_ticks(10),
+            tau(10),
         ),
     );
     print_frame(
         "corrected",
-        present(
-            &corrected,
-            &reference_query,
-            &playback,
-            &renderer,
-            Tau::from_ticks(10),
-        ),
+        present(&corrected, &reference_query, &playback, &renderer, tau(10)),
     );
 }
 
@@ -252,7 +254,11 @@ fn spawn(id: u64, kind: ActorKind, tile: TileId) -> GameJournalEntry {
 }
 
 fn time(ticks: i64) -> LogicalTime {
-    LogicalTime::from_ticks(ticks)
+    LogicalTime::from_game_ticks(ticks).expect("demo game-tick times are representable")
+}
+
+fn tau(game_ticks: i64) -> Tau {
+    Tau::from_ticks(time(game_ticks).ticks())
 }
 
 fn tile(q: i32, r: i32) -> TileId {

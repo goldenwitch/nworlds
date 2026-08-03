@@ -24,7 +24,8 @@ present(worldline, playback, tau) =
 ## Settled Constraints
 
 - `LogicalTime` and `Tau` are distinct types backed by signed `i64` fixed-point
-  ticks. Tick scale and checked overflow behavior are centralized.
+  milliseconds. Tick scale and checked overflow behavior are centralized; one
+  automaton game tick remains one logical second.
 - Target-time events are included; equal-time events use journal append order.
 - Journal writing owns timestamps through a monotonic cursor:
   `advance_to(t_)`, then `record(event)`.
@@ -40,11 +41,11 @@ present(worldline, playback, tau) =
 
 ## Current Position
 
-The former Rust interval-fold prototype has been removed. Its tests and demo
-remain in repository history, but there is currently no implementation or
-Cargo workspace. The repository is intentionally at a design-to-implementation
-boundary: the next code is the direct indexed DSL, not a migration of the old
-callback engine.
+The indexed anchor implementation exists and is covered by the demo,
+conformance report, persistence, benchmarks, and compiler-boundary tests. Its
+public query is direct, but the reference oracle still contains a private
+tick-fold calculation. The next step is to replace that calculation with an
+explicit discontinuity index and piecewise projection.
 
 The packet-level delegation plan is maintained in `build.vine`: each packet
 owns a disjoint path set and can be assigned to one Luna agent. The graph makes
@@ -90,7 +91,21 @@ corrected branches use one presentation path.
 **Exit:** query order, scrub direction, repeated samples, and branch selection do
 not change states or frames.
 
-### 5. Caravan vertical slice
+### 5. Discontinuity index and piecewise projection
+
+Extract journal timestamps, game-tick boundaries, and actor/rule thresholds as
+an immutable ordered discontinuity index. Project terrain, actors, effects, and
+resources from the selected piece and requested `t_`; do not fold a current
+board through ticks. Compare the new path with the existing oracle, then delete
+the private fold after parity is proven.
+
+See [discontinuity-projection.md](proposals/discontinuity-projection.md).
+
+**Exit:** the reference oracle has no `WorkingState`/`transition` tick loop,
+and all existing anchor, conformance, demo, persistence, benchmark, and
+presentation evidence still passes.
+
+### 6. Caravan vertical slice
 
 Choose the smallest recognizable game loop that exercises one indexed quantity,
 one player event, journal writing, past/present/future lookup, lookahead, one
@@ -99,7 +114,7 @@ branch choice, and presentation.
 **Exit:** a fixed playable trace is reproducible without engine exceptions or
 hidden frame state.
 
-### 6. Proof, persistence, and performance
+### 7. Proof, persistence, and performance
 
 Build the skeptic-facing proof package: clause-to-test matrix, property tests,
 deterministic replay, and a conformance report. Then add save/load and measure
@@ -108,7 +123,7 @@ query cost, journal length, branch count, scrub latency, and frame production.
 **Exit:** every claim is executable evidence or an explicit limitation; caches
 and indexes have measured identity/invalidation rules.
 
-### 7. Compiler-checked purity hardening
+### 8. Compiler-checked purity hardening
 
 This is deliberately last, after behavior, the game slice, proof, persistence,
 and workload are known. Narrow the public boundary with closed DSL types,
@@ -129,4 +144,4 @@ still passes.
 A stage advances when its decisions are recorded, its boundary has executable
 evidence, its demo or trace is reproducible, and its outputs do not mutate an
 earlier branch or depend on frame history. Compiler evidence is required only
-at Stage 7; earlier stages document and test their limitations.
+at Stage 8; earlier stages document and test their limitations.

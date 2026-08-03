@@ -12,7 +12,7 @@ use engine_time::{LogicalTime, Tau, GAME_TICK_PERIOD, TICKS_PER_LOGICAL_SECOND};
 
 use crate::fixtures::{
     actor_id, actor_ids, journal, reference_query, seeded_worldline, snapshot_at, spawn, state,
-    terrain, tile, time, worldline, ParityAnimation, RenderValue, TraceRenderer,
+    tau, terrain, tile, time, worldline, ParityAnimation, RenderValue, TraceRenderer,
 };
 
 pub fn empty_journal_is_empty_and_owns_exact_time() {
@@ -114,13 +114,23 @@ pub fn fixed_journal_repeated_sample_is_stable() {
     let actual = worldline([(0, GameJournalEntry::create_saucer())]);
     let first = state(&actual, 4);
     let repeated = state(&actual, 4);
+    let subsecond_first_time = LogicalTime::from_ticks(4 * TICKS_PER_LOGICAL_SECOND);
+    let subsecond_second_time = LogicalTime::from_ticks(
+        subsecond_first_time.ticks() + TICKS_PER_LOGICAL_SECOND / 2,
+    );
+    let subsecond_first = caravan_reference::state(&actual, subsecond_first_time);
+    let subsecond_second = caravan_reference::state(&actual, subsecond_second_time);
 
-    assert_eq!(TICKS_PER_LOGICAL_SECOND, 1);
+    assert_eq!(TICKS_PER_LOGICAL_SECOND, 1_000);
     assert_eq!(GAME_TICK_PERIOD, time(1));
     assert_eq!(game_tick_index(time(4)), 4);
     assert_eq!(first.logical_time(), time(4));
     assert_eq!(repeated.logical_time(), time(4));
     assert_eq!(first.payload(), repeated.payload());
+    assert_eq!(game_tick_index(subsecond_first.logical_time()), 4);
+    assert_eq!(game_tick_index(subsecond_second.logical_time()), 4);
+    assert_eq!(subsecond_first.payload(), subsecond_second.payload());
+    assert_ne!(subsecond_first.logical_time(), subsecond_second.logical_time());
     assert_eq!(actual.journal().len(), 1);
 }
 
@@ -368,34 +378,34 @@ pub fn presentation_supports_scrubbing_branches_and_repeatable_animation() {
         &reference_query,
         &forward,
         &renderer,
-        Tau::from_ticks(5),
+        tau(5),
     );
     let reverse_frame = present(
         &parent,
         &reference_query,
         &reverse,
         &renderer,
-        Tau::from_ticks(2),
+        tau(2),
     );
     let scrubbed_frame = present(
         &parent,
         &reference_query,
         &forward,
         &renderer,
-        Tau::from_ticks(2),
+        tau(2),
     );
     let repeated_frame = present(
         &parent,
         &reference_query,
         &forward,
         &renderer,
-        Tau::from_ticks(5),
+        tau(5),
     );
 
-    assert_eq!(forward_frame.tau(), Tau::from_ticks(5));
-    assert_eq!(forward_frame.payload().sampled_time, 5);
-    assert_eq!(reverse_frame.payload().sampled_time, 3);
-    assert_eq!(scrubbed_frame.payload().sampled_time, 2);
+    assert_eq!(forward_frame.tau(), tau(5));
+    assert_eq!(forward_frame.payload().sampled_time, time(5).ticks());
+    assert_eq!(reverse_frame.payload().sampled_time, time(3).ticks());
+    assert_eq!(scrubbed_frame.payload().sampled_time, time(2).ticks());
     assert!(scrubbed_frame.payload().actor_ids.is_empty());
     assert_eq!(forward_frame, repeated_frame);
     assert_eq!(parent, original_parent);
@@ -446,21 +456,21 @@ pub fn presentation_supports_scrubbing_branches_and_repeatable_animation() {
         &reference_query,
         &forward,
         &renderer,
-        Tau::from_ticks(4),
+        tau(4),
     );
     let counterfactual_frame = present(
         &counterfactual,
         &reference_query,
         &forward,
         &renderer,
-        Tau::from_ticks(4),
+        tau(4),
     );
     let corrected_frame = present(
         &corrected,
         &reference_query,
         &forward,
         &renderer,
-        Tau::from_ticks(4),
+        tau(4),
     );
     assert_eq!(actual_frame.payload().actor_ids, vec![1]);
     assert_eq!(counterfactual_frame.payload().actor_ids, vec![2]);
@@ -476,11 +486,12 @@ pub fn demo_trace_contains_the_anchor_observables() {
         "create saucer: journal_t_=0 radius=5 tiles=91 void=91",
         "postdated spawn: t_=9 actors=[]; t_=10 actors=[1]",
         "arbitrary sampling: t_=[10,2,10]",
+        "sub-second sampling: t_=[4000,4500] tick_index=[4,4] same_automaton_data=true distinct_logical_time=true",
         "three layers: t_=1 tile=(1, 0)",
         "seeded journal: seed=0xCAFE horizon=20",
         "lookahead: fixed_entries=7 t_=30",
-        "branch views: actual=Actual fork=- counterfactual=Counterfactual fork=5 corrected=Corrected fork=5",
-        "presentation actual: sdk_tau=10 game_t_=10",
+        "branch views: actual=Actual fork=- counterfactual=Counterfactual fork=5000 corrected=Corrected fork=5000",
+        "presentation actual: sdk_tau=10000 game_t_=10000",
     ] {
         assert!(trace.contains(line), "demo trace is missing: {line}");
     }

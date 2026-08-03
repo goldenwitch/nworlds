@@ -23,7 +23,6 @@
     {"id":"demo-trace","status":"pass","clause":"Runnable demo trace exposes the anchor observables","test":"demo_trace_contains_the_anchor_observables","artifact":"crates/caravan-demo/snapshots/anchor-trace.txt"}
   ],
   "gaps": [
-    {"id":"sub-tick-sampling","status":"partial","description":"The anchor uses one logical tick per game tick and TICKS_PER_LOGICAL_SECOND is 1, so no two distinct representable t_ values lie inside one game-tick interval. Repeated fixed-time samples are proven; distinct sub-tick stability remains unexercised."},
     {"id":"compiler-purity","status":"deferred","description":"Runtime equality and immutable public values provide behavioral evidence, but ordinary tests cannot prove that arbitrary Rust code is pure or prevent callback injection. The roadmap defers compiler-checked purity hardening."},
     {"id":"static-time-distinction","status":"partial","description":"LogicalTime and Tau are separate public types and are exercised through their APIs; this package does not add compile-fail evidence for accidental interchange."}
   ]

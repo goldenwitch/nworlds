@@ -1,6 +1,7 @@
 use core::fmt;
 
-/// A presentation-time value represented by signed fixed-point ticks.
+/// A presentation-time value represented by signed fixed-point ticks at the
+/// same resolution as `LogicalTime`.
 #[repr(transparent)]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Tau(i64);
@@ -121,5 +122,13 @@ mod tests {
     #[test]
     fn arbitrary_negative_values_are_supported() {
         assert_eq!(Tau::from_ticks(-9_876_543_210).ticks(), -9_876_543_210);
+    }
+
+    #[test]
+    fn distinct_subsecond_ticks_are_representable() {
+        let half_second = Tau::from_ticks(crate::TICKS_PER_LOGICAL_SECOND / 2);
+
+        assert_ne!(Tau::zero(), half_second);
+        assert_eq!(half_second.ticks(), 500);
     }
 }

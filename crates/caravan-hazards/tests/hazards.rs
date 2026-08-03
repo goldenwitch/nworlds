@@ -32,7 +32,12 @@ where
     let context = Context::new(());
     let journal = SdkJournal::<GameJournalEntry>::empty();
 
-    state(&context, &journal, LogicalTime::from_ticks(tick), query)
+    state(
+        &context,
+        &journal,
+        LogicalTime::from_game_ticks(tick).expect("hazard test game-tick times are representable"),
+        query,
+    )
 }
 
 #[test]

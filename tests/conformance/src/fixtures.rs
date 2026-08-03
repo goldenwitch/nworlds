@@ -6,7 +6,11 @@ use engine_sdk::GameState;
 use engine_time::{LogicalTime, Tau};
 
 pub fn time(ticks: i64) -> LogicalTime {
-    LogicalTime::from_ticks(ticks)
+    LogicalTime::from_game_ticks(ticks).expect("conformance game-tick times are representable")
+}
+
+pub fn tau(game_ticks: i64) -> Tau {
+    Tau::from_ticks(time(game_ticks).ticks())
 }
 
 pub fn tile(q: i32, r: i32) -> TileId {

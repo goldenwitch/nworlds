@@ -40,7 +40,9 @@ pub fn try_generate_spawn_journal(
     seed: u64,
     horizon_game_ticks: u64,
 ) -> Result<Journal, SeededJournalError> {
-    if horizon_game_ticks > i64::MAX as u64 {
+    if horizon_game_ticks > i64::MAX as u64
+        || LogicalTime::from_game_ticks(horizon_game_ticks as i64).is_none()
+    {
         return Err(SeededJournalError::HorizonExceedsLogicalTime { horizon_game_ticks });
     }
 
@@ -69,7 +71,10 @@ pub fn try_generate_spawn_journal(
     for batch in 1..=spawn_batches {
         let spawn_time = batch * SPAWN_PERIOD_GAME_TICKS;
         writer
-            .advance_to(LogicalTime::from_ticks(spawn_time as i64))
+            .advance_to(
+                LogicalTime::from_game_ticks(spawn_time as i64)
+                    .expect("generated spawn times are representable"),
+            )
             .expect("generated spawn times are monotonic");
 
         for _ in 0..ACTORS_PER_SPAWN {
@@ -251,15 +256,15 @@ mod tests {
                 panic!("generated entries after CreateSaucer must be spawns");
             };
 
-            let ticks = entry.logical_time().ticks();
-            assert!(ticks >= SPAWN_PERIOD_GAME_TICKS as i64);
-            assert!(ticks <= horizon as i64);
-            assert_eq!(ticks % SPAWN_PERIOD_GAME_TICKS as i64, 0);
+            let game_ticks = entry.logical_time().game_tick_index();
+            assert!(game_ticks >= SPAWN_PERIOD_GAME_TICKS as i64);
+            assert!(game_ticks <= horizon as i64);
+            assert_eq!(game_ticks % SPAWN_PERIOD_GAME_TICKS as i64, 0);
             assert_eq!(*kind, SEEDED_ACTOR_KIND);
             assert!(saucer.tiles().contains(tile));
             assert!(occupied.insert(*tile));
             assert!(actor_ids.insert(*id));
-            *entries_per_time.entry(ticks).or_insert(0) += 1;
+            *entries_per_time.entry(game_ticks).or_insert(0) += 1;
         }
 
         assert_eq!(entries_per_time.len(), horizon as usize / 10);

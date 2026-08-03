@@ -6,7 +6,7 @@ use engine_lookahead::{branch_view, future, ViewKind};
 use engine_time::LogicalTime;
 
 fn time(ticks: i64) -> LogicalTime {
-    LogicalTime::from_ticks(ticks)
+    LogicalTime::from_game_ticks(ticks).expect("lookahead test game-tick times are representable")
 }
 
 fn actor_id(value: u64) -> ActorId {

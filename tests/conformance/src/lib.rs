@@ -21,11 +21,6 @@ pub struct Gap {
 
 pub const GAPS: &[Gap] = &[
     Gap {
-        id: "sub-tick-sampling",
-        status: "partial",
-        description: "The anchor uses one logical tick per game tick and TICKS_PER_LOGICAL_SECOND is 1, so no two distinct representable t_ values lie inside one game-tick interval. Repeated fixed-time samples are proven; distinct sub-tick stability remains unexercised.",
-    },
-    Gap {
         id: "compiler-purity",
         status: "deferred",
         description: "Runtime equality and immutable public values provide behavioral evidence, but ordinary tests cannot prove that arbitrary Rust code is pure or prevent callback injection. The roadmap defers compiler-checked purity hardening.",

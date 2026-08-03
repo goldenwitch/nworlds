@@ -16,6 +16,19 @@ impl LogicalTime {
         self.0
     }
 
+    /// Constructs logical time at a game-tick boundary if it is representable.
+    pub const fn from_game_ticks(game_ticks: i64) -> Option<Self> {
+        match game_ticks.checked_mul(crate::TICKS_PER_LOGICAL_SECOND) {
+            Some(ticks) => Some(Self::from_ticks(ticks)),
+            None => None,
+        }
+    }
+
+    /// Returns the floor-indexed automaton game tick containing this sample.
+    pub const fn game_tick_index(self) -> i64 {
+        self.0.div_euclid(crate::TICKS_PER_LOGICAL_SECOND)
+    }
+
     /// Returns logical time zero.
     pub const fn zero() -> Self {
         Self(0)
@@ -144,10 +157,17 @@ mod tests {
 
     #[test]
     fn game_tick_anchor_is_one_logical_second() {
-        assert_eq!(TICKS_PER_LOGICAL_SECOND, 1);
+        assert_eq!(TICKS_PER_LOGICAL_SECOND, 1_000);
         assert_eq!(
             GAME_TICK_PERIOD,
-            LogicalTime::from_ticks(TICKS_PER_LOGICAL_SECOND)
+            LogicalTime::from_game_ticks(1).expect("one game tick is representable")
         );
+        assert_eq!(LogicalTime::from_ticks(999).game_tick_index(), 0);
+        assert_eq!(LogicalTime::from_ticks(1_000).game_tick_index(), 1);
+    }
+
+    #[test]
+    fn game_tick_conversion_reports_fixed_point_overflow() {
+        assert_eq!(LogicalTime::from_game_ticks(i64::MAX), None);
     }
 }

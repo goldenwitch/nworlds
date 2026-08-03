@@ -158,7 +158,8 @@ fn evaluate(input: QueryInput<'_, ReferenceContext, GameJournalEntry>) -> Snapsh
     let mut history = vec![working.vegetation_snapshot(0)];
 
     for next_tick in 1..=target_tick {
-        let next_time = LogicalTime::from_ticks(next_tick);
+        let next_time = LogicalTime::from_game_ticks(next_tick)
+            .expect("the selected game-tick boundary is representable");
         while cursor < visible_entries.len() && visible_entries[cursor].0 < next_time {
             working.apply_entry(&visible_entries[cursor].1, context);
             cursor += 1;

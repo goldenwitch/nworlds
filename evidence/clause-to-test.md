@@ -18,7 +18,7 @@ test additionally checks the complete stdout trace against
 | Journal-owned creation and 91 tiles | `create-saucer` | `checks.rs` | Runtime pass |
 | Target inclusion, postdating, equal-time order | `journal-time` | `checks.rs` | Runtime pass |
 | Arbitrary and non-monotonic query order | `query-order` | `checks.rs` | Runtime pass |
-| Fixed-journal stability without a crossed boundary | `within-tick` | `checks.rs` | Partial: repeated exact sample; no distinct sub-tick values exist |
+| Fixed-journal stability without a crossed boundary | `within-tick` | `checks.rs` | Runtime pass: distinct 4,000/4,500 fixed-point samples share tick 4 and automaton data while retaining distinct logical times |
 | Exact journal-time discontinuity | `journal-discontinuity` | `checks.rs` | Runtime pass |
 | Independent terrain, actor, and effect layers | `layer-separation` | `checks.rs` | Runtime pass |
 | Farmer, wheat, forester, fire, fighter, arborist differences | `farmer`, `wheat`, `forester`, `arsonist-fire`, `fighter`, `arborist` | `checks.rs` | Runtime pass |
@@ -30,9 +30,6 @@ test additionally checks the complete stdout trace against
 
 ## Explicit Gaps
 
-- Distinct samples inside one game tick cannot be represented by the current
-  `TICKS_PER_LOGICAL_SECOND = 1` anchor, so the stability case records the
-  available repeated-sample evidence and the limitation.
 - Runtime tests cannot establish compiler-enforced purity, forbidden callback
   injection, or mutation impossibility. The roadmap places those checks in the
   later purity-hardening stage.

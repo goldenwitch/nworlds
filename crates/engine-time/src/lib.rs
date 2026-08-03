@@ -13,3 +13,8 @@ pub const TICKS_PER_LOGICAL_SECOND: i64 = scale::TICKS_PER_LOGICAL_SECOND;
 /// The anchor relation for the cellular automata: one game tick is one logical
 /// second/unit.
 pub const GAME_TICK_PERIOD: LogicalTime = LogicalTime::from_ticks(scale::GAME_TICK_PERIOD_TICKS);
+
+/// Computes the floor-indexed automaton game tick containing a logical sample.
+pub const fn game_tick_index(logical_time: LogicalTime) -> i64 {
+    logical_time.game_tick_index()
+}

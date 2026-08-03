@@ -1,2 +1,2 @@
-pub(crate) const TICKS_PER_LOGICAL_SECOND: i64 = 1;
+pub(crate) const TICKS_PER_LOGICAL_SECOND: i64 = 1_000;
 pub(crate) const GAME_TICK_PERIOD_TICKS: i64 = TICKS_PER_LOGICAL_SECOND;
