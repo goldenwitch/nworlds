@@ -1,0 +1,9 @@
+[package]
+name = "engine-journal"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+caravan-domain = { path = "../caravan-domain" }
+engine-sdk = { path = "../engine-sdk" }
+engine-time = { path = "../engine-time" }

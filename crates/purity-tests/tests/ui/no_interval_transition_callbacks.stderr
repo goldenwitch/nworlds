@@ -1,0 +1,16 @@
+error[E0061]: this function takes 2 arguments but 3 arguments were supplied
+ --> tests/ui/no_interval_transition_callbacks.rs:9:5
+  |
+9 |     state(&worldline, LogicalTime::zero(), interval_transition);
+  |     ^^^^^                                  ------------------- unexpected argument #3 of type `for<'a> fn(&'a mut (), LogicalTime, LogicalTime) {interval_transition}`
+  |
+note: function defined here
+ --> $WORKSPACE/crates/caravan-reference/src/lib.rs
+  |
+  | pub fn state(worldline: &ReferenceWorldline, logical_time: LogicalTime) -> State {
+  |        ^^^^^
+help: remove the extra argument
+  |
+9 -     state(&worldline, LogicalTime::zero(), interval_transition);
+9 +     state(&worldline, LogicalTime::zero());
+  |

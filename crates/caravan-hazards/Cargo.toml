@@ -1,0 +1,12 @@
+[package]
+name = "caravan-hazards"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+caravan-domain = { path = "../caravan-domain" }
+engine-index = { path = "../engine-index" }
+
+[dev-dependencies]
+engine-sdk = { path = "../engine-sdk" }
+engine-time = { path = "../engine-time" }

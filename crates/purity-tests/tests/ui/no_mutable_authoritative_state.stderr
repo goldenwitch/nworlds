@@ -1,0 +1,23 @@
+error[E0599]: no method named `journal_mut` found for struct `engine_branches::branch::Branch<C>` in the current scope
+ --> tests/ui/no_mutable_authoritative_state.rs:8:15
+  |
+8 |     worldline.journal_mut().clear();
+  |               ^^^^^^^^^^^
+  |
+help: there is a method `journal` with a similar name
+  |
+8 -     worldline.journal_mut().clear();
+8 +     worldline.journal().clear();
+  |
+
+error[E0599]: no method named `payload_mut` found for struct `engine_sdk::game_state::GameState<P>` in the current scope
+  --> tests/ui/no_mutable_authoritative_state.rs:11:13
+   |
+11 |     sampled.payload_mut();
+   |             ^^^^^^^^^^^
+   |
+help: there is a method `payload` with a similar name
+   |
+11 -     sampled.payload_mut();
+11 +     sampled.payload();
+   |

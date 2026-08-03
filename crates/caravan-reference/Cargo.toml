@@ -1,0 +1,15 @@
+[package]
+name = "caravan-reference"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+caravan-domain = { path = "../caravan-domain" }
+caravan-hazards = { path = "../caravan-hazards" }
+caravan-seeded = { path = "../caravan-seeded" }
+caravan-vegetation = { path = "../caravan-vegetation" }
+engine-branches = { path = "../engine-branches" }
+engine-index = { path = "../engine-index" }
+engine-journal = { path = "../engine-journal" }
+engine-sdk = { path = "../engine-sdk" }
+engine-time = { path = "../engine-time" }

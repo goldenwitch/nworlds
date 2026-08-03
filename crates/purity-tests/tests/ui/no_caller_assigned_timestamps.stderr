@@ -1,0 +1,5 @@
+error[E0616]: field `logical_time` of struct `engine_sdk::journal::JournalEntry` is private
+ --> tests/ui/no_caller_assigned_timestamps.rs:8:11
+  |
+8 |     entry.logical_time = LogicalTime::from_ticks(7);
+  |           ^^^^^^^^^^^^ private field

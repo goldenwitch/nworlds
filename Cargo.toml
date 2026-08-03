@@ -1,0 +1,3 @@
+[workspace]
+members = ["crates/engine-time", "crates/engine-sdk", "crates/caravan-domain", "crates/engine-journal", "crates/engine-branches", "crates/engine-index", "crates/caravan-vegetation", "crates/caravan-hazards", "crates/caravan-seeded", "crates/caravan-reference", "crates/engine-lookahead", "crates/engine-presentation", "crates/caravan-demo", "crates/engine-persistence", "crates/engine-benchmarks", "crates/engine-api", "crates/purity-tests"]
+resolver = "2"

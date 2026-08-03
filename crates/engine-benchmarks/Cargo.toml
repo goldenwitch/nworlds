@@ -1,0 +1,15 @@
+[package]
+name = "engine-benchmarks"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+caravan-domain = { path = "../caravan-domain" }
+caravan-reference = { path = "../caravan-reference" }
+caravan-seeded = { path = "../caravan-seeded" }
+engine-branches = { path = "../engine-branches" }
+engine-journal = { path = "../engine-journal" }
+engine-presentation = { path = "../engine-presentation" }
+engine-sdk = { path = "../engine-sdk" }
+engine-time = { path = "../engine-time" }

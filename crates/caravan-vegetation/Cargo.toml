@@ -1,0 +1,9 @@
+[package]
+name = "caravan-vegetation"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+caravan-domain = { path = "../caravan-domain" }
+engine-index = { path = "../engine-index" }
+engine-time = { path = "../engine-time" }

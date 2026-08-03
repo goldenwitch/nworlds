@@ -1,0 +1,11 @@
+[package]
+name = "engine-persistence"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+caravan-domain = { path = "../caravan-domain" }
+caravan-reference = { path = "../caravan-reference" }
+engine-branches = { path = "../engine-branches" }
+engine-journal = { path = "../engine-journal" }
+engine-sdk = { path = "../engine-sdk" }

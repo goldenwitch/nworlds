@@ -1,0 +1,15 @@
+caravan anchor demo
+empty journal: saucer=false tiles=0 void=0 actors=0 effects=0 wheat=0 wood=0
+create saucer: journal_t_=0 radius=5 tiles=91 void=91 actors=0 effects=0
+journal-owned timestamps: CreateSaucer@t_=0 SpawnActor(id=1)@t_=10
+postdated spawn: t_=9 actors=[]; t_=10 actors=[1]
+arbitrary sampling: t_=[10,2,10] tick_index=[10,2,10] game_tick_period=1s same_data_at_2_and_10=false repeated_t10=true
+farmer result: t_=0 actors=[1] -> t_=1 actors=[] wheat_tiles=6 wheat_resource=6
+three layers: t_=1 tile=(1, 0) terrain=Wheat actor=3 effect=Fire(age=0)
+fire aging: t_=4 tile=(1, 0) terrain=Void actor=3 effect=None
+seeded journal: seed=0xCAFE horizon=20 entries=7 same_entries=true spawn_times=[10, 10, 10, 20, 20, 20]
+lookahead: fixed_entries=7 t_=30 tick_index=30 tiles=91 actors=0
+branch views: actual=Actual fork=- counterfactual=Counterfactual fork=5 corrected=Corrected fork=5
+presentation actual: sdk_tau=10 game_t_=10 actor_ids=[1] wheat=0 wood=0
+presentation counterfactual: sdk_tau=10 game_t_=10 actor_ids=[2] wheat=0 wood=0
+presentation corrected: sdk_tau=10 game_t_=10 actor_ids=[3] wheat=0 wood=0

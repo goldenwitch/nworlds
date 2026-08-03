@@ -1,0 +1,13 @@
+[package]
+name = "engine-lookahead"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+caravan-reference = { path = "../caravan-reference" }
+engine-branches = { path = "../engine-branches" }
+engine-time = { path = "../engine-time" }
+
+[dev-dependencies]
+caravan-domain = { path = "../caravan-domain" }
+engine-journal = { path = "../engine-journal" }
