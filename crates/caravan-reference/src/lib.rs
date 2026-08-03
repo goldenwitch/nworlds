@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
-mod evaluator;
+mod discontinuities;
+mod projection;
 mod snapshot;
 
 use caravan_domain::Saucer;
@@ -10,6 +11,11 @@ use engine_sdk::{Context, GameState};
 use engine_time::LogicalTime;
 
 pub use caravan_vegetation::IndexedTile;
+pub use discontinuities::{
+    discontinuity_index, ActorThreshold, CaravanBreakpointSource, DiscontinuityIndex, PieceInput,
+    RuleThreshold,
+};
+pub use projection::{project, project_query, project_with_index};
 pub use snapshot::Snapshot;
 
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
@@ -42,12 +48,7 @@ pub fn actual(journal: Journal) -> ReferenceWorldline {
 }
 
 pub fn state(worldline: &ReferenceWorldline, logical_time: LogicalTime) -> State {
-    engine_index::state(
-        worldline.context(),
-        worldline.journal(),
-        logical_time,
-        evaluator::Oracle,
-    )
+    project(worldline, logical_time)
 }
 
 pub fn query(
@@ -55,5 +56,5 @@ pub fn query(
     journal: &Journal,
     logical_time: LogicalTime,
 ) -> State {
-    engine_index::state(context, journal, logical_time, evaluator::Oracle)
+    project_query(context, journal, logical_time)
 }

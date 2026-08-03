@@ -1,10 +1,16 @@
 #![forbid(unsafe_code)]
 
+mod discontinuities;
+
 use caravan_domain::GameJournalEntry;
 use engine_journal::Journal as GameJournal;
 use engine_sdk::{Context, GameState, Journal as SdkJournal, JournalEntry};
 use engine_time::LogicalTime;
 
+pub use discontinuities::{
+    game_tick_boundary, Breakpoint, BreakpointSource, DiscontinuityIndex, DiscontinuityIndexError,
+    Piece, PieceBoundsError,
+};
 pub use engine_time::game_tick_index;
 
 /// Supplies immutable journal entries to the direct query boundary.

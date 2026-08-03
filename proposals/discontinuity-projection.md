@@ -1,103 +1,255 @@
 # Discontinuity Projection
 
-This proposal is the next implementation target after the indexed anchor
-prototype. The public query already has the right shape, but the reference
-oracle still computes it by folding a private `WorkingState` through ticks.
-This work replaces that hidden stepping model with explicit discontinuities and
-piecewise projection.
+This proposal freezes the discontinuity index and piecewise projection contract
+for the direct indexed query. It replaces the reference oracle's private
+tick-fold calculation without changing the public query or adding actor rules.
+All behavior referred to here is already defined by
+[cellular-automata-anchor.md](cellular-automata-anchor.md).
 
-## Target
+## Contract
+
+For one immutable worldline and its immutable context definitions:
 
 ```text
 state(worldline, t_) =
-    project(worldline, discontinuity_index(worldline), t_)
+      project(discontinuity_index(worldline), t_)
 ```
 
-A **discontinuity** is a logical-time location where an indexed result may
-change because of an authoritative journal entry, a game-tick boundary, or a
-definition-specific threshold such as fire aging or an actor's terminal action.
-Between relevant discontinuities, a projection function determines the result
-without consuming or mutating a result from another time.
+A **breakpoint** is a logical-time location at which a selected indexed value
+may change. A breakpoint is a value-level fact, not an imperative action. The
+index is an immutable derived value. It may be materialized eagerly for the
+finite anchor journal or represented lazily behind the same value/query
+boundary, but it must not mutate the worldline or depend on query history.
 
-The projection may use disposable local data while answering one query. That is
-ordinary calculation, not authoritative mutation. No query receives a prior
-`GameState`, a current board, a mutable actor, a cursor, or frame history.
+The index preserves three distinct source classes:
 
-## Boundaries
+- **Journal breakpoints**: the exact timestamp of each authoritative journal
+   entry, together with its immutable append ordinal.
+- **Tick breakpoints**: the boundaries of the one-second, phase-zero game-tick
+   grid used by the anchor.
+- **Caravan definition breakpoints**: thresholds already required by the
+   anchor's terrain, actor, effect, and resource definitions.
 
-Engine responsibilities:
+If different source classes have the same timestamp, the index retains the
+source identity and metadata. It must not replace an exact journal breakpoint
+with a tick breakpoint merely because their timestamps coincide.
 
-- represent logical-time discontinuities and ordered piecewise domains;
-- expose immutable worldline/journal inputs;
-- select the applicable piece for a requested `t_`;
-- return an SDK `GameState` carrying exact `t_`.
+## Piece Selection
 
-Caravan responsibilities:
-
-- declare which journal entries and actor definitions create discontinuities;
-- provide projection values for terrain, actors, effects, and resources;
-- define thresholds and visibility rules for the anchor actors.
-
-The engine must not turn saucers, tiles, actors, fire, or resources into SDK
-primitives. The game must not receive an engine-owned current-state object.
-
-## Required Shape
-
-The discontinuity index is a value derived from an immutable worldline. It may
-be built eagerly for the finite anchor journal or queried lazily later; that is
-an implementation choice behind the same interface.
-
-Each indexed piece needs:
+The ordered index partitions logical time into non-overlapping half-open
+pieces:
 
 ```text
-[start_t, end_t)
-projection inputs
-projection function/result definition
+piece_i = [start_t, end_t)
 ```
 
-Journal entries at an exact timestamp are visible at that timestamp. A journal
-entry inside a game tick affects the next tick-boundary behavior; an entry on a
-tick boundary participates in that tick. The index must preserve exact journal
-discontinuities separately from game-tick discontinuities.
+Each piece contains its immutable projection inputs and its projection
+definition/result definition. The first and last pieces may have an unbounded
+endpoint. For every representable query time `t_`, exactly one piece satisfies:
 
-## Initial Discontinuity Classes
+```text
+start_t <= t_ && t_ < end_t
+```
 
-The anchor needs at least:
+The selected piece owns its left boundary. The right boundary is excluded, so
+when `t_ == end_t` selection moves to the piece beginning at that timestamp.
+There are no gaps, and a breakpoint does not become an inclusive right edge of
+the preceding piece.
 
-- `CreateSaucer` at `t_=0`;
-- postdated spawn and terrain entries at their assigned times;
+Projection evaluates the selected piece against the exact requested time:
+
+```text
+piece = select(index, t_)
+game_state = piece.project(piece.inputs, t_)
+game_state.logical_time = t_
+```
+
+The returned SDK `GameState` therefore preserves the requested `LogicalTime`
+even when the projected automaton data is constant across an entire piece.
+
+## Journal Visibility and Ordering
+
+For a fixed branch, an entry `e` is visible to a query exactly when:
+
+```text
+e.timestamp <= t_
+```
+
+The target timestamp is inclusive. Entries after `t_` are invisible, including
+entries that were postdated into the immutable journal before the query was
+made. The visible sequence is ordered chronologically and, for equal
+timestamps, by the journal's append ordinal.
+
+All entries sharing a timestamp are visible at that timestamp. Their append
+order is retained as input ordering wherever an existing Caravan definition
+needs a deterministic tie-breaker. There is no secondary ordering invented
+from actor identifiers, map order, or breakpoint source kind. A tick marker at
+the same timestamp is a separate marker, not an extra journal entry and not an
+imperative operation to order before or after the journal group.
+
+## Journal and Tick Breakpoints
+
+The anchor uses a one-second game-tick period and zero phase. Let
+`P = 1,000 ms`. For every signed tick index `n`, its interval is:
+
+```text
+tick_n = [n * P, (n + 1) * P)
+
+```
+
+The division is mathematical floor division over signed logical time, not
+integer division that truncates toward zero.
+
+A journal timestamp has two distinct consequences:
+
+1. Its journal breakpoint makes the entry visible at the exact timestamp.
+2. If an existing discrete Caravan definition consumes that entry as tick
+    input, its activation occurs on the applicable tick boundary.
+
+For an entry at `e_t`, define its activation boundary as the first tick
+boundary at or after that timestamp:
+
+```text
+activate_at(e_t) = P * ceil(e_t / P)
+```
+
+Thus an entry strictly inside `tick_n` is visible from `e_t` onward, but does
+not alter the tick-derived result in `[e_t, (n + 1) * P)`. It participates in
+the next tick-boundary result beginning at `(n + 1) * P`. The index contains
+both the exact journal breakpoint `e_t` and that tick boundary.
+
+An entry whose timestamp is already a tick boundary has
+`activate_at(e_t) == e_t`. It is visible at that boundary and participates in
+that tick. The piece beginning at the boundary is consequently selected for
+the query at the boundary itself.
+
+This rule does not suppress an exact-time change to a journal-visible layer.
+For example, a direct entry value may change at an inside-tick journal
+breakpoint while the automaton-derived value remains the value for the current
+tick until the next tick breakpoint. The existing Caravan definition decides
+which layers expose which values; this proposal adds no new actor behavior.
+
+## Negative Logical Time
+
+Negative logical time uses the same signed grid and the same half-open rule.
+There is no implicit clamp to zero and no special pre-zero stepping mode. For
+example:
+
+```text
+tick_index(-1 ms)      == -1
+-1 ms                  in [-1,000 ms, 0 ms)
+activate_at(-1 ms)     == 0 ms
+activate_at(-1,001 ms) == -1,000 ms
+activate_at(-1,000 ms) == -1,000 ms
+```
+
+Queries before zero select ordinary negative-time pieces. If an existing
+Caravan definition has no value at a requested negative time, it returns that
+definition's established absent or out-of-domain result; the index does not
+invent an initial board or extrapolate a new actor rule. Checked time
+arithmetic remains the responsibility of the shared time module.
+
+## Query-Local Calculation
+
+Projection may allocate disposable local values while answering one query:
+temporary collections, derived layer values, and other pure intermediate
+calculations are allowed. They are calculation, not authoritative state, and
+are discarded after the query.
+
+The query boundary rejects temporal continuation inputs. Evaluation must not
+receive or consult:
+
+- a prior `GameState` or any other prior query result;
+- a mutable current board, actor, or resource counter;
+- a journal-writer or evaluator cursor;
+- frame, playback, or query-order history.
+
+A local calculation may inspect immutable context, the immutable branch
+journal, the selected piece, exact `t_`, and the piece's definition inputs. It
+may not turn a temporary value into a hidden tick-by-tick continuation from a
+different requested time, publish it as current state, or expose an actor
+stepping API.
+
+## Ownership Boundary
+
+The engine SDK owns the generic machinery:
+
+- `LogicalTime` ordering, checked time operations, and generic boundary
+   selection;
+- immutable worldline, journal, branch, and query-input envelopes;
+- immutable breakpoint/index and half-open piece containers;
+- selection of the unique piece for a requested `t_`;
+- the SDK `GameState` envelope carrying the exact requested time and opaque
+   game payload.
+
+The SDK may provide parameterized time-grid primitives, including the anchor's
+one-second grid, but it does not interpret their game meaning.
+
+Caravan owns the domain definitions:
+
+- which existing journal entries produce exact or tick-activation
+   breakpoints;
+- the anchor's use of the one-second tick grid and its definition-specific
+   thresholds;
+- the projection values for saucers, tiles, terrain, actors, effects, and
+   resources;
+- visibility and out-of-domain rules for those game values.
+
+The SDK must not turn saucers, tiles, terrain, actors, fire, or resources into
+engine primitives. Caravan must not receive an engine-owned current-state
+object or put game meaning into the generic breakpoint selector. Journal and
+game payloads remain distinct: the engine carries their immutable envelopes,
+while Caravan defines the payload meaning.
+
+## Existing Discontinuity Sources
+
+The first index must be able to represent the sources already present in the
+anchor:
+
+- `CreateSaucer` and postdated spawn/terrain entries at their assigned times;
 - one-second game-tick boundaries;
-- farmer terminal action;
-- forester movement decisions;
-- arborist completion at three game ticks;
-- fire ages 0, 1, 2, and 3;
-- fire spread and terrain destruction;
-- fighter collision with an arsonist;
-- resource-total integration/counting boundaries.
+- the existing farmer terminal, forester movement, and arborist completion
+   thresholds;
+- the existing fire ages, spread, and terrain-destruction thresholds;
+- the existing fighter/arsonist collision threshold;
+- existing resource counting or integration boundaries.
 
-These are locations in the indexed result, not actions performed on objects.
+These are indexed locations in returned values, never actions performed on
+objects. Each source must be traced to an existing anchor definition; this
+packet does not add or alter actor behavior.
 
 ## Work Sequence
 
-1. Freeze the discontinuity and piecewise-function contract.
-2. Extract an ordered immutable discontinuity index from the worldline and game
-   definitions.
-3. Project each game layer from the selected piece and exact `t_`.
+1. Implement the immutable source-preserving breakpoint index and half-open
+    piece selection.
+2. Project each existing game layer from the selected piece and exact `t_`.
+3. Test exact journal timestamps, inside-tick activation, boundary activation,
+    equal-time append order, negative-time samples, arbitrary query order, and
+    branch isolation.
 4. Compare projection results with the current reference oracle over generated
-   traces and arbitrary query order.
-5. Delete the private `WorkingState`/tick-fold path after parity is established.
+    traces and the existing anchor cases.
+5. Remove the private `WorkingState`/tick-fold path only after parity evidence is
+    reviewed.
 
 ## Acceptance
 
 - The public `state(worldline, t_)` API is unchanged.
-- The projection path has no prior-state or current-board input.
+- Every indexed piece is half-open `[start_t, end_t)` and boundary selection is
+   unique and gap-free.
+- Exact journal visibility is inclusive; later postdated entries are ignored.
+- Equal-time journal entries remain in append order.
+- Journal and tick breakpoints remain distinct, including when timestamps match.
+- Inside-tick entries are visible immediately but activate discrete tick input
+   at the next boundary; boundary entries activate at that boundary.
+- Negative logical times use floor-based tick selection and the same activation
+   rule without clamping to zero.
+- Projection has no prior-state, current-board, cursor, or frame-history input;
+   disposable query-local calculation is the only permitted temporary state.
 - Query order, repeated samples, and branch choice do not affect results.
-- Exact journal timestamps and one-second tick boundaries remain distinct.
-- The existing anchor, conformance, demo, persistence, and presentation tests
-  pass against the projection path.
-- The old reference fold is removed only after parity evidence is recorded.
+- Existing anchor, conformance, demo, persistence, and presentation tests pass
+   against the projection path.
+- The old reference fold is removed only after recorded parity evidence passes.
 
-Complex analysis is not required for the first implementation. If a richer
-mathematical representation becomes useful, it must preserve the same value
-boundary and remain an internal representation choice rather than a new source
-of state or mutation.
+The representation may be richer than this first implementation requires, but
+it must preserve this value boundary and remain an internal representation
+choice rather than a new source of state or mutation.

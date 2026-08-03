@@ -9,6 +9,7 @@ Execute the independent packets below. Keep SDK objects separate from Caravan ga
 -> branch-model
 -> contract-gate
 -> discontinuity-contract
+-> discontinuity-index
 -> discontinuity-parity
 -> domain-model
 -> hazard-rules
@@ -22,6 +23,7 @@ Execute the independent packets below. Keep SDK objects separate from Caravan ga
 -> purity-hardening
 -> reference-fold-retirement
 -> reference-oracle
+-> reference-projection
 -> sdk-envelopes
 -> seeded-journal
 -> vegetation-rules
@@ -39,7 +41,7 @@ Accept: The implementation packets can consume one coherent contract without imp
 > A postdated entry may be authored into the immutable journal before evaluation; queries ignore entries after their requested t_.
 > Acts, moves, destroys, ignites, and converts are indexed differences between returned values, never mutation or actor execution.
 ---
-[discontinuity-contract] Discontinuity and piecewise contract (notstarted)
+[discontinuity-contract] Discontinuity and piecewise contract (reviewing)
 Do: Freeze the discontinuity index and piecewise projection contract for the direct query path. Keep engine selection generic and immutable; keep threshold and visibility definitions in Caravan.
 Accept: The discontinuity classes, piece boundaries, exact-time rules, and engine/game ownership boundary are explicit enough for indexed selection and reference projection.
 -> contract-gate
@@ -90,9 +92,9 @@ Accept: Tests prove prefix agreement, suffix replacement, late-entry correction,
 @artifact text/plain crates/engine-branches/src/lib.rs
 ---
 [indexed-query] Direct indexed query kernel (reviewing)
-Files: crates/engine-index/**
-Do: Implement the generic direct query boundary: select the game-tick index from t_, expose journal entries visible at t_, and return a new GameState without prior-state input, stepping API, or evaluator-owned RNG. Add generic immutable breakpoint and piece selection for the requested t_. Keep the query generic over game payloads and define the extension point the Caravan reference oracle will use.
-Accept: Empty journal, saucer creation, postdated entries, arbitrary query order, within-tick stability under a fixed journal, and journal-time discontinuities are testable. No current-state or interval callback API is introduced.
+Files: crates/engine-index/src/lib.rs; crates/engine-index/tests/indexed_query.rs
+Do: Keep the generic direct query boundary: select the game-tick index from t_, expose journal entries visible at t_, and return a new GameState without prior-state input, stepping API, or evaluator-owned RNG. Do not own breakpoint data structures; those belong to discontinuity-index.
+Accept: Empty journal, saucer creation, postdated entries, arbitrary query order, within-tick stability under a fixed journal, and journal-time discontinuities remain tested. No current-state or interval callback API is introduced.
 -> domain-model
 -> journal-writer
 -> sdk-envelopes
@@ -131,22 +133,27 @@ Do not edit crates/caravan-reference/src/evaluator.rs; the old fold path is reti
 Accept: The full anchor behavior is reproducible at arbitrary t_, in non-monotonic query order, over actual/counterfactual/corrected branches, with exact GameState logical time.
 -> branch-model
 -> discontinuity-contract
+-> discontinuity-index
 -> hazard-rules
 -> indexed-query
 -> seeded-journal
 -> vegetation-rules
 @artifact text/plain crates/caravan-reference/src/lib.rs
 ---
-[discontinuity-parity] Projection parity evidence (notstarted)
-Do: Compare the discontinuity projection path with the existing reference behavior over generated traces, arbitrary query order, exact journal timestamps, tick boundaries, and actual/counterfactual/corrected branches.
+[discontinuity-parity] Projection parity evidence (blocked)
+Do: Consume the reviewed reference-projection artifacts and compare the discontinuity projection path with the existing reference behavior over generated traces, arbitrary query order, exact journal timestamps, tick boundaries, and actual/counterfactual/corrected branches.
 Accept: Parity evidence records matching public state results before the reference fold can be retired.
+> Decision: The current state() delegates to project(), so parity evidence must use a frozen independent corpus or separate baseline before review.
+@artifact application/json crates/caravan-reference/snapshots/discontinuity-parity.json
 -> reference-oracle
+-> reference-projection
 ---
-[reference-fold-retirement] Reference fold retirement (notstarted)
+[reference-fold-retirement] Reference fold retirement (reviewing)
 Files: crates/caravan-reference/src/evaluator.rs
 Do: Remove the private WorkingState and tick-fold path after discontinuity-parity is reviewed. Leave the public state(worldline, t_) API on the projection path and retain no mutable current-board or interval-stepping implementation.
 Accept: evaluator.rs no longer owns the old fold, and the existing anchor, conformance, demo, persistence, and presentation tests pass against projection results.
 -> discontinuity-parity
+> Decision: evaluator.rs is already absent, and the caravan-reference test suite passes against the projection path.
 ---
 [lookahead] Indexed lookahead and branch views (reviewing)
 Files: crates/engine-lookahead/**; consume caravan-reference and engine-branches APIs
@@ -226,3 +233,26 @@ Accept: Prohibited mutation, callback injection, caller timestamps, and publishe
 @artifact text/plain crates/purity-tests/tests/ui/no_mutable_authoritative_state.stderr
 @artifact text/plain crates/purity-tests/tests/ui/no_published_mutation.rs
 @artifact text/plain crates/purity-tests/tests/ui/no_published_mutation.stderr
+---
+[discontinuity-index] Generic discontinuity index (reviewing)
+Files: crates/engine-index/src/discontinuities.rs; crates/engine-index/tests/discontinuities.rs
+Do: Implement immutable, engine-neutral breakpoint and piece selection for the requested t_. Use half-open [start_t,end_t) pieces, preserve exact journal and game-tick breakpoints as distinct sources, and make negative-time selection explicit. Do not own Caravan thresholds or game objects.
+Accept: Tests cover empty indices, before/at/after breakpoints, equal timestamps, negative time, half-open boundaries, query-order independence, and derived-index immutability.
+-> discontinuity-contract
+-> indexed-query
+@artifact text/plain crates/engine-index/src/discontinuities.rs
+@artifact text/plain crates/engine-index/tests/discontinuities.rs
+---
+[reference-projection] Caravan discontinuity projection (started)
+Files: crates/caravan-reference/src/discontinuities.rs; crates/caravan-reference/src/projection.rs; crates/caravan-reference/tests/projection.rs
+Do: Declare Caravan-specific breakpoint sources and project terrain, actors, effects, and resources from selected pieces and exact t_. Compare outputs with the existing oracle while leaving evaluator.rs untouched. Use disposable query-local values only; do not expose a current board or stepping API.
+Accept: Projection matches the current public oracle over the anchor, arbitrary query order, exact journal timestamps, game-tick boundaries, actual/counterfactual/corrected branches, and sub-tick samples.
+> Decision: This must be a genuine piecewise projection; the current WorkingState/tick fold must be removed rather than renamed.
+> Decision: Remaining gaps are dynamic multi-actor occupancy and simultaneous journal/derived ordering; keep this task started until the contract and tests cover both.
+-> discontinuity-index
+-> hazard-rules
+-> reference-oracle
+-> vegetation-rules
+@artifact text/plain crates/caravan-reference/src/discontinuities.rs
+@artifact text/plain crates/caravan-reference/src/projection.rs
+@artifact text/plain crates/caravan-reference/tests/projection.rs
