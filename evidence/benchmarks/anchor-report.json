@@ -21,16 +21,16 @@
   ],
   "results": {
     "direct_reference_query": [
-{"name":"empty@7","samples":10000,"operations_per_sample":1,"total_nanos":18252800,"min_ns_per_operation":1500.00,"mean_ns_per_operation":1825.28,"max_ns_per_operation":151200.00},
-{"name":"authored@10","samples":10000,"operations_per_sample":1,"total_nanos":301916900,"min_ns_per_operation":25200.00,"mean_ns_per_operation":30191.69,"max_ns_per_operation":553500.00},
-{"name":"seeded@30","samples":10000,"operations_per_sample":1,"total_nanos":1036927700,"min_ns_per_operation":85700.00,"mean_ns_per_operation":103692.77,"max_ns_per_operation":694000.00},
-{"name":"behavior@4","samples":10000,"operations_per_sample":1,"total_nanos":315629400,"min_ns_per_operation":25600.00,"mean_ns_per_operation":31562.94,"max_ns_per_operation":479700.00}
+{"name":"empty@7","samples":10000,"operations_per_sample":1,"total_nanos":17481200,"min_ns_per_operation":1500.00,"mean_ns_per_operation":1748.12,"max_ns_per_operation":51100.00},
+{"name":"authored@10","samples":10000,"operations_per_sample":1,"total_nanos":347397500,"min_ns_per_operation":27700.00,"mean_ns_per_operation":34739.75,"max_ns_per_operation":278500.00},
+{"name":"seeded@30","samples":10000,"operations_per_sample":1,"total_nanos":1941608400,"min_ns_per_operation":150600.00,"mean_ns_per_operation":194160.84,"max_ns_per_operation":40153900.00},
+{"name":"behavior@4","samples":10000,"operations_per_sample":1,"total_nanos":811496000,"min_ns_per_operation":46500.00,"mean_ns_per_operation":81149.60,"max_ns_per_operation":2745600.00}
     ],
-    "scrub_query_latency": {"name":"seeded-non-monotonic-scrub","samples":10000,"operations_per_sample":8,"total_nanos":4735140300,"min_ns_per_operation":48837.50,"mean_ns_per_operation":59189.25,"max_ns_per_operation":5028775.00},
+    "scrub_query_latency": {"name":"seeded-non-monotonic-scrub","samples":10000,"operations_per_sample":8,"total_nanos":15050325100,"min_ns_per_operation":151875.00,"mean_ns_per_operation":188129.06,"max_ns_per_operation":5242012.50},
     "frame_production": [
-{"name":"actual","samples":10000,"operations_per_sample":6,"total_nanos":1088254800,"min_ns_per_operation":14766.67,"mean_ns_per_operation":18137.58,"max_ns_per_operation":6698716.67},
-{"name":"counterfactual","samples":10000,"operations_per_sample":6,"total_nanos":1144323300,"min_ns_per_operation":16150.00,"mean_ns_per_operation":19072.06,"max_ns_per_operation":93516.67},
-{"name":"corrected","samples":10000,"operations_per_sample":6,"total_nanos":1227923700,"min_ns_per_operation":16083.33,"mean_ns_per_operation":20465.40,"max_ns_per_operation":5506700.00}
+{"name":"actual","samples":10000,"operations_per_sample":6,"total_nanos":2145358500,"min_ns_per_operation":28983.33,"mean_ns_per_operation":35755.97,"max_ns_per_operation":198283.33},
+{"name":"counterfactual","samples":10000,"operations_per_sample":6,"total_nanos":2171853600,"min_ns_per_operation":28883.33,"mean_ns_per_operation":36197.56,"max_ns_per_operation":194200.00},
+{"name":"corrected","samples":10000,"operations_per_sample":6,"total_nanos":3187592400,"min_ns_per_operation":41650.00,"mean_ns_per_operation":53126.54,"max_ns_per_operation":6744450.00}
     ]
   }
 }

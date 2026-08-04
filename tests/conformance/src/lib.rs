@@ -21,15 +21,43 @@ pub struct Gap {
 
 pub const GAPS: &[Gap] = &[
     Gap {
-        id: "compiler-purity",
-        status: "deferred",
-        description: "Runtime equality and immutable public values provide behavioral evidence, but ordinary tests cannot prove that arbitrary Rust code is pure or prevent callback injection. The roadmap defers compiler-checked purity hardening.",
+        id: "presentation-extension-trust",
+        status: "explicit",
+        description: "The authoritative engine boundary has compiler-checked purity evidence. Rust cannot prove arbitrary QueryAdapter, Renderer, or Animation extension bodies have no side effects; those implementations are trusted extensions receiving immutable values and returning owned values.",
     },
     Gap {
         id: "static-time-distinction",
         status: "partial",
         description: "LogicalTime and Tau are separate public types and are exercised through their APIs; this package does not add compile-fail evidence for accidental interchange.",
     },
+];
+
+pub const SUPPLEMENTAL_CASES: &[(&str, &str, &str)] = &[
+    (
+        "indexed-tick-boundaries",
+        "sampled_index_includes_each_game_tick_boundary_through_sample",
+        "crates/caravan-reference/src/discontinuities.rs",
+    ),
+    (
+        "trajectory-horizon",
+        "reusable_index_rejects_samples_beyond_its_trajectory_horizon",
+        "crates/caravan-reference/tests/projection.rs",
+    ),
+    (
+        "cross-rule-composition",
+        "projection_fire_sees_farmer_derived_wheat_on_the_same_tick",
+        "crates/caravan-reference/tests/projection.rs",
+    ),
+    (
+        "bounded-projection-parity",
+        "legacy_fold_matches_projection_on_shared_fixture; frozen_expected_corpus_matches_the_projection",
+        "crates/caravan-reference/src/legacy_evaluator.rs; crates/caravan-reference/tests/parity.rs",
+    ),
+    (
+        "timestamp-facade",
+        "no_low_level_timestamp_import",
+        "crates/purity-tests/tests/ui/no_low_level_timestamp_import.rs",
+    ),
 ];
 
 pub fn cases() -> &'static [Case] {

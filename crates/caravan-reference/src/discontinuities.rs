@@ -7,6 +7,9 @@ use engine_index::{
 use engine_journal::{Journal, JournalEntry};
 use engine_time::{game_tick_index, LogicalTime};
 
+use crate::projection::{build_actor_trajectory, ActorTrajectory};
+use crate::ReferenceContext;
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ActorThreshold {
     FarmerTerminal,
@@ -47,6 +50,7 @@ pub enum CaravanBreakpointSource {
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct PieceInput {
     visible_entries: Arc<[JournalEntry]>,
+    actor_trajectory: Arc<ActorTrajectory>,
     tick_index_at_start: Option<i64>,
     projection: PieceProjection,
 }
@@ -64,6 +68,10 @@ impl PieceInput {
 
     pub fn visible_entry_count(&self) -> usize {
         self.visible_entries.len()
+    }
+
+    pub(crate) fn actor_trajectory(&self) -> &ActorTrajectory {
+        &self.actor_trajectory
     }
 
     pub const fn tick_index_at_start(&self) -> Option<i64> {
@@ -188,6 +196,20 @@ impl DiscontinuityIndex {
             tick_indices.insert(game_tick_index(logical_time));
         }
 
+        if let (Some(first_tick), Some(last_tick)) = (
+            tick_indices.iter().next().copied(),
+            tick_indices.iter().next_back().copied(),
+        ) {
+            for tick_index in first_tick..=last_tick {
+                tick_indices.insert(tick_index);
+            }
+        }
+
+        let trajectory_target_tick = sample_time
+            .map(game_tick_index)
+            .or_else(|| tick_indices.iter().next_back().copied())
+            .unwrap_or(0);
+
         for tick_index in tick_indices {
             let Some(logical_time) = LogicalTime::from_game_ticks(tick_index) else {
                 continue;
@@ -241,6 +263,11 @@ impl DiscontinuityIndex {
 
                 PieceInput {
                     visible_entries: Arc::from(entries[..visible_entry_count].to_vec()),
+                    actor_trajectory: Arc::new(build_actor_trajectory(
+                        ReferenceContext::new(),
+                        &entries[..visible_entry_count],
+                        trajectory_target_tick,
+                    )),
                     tick_index_at_start: start_t.map(game_tick_index),
                     projection: match start_t.map(game_tick_index) {
                         Some(tick_index) if tick_index >= 0 => PieceProjection::TickIndexed,
@@ -268,5 +295,31 @@ fn actor_threshold(kind: ActorKind) -> Option<ActorThreshold> {
         ActorKind::Arsonist => Some(ActorThreshold::ArsonistIgnition),
         ActorKind::Fighter => Some(ActorThreshold::FighterCollision),
         ActorKind::Arborist => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::DiscontinuityIndex;
+    use caravan_domain::GameJournalEntry;
+    use engine_journal::JournalWriter;
+    use engine_time::LogicalTime;
+
+    #[test]
+    fn sampled_index_includes_each_game_tick_boundary_through_sample() {
+        let mut writer = JournalWriter::new();
+        writer.record(GameJournalEntry::create_saucer());
+        let journal = writer.finish();
+        let sample = LogicalTime::from_game_ticks(4).expect("sample is representable");
+        let index = DiscontinuityIndex::for_sample(&journal, sample);
+
+        for tick_index in 0..=4 {
+            let boundary =
+                LogicalTime::from_game_ticks(tick_index).expect("tick boundary is representable");
+            assert!(
+                index.boundary_times().contains(&boundary),
+                "missing game-tick boundary {tick_index}"
+            );
+        }
     }
 }

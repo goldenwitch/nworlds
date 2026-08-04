@@ -29,6 +29,7 @@
       "Exact journal-visible saucer, terrain, and actor values",
       "One-shot Farmer terminal and wheat placement thresholds",
       "Forester collective pre-tick occupancy and forest production form",
+      "Piece-owned actor trajectory sampling and explicit reusable-index horizon",
       "Arsonist ignition and spatial fire reachability form",
       "Fighter direct hex-distance trajectory and conflict winner resolution",
       "Arborist conversion threshold",

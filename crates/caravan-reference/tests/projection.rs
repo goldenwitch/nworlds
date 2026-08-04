@@ -1,7 +1,7 @@
 use caravan_domain::{ActorId, ActorKind, GameJournalEntry, Terrain, TileId};
 use caravan_reference::{
-    actual, discontinuity_index, project, project_with_index, ActorThreshold,
-    CaravanBreakpointSource, RuleThreshold,
+    actual, discontinuity_index, project, project_with_index, try_project_with_index,
+    ActorThreshold, CaravanBreakpointSource, ProjectionError, RuleThreshold,
 };
 use caravan_seeded::{generate_spawn_journal, hand_authored_behavior_fixture};
 use engine_branches::BranchKind;
@@ -173,6 +173,25 @@ fn projection_applies_authored_terrain_before_derived_terrain_at_one_tick() {
 }
 
 #[test]
+fn projection_fire_sees_farmer_derived_wheat_on_the_same_tick() {
+    let worldline = actual(journal(&[
+        (0, GameJournalEntry::create_saucer()),
+        (0, spawn(1, ActorKind::Farmer, TileId::origin())),
+        (0, spawn(2, ActorKind::Arsonist, tile(3, 0))),
+    ]));
+
+    let at_one = project(&worldline, game_time(1));
+    assert_eq!(
+        at_one.payload().terrain_at(tile(2, 0)),
+        Some(Terrain::Wheat)
+    );
+    assert_eq!(
+        at_one.payload().effect_at(tile(2, 0)),
+        Some(caravan_domain::Effect::fire(0))
+    );
+}
+
+#[test]
 fn projection_moves_foresters_from_shared_pre_tick_occupancy() {
     let worldline = actual(journal(&[
         (0, GameJournalEntry::create_saucer()),
@@ -332,6 +351,25 @@ fn projection_uses_an_immutable_piece_index_with_caravan_sources() {
 }
 
 #[test]
+fn reusable_index_rejects_samples_beyond_its_trajectory_horizon() {
+    let journal = journal(&[
+        (0, GameJournalEntry::create_saucer()),
+        (0, spawn(1, ActorKind::Forester, TileId::origin())),
+        (0, terrain(tile(1, 0), Terrain::Forest)),
+    ]);
+    let index = discontinuity_index(&journal);
+    let context = Context::new(caravan_reference::ReferenceContext::new());
+
+    assert_eq!(
+        try_project_with_index(&context, &index, game_time(2)),
+        Err(ProjectionError::InsufficientTrajectoryHorizon {
+            requested_tick: 2,
+            indexed_through: 1,
+        })
+    );
+}
+
+#[test]
 fn projection_matches_actual_counterfactual_and_corrected_branches_in_any_order() {
     let parent = actual(journal(&[
         (0, GameJournalEntry::create_saucer()),
@@ -377,8 +415,6 @@ fn projection_matches_actual_counterfactual_and_corrected_branches_in_any_order(
     assert_eq!(corrected.kind(), BranchKind::Corrected);
 }
 
-const REMAINING_PROJECTION_GAPS: &[&str] = &[];
-
 #[test]
 fn projection_corpus_covers_direct_forms_without_a_tautological_baseline() {
     let worldline = actual(hand_authored_behavior_fixture());
@@ -404,12 +440,4 @@ fn projection_corpus_covers_direct_forms_without_a_tautological_baseline() {
     assert_eq!(earlier.logical_time(), time(499));
     assert_eq!(later.payload().tick_index(), 4);
     assert_eq!(earlier.payload().tick_index(), 0);
-}
-
-#[test]
-fn projection_gaps_are_recorded_as_scope_data() {
-    assert_eq!(REMAINING_PROJECTION_GAPS.len(), 0);
-    assert!(REMAINING_PROJECTION_GAPS
-        .iter()
-        .all(|gap| !gap.trim().is_empty()));
 }

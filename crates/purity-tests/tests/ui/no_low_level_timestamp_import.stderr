@@ -1,0 +1,8 @@
+error[E0432]: unresolved import `engine_api::JournalEntry`
+ --> tests/ui/no_low_level_timestamp_import.rs:1:5
+  |
+1 | use engine_api::JournalEntry;
+  |     ^^^^^^^^^^^^------------
+  |     |           |
+  |     |           help: a similar name exists in the module: `GameJournalEntry`
+  |     no `JournalEntry` in the root

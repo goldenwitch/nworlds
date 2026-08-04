@@ -70,6 +70,25 @@ game_state.logical_time = t_
 The returned SDK `GameState` therefore preserves the requested `LogicalTime`
 even when the projected automaton data is constant across an entire piece.
 
+## Indexed Actor Trajectories and Tick Coverage
+
+The selected piece is a value boundary, not a license for `state` to replay
+every preceding game tick. Caravan actor trajectories are indexed value
+functions built from immutable worldline inputs. Querying a piece samples the
+selected trajectory at the requested tick and `t_`; it does not reconstruct an
+actor layer by iterating from tick zero to the target.
+
+Every one-second game-tick boundary at which an indexed Caravan value may
+change is represented in the relevant discontinuity index. A sparse set that
+contains only journal ticks, threshold ticks, and the requested endpoint is
+insufficient when intermediate actor, effect, or resource values can differ.
+The generic engine still stores only opaque breakpoints and pieces; Caravan
+defines the trajectory values and the finite boundary range needed by a query.
+The public `state` query builds a query-scoped index through the requested
+sample time. A reusable journal-only index is bounded by its materialized
+trajectory horizon and must return an explicit horizon error rather than
+silently dropping actors when asked for a later sample.
+
 ## Journal Visibility and Ordering
 
 For a fixed branch, an entry `e` is visible to a query exactly when:
@@ -95,6 +114,12 @@ For terrain events that activate on the same tick and tile, authored
 events. Derived events retain the anchor's fixed source order and stable
 actor/tile ordering. This is a Caravan rule, not an ordering imposed by the
 generic breakpoint index.
+
+Cross-rule evaluation uses the same value-level ordering: authored terrain,
+Farmer wheat placement, Arborist forest conversion, Fire ignition and
+aging/spread, then Fire terrain destruction. Fire ignition sees the terrain
+result after the authored and vegetation-derived events at that tick; resource
+totals sample the resulting terrain and actor layers.
 
 ## Journal and Tick Breakpoints
 
@@ -248,10 +273,14 @@ packet does not add or alter actor behavior.
 - Exact journal visibility is inclusive; later postdated entries are ignored.
 - Equal-time journal entries remain in append order.
 - Journal and tick breakpoints remain distinct, including when timestamps match.
+- Every game-tick boundary that can change an indexed Caravan value is present
+   in the relevant index; sparse endpoint-only tick coverage is not sufficient.
 - Inside-tick entries are visible immediately but activate discrete tick input
    at the next boundary; boundary entries activate at that boundary.
 - Same-tick authored terrain entries precede derived terrain events by the
    explicit Caravan ordering rule.
+- Fire ignition and aging/spread consume the authored-plus-vegetation terrain
+   result for that tick; destruction remains the final Fire terrain event.
 - Collective forester proposals use shared pre-tick occupancy and deterministic
    destination conflict resolution.
 - Forester resource totals use the resulting collective actor positions at each
@@ -259,7 +288,10 @@ packet does not add or alter actor behavior.
 - Negative logical times use floor-based tick selection and the same activation
    rule without clamping to zero.
 - Projection has no prior-state, current-board, cursor, or frame-history input;
-   disposable query-local calculation is the only permitted temporary state.
+   disposable query-local calculation is permitted, but query evaluation does
+   not replay preceding ticks to reconstruct the selected actor layer.
+- A reusable index queried beyond its materialized trajectory horizon returns a
+   typed error; the public `state` path builds a sufficient query-scoped index.
 - Query order, repeated samples, and branch choice do not affect results.
 - Existing anchor, conformance, demo, persistence, and presentation tests pass
    against the projection path.

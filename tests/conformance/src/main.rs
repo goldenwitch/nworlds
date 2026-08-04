@@ -5,7 +5,7 @@ use std::{
     process,
 };
 
-use caravan_conformance::{cases, GAPS};
+use caravan_conformance::{cases, GAPS, SUPPLEMENTAL_CASES};
 
 fn main() {
     let output = report_path();
@@ -41,10 +41,16 @@ fn main() {
         })
         .collect::<Vec<_>>()
         .join(",\n");
+    let supplemental_cases = SUPPLEMENTAL_CASES
+        .iter()
+        .map(|(id, test, artifact)| format_case_values(id, "pass", test, artifact))
+        .collect::<Vec<_>>()
+        .join(",\n");
     let report = format!(
-        "{{\n  \"schema\": \"caravan-conformance-report-v1\",\n  \"status\": \"{}\",\n  \"command\": \"cargo test --manifest-path tests/conformance/Cargo.toml\",\n  \"cases\": [\n{}\n  ],\n  \"gaps\": [\n{}\n  ]\n}}\n",
+        "{{\n  \"schema\": \"caravan-conformance-report-v1\",\n  \"status\": \"{}\",\n  \"command\": \"cargo test --manifest-path tests/conformance/Cargo.toml\",\n  \"cases\": [\n{}\n  ],\n  \"supplemental_cases\": [\n{}\n  ],\n  \"gaps\": [\n{}\n  ]\n}}\n",
         if failed { "fail" } else { "pass" },
         rows,
+        supplemental_cases,
         gaps
     );
     fs::write(&output, report).expect("write conformance report");
@@ -76,6 +82,16 @@ fn format_case(case: &caravan_conformance::Case, status: &str) -> String {
         escape(case.clause),
         escape(case.test),
         escape(case.artifact)
+    )
+}
+
+fn format_case_values(id: &str, status: &str, test: &str, artifact: &str) -> String {
+    format!(
+        "    {{\"id\":\"{}\",\"status\":\"{}\",\"test\":\"{}\",\"artifact\":\"{}\"}}",
+        escape(id),
+        escape(status),
+        escape(test),
+        escape(artifact)
     )
 }
 

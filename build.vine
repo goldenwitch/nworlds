@@ -12,6 +12,7 @@ Execute the independent packets below. Keep SDK objects separate from Caravan ga
 -> discontinuity-index
 -> discontinuity-parity
 -> domain-model
+-> evidence-reconciliation
 -> hazard-rules
 -> indexed-query
 -> journal-writer
@@ -156,7 +157,7 @@ Accept: The frozen corpus and cfg(test)-only legacy comparison pass, with scope 
 @artifact application/json crates/caravan-reference/snapshots/discontinuity-parity.json
 ---
 [reference-fold-retirement] Reference fold retirement (complete)
-Files: crates/caravan-reference/src/evaluator.rs; crates/caravan-reference/src/legacy_evaluator.rs
+Files: crates/caravan-reference/src/legacy_evaluator.rs
 Do: Keep the production reference fold retired. Preserve the recovered historical implementation only as a cfg(test)-isolated baseline for bounded parity comparisons; do not expose it through state() or query().
 Accept: evaluator.rs is absent from production, legacy_evaluator.rs compiles only for tests, the shared-fixture comparison passes, and all anchor, conformance, demo, persistence, presentation, and purity tests pass.
 -> discontinuity-parity
@@ -276,3 +277,90 @@ Accept: No default-looking SDK constructor remains for caller-assigned timestamp
 -> journal-writer
 -> sdk-envelopes
 > Low-level SDK constructors are explicitly named from_assigned_time and from_assigned_entries and documented as interoperability escape hatches; JournalWriter remains the game-facing timestamp authority.
+---
+[indexed-projection-contract] Close indexed projection contract (complete)
+Files: proposals/discontinuity-projection.md; proposals/semantic-contract.md; crates/caravan-reference/tests/projection.rs
+Do: Decide the remaining direct-query shape for actor trajectories and game-tick boundaries. Resolve whether query-local transition iteration is permitted, what every piece must encode, and how complete tick breakpoint coverage is defined. Keep the generic engine neutral and record one implementation shape only after a discriminating test or measurement.
+Accept: The contract distinguishes selected immutable piece inputs from any query-local recurrence, states whether every game-tick boundary is indexed, and names the focused evidence needed before implementation.
+-> discontinuity-contract
+-> discontinuity-index
+-> reference-projection
+> Caravan actor trajectories are indexed value functions built from immutable worldline inputs; state sampling does not replay every preceding game tick from zero.
+> Every one-second game-tick boundary that can change an indexed Caravan value is retained in the relevant index; sparse endpoint-only coverage is incomplete.
+> The generic engine remains opaque and engine-neutral; Caravan owns trajectory values and the finite boundary range needed by a query.
+---
+[indexed-projection-implementation] Implement indexed projection closure (complete)
+Files: crates/caravan-reference/src/discontinuities.rs; crates/caravan-reference/src/projection.rs; crates/caravan-reference/tests/projection.rs; crates/caravan-reference/tests/parity.rs
+Do: Implement the approved indexed-projection shape. Complete the required game-tick breakpoint coverage and reduce or eliminate query-local tick recurrence according to the contract while preserving exact-time sampling, branches, occupancy, resources, and bounded parity.
+Accept: Targeted behavior and shape tests pass, the production query has no hidden continuation state, and the implementation matches the revised discontinuity contract.
+-> discontinuity-parity
+-> indexed-projection-contract
+-> reference-projection
+> The relevant finite game-tick range is materialized in the Caravan discontinuity index.
+> Each piece carries an immutable actor trajectory built from its visible journal prefix; state samples the trajectory and does not replay preceding transitions.
+> Resources sample the same piece-owned actor trajectory.
+> Public state builds a query-scoped index through the requested sample time; reusable journal-only indices return InsufficientTrajectoryHorizon rather than silently dropping actors beyond their materialized horizon.
+---
+[rule-composition-contract] Close cross-rule composition contract (complete)
+Files: proposals/semantic-contract.md; proposals/cellular-automata-anchor.md; proposals/discontinuity-projection.md; crates/caravan-reference/tests/projection.rs; crates/caravan-reference/tests/parity.rs
+Do: Define the value-level dependency and ordering between authored terrain, Farmer wheat, Arborist conversion, Fire ignition/spread/destruction, actor occupancy, and resource totals. Treat this as a contract ruling over existing rules; do not add new game behavior.
+Accept: An independent corpus covers derived terrain becoming burnable, same-tick precedence, actor/effect coexistence, and resource consequences without relying on implementation order.
+-> discontinuity-contract
+-> hazard-rules
+-> reference-projection
+-> vegetation-rules
+> The value-level order is authored terrain, Farmer wheat placement, Arborist forest conversion, Fire ignition and aging/spread, then Fire terrain destruction.
+> Fire ignition and spread inspect the authored-plus-vegetation terrain timeline at their activation ticks.
+> Actor proposals use the pre-tick live actor layer; resources sample resulting terrain and actor layers.
+---
+[rule-composition-implementation] Implement cross-rule composition (complete)
+Files: crates/caravan-reference/src/projection.rs; crates/caravan-reference/tests/projection.rs; crates/caravan-reference/tests/parity.rs
+Do: Implement the approved cross-rule dependency order for terrain, effects, actors, and resources. Preserve the direct query boundary and keep all intermediate values query-local.
+Accept: The composition corpus passes for authored and derived terrain, fire over derived terrain, dynamic occupancy, effects, and indexed resources; the frozen and bounded legacy evidence state any intentional divergence.
+-> indexed-projection-implementation
+-> rule-composition-contract
+> Production projection now builds authored-plus-vegetation terrain events before Fire ignition/spread and appends Fire destruction afterward. Derived terrain can be consumed by Fire at the same activation tick; the complete reference suite passes.
+---
+[presentation-purity-contract] Close presentation purity boundary (complete)
+Files: proposals/semantic-contract.md; proposals/productization-review.md; crates/engine-presentation/src/**; crates/purity-tests/**
+Do: Decide the intended purity boundary for QueryAdapter closures, Renderer implementations, and Animation implementations. Distinguish authoritative-state purity from renderer/plugin trust, and choose either data-only inputs, a constrained API, or an explicit documented escape boundary.
+Accept: The contract and productization review state what is guaranteed and what remains trusted extension code; the compile-fail and runtime evidence targets are named before implementation.
+-> presentation
+-> productization
+-> purity-hardening
+-> sdk-envelopes
+> Authoritative query inputs/results are the compiler-tested purity boundary. QueryAdapter, Renderer, and Animation bodies are trusted extensions that receive immutable values and return owned values; arbitrary body purity is not claimed.
+---
+[presentation-purity-implementation] Implement presentation purity boundary (complete)
+Files: crates/engine-presentation/**; crates/purity-tests/**; evidence/clause-to-test.md
+Do: Implement the approved presentation boundary and add the smallest compile-fail or behavioral evidence needed for the chosen guarantee. Keep rendering generic over opaque game payloads.
+Accept: Presentation tests remain green, the chosen purity guarantee is mechanically exercised where possible, and the remaining trust boundary is explicit.
+-> presentation-purity-contract
+---
+[sdk-timestamp-policy] Close low-level timestamp policy (complete)
+Files: proposals/semantic-contract.md; crates/engine-sdk/src/journal.rs; crates/engine-api/src/lib.rs; crates/engine-journal/src/writer.rs
+Do: Decide whether assigned-time SDK imports remain public as an explicit interoperability boundary or become internal. Preserve JournalWriter as the game-facing authoring path and avoid silently reintroducing caller-default timestamp APIs.
+Accept: One policy is recorded, the public facade and low-level SDK documentation agree, and the required compile/API evidence is named before implementation.
+-> journal-writer
+-> sdk-envelopes
+-> sdk-timestamp-boundary
+> Assigned-time SDK imports remain public only as explicitly named interoperability APIs. JournalWriter is the sole game-facing timestamp authoring path, and engine-api does not export JournalEntry or assigned-time constructors.
+---
+[sdk-timestamp-implementation] Implement timestamp boundary policy (complete)
+Files: crates/engine-sdk/src/journal.rs; crates/engine-journal/src/**; crates/engine-api/src/lib.rs; crates/purity-tests/tests/ui/no_caller_assigned_timestamps.rs; crates/purity-tests/tests/ui/no_low_level_timestamp_import.rs; evidence/clause-to-test.md
+Do: Preserve explicitly named low-level assigned-time imports as interoperability APIs while enforcing JournalWriter-only authoring through engine-api. Keep persistence, branch construction, and writer behavior unchanged.
+Accept: Compile-fail evidence rejects caller-assigned timestamp access through engine-api, intentional low-level imports are documented, and all journal/branch/purity tests pass.
+-> sdk-timestamp-policy
+---
+[evidence-reconciliation] Reconcile objective evidence (complete)
+Files: evidence/conformance-report.json; evidence/clause-to-test.md; evidence/benchmarks/anchor-report.json; proposals/productization-review.md; build.vine
+Do: Reconcile every spec and roadmap objective with current tests, artifacts, and deferred decisions. Remove stale gap claims, add the new composition/index/purity evidence, and keep bounded parity and trusted-extension limitations explicit.
+Accept: Every objective is either backed by a reproducible artifact or named as an intentional open/deferred decision; VINE statuses match the repository and reports are regenerated successfully.
+-> discontinuity-parity
+-> indexed-projection-implementation
+-> presentation-purity-implementation
+-> rule-composition-implementation
+-> sdk-timestamp-implementation
+> Conformance generation preserves supplemental cases for indexed boundaries, trajectory horizons, cross-rule composition, bounded parity, and timestamp facade evidence.
+> The trusted presentation-extension boundary and static LogicalTime/Tau compile-fail limitation are explicit in the report; benchmark evidence was regenerated against the current implementation.
+> All phase validation commands pass: formatting, workspace tests, fresh conformance, clippy, and purity tests.
