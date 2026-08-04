@@ -105,7 +105,6 @@ dependencies = [
 name = "engine-presentation"
 version = "0.1.0"
 dependencies = [
- "caravan-reference",
  "engine-sdk",
  "engine-time",
 ]

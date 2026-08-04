@@ -24,8 +24,6 @@ impl GameJournalEntry {
     }
 }
 
-pub type DomainJournalEntry = GameJournalEntry;
-
 #[cfg(test)]
 mod tests {
     use crate::{ActorId, ActorKind, Axial, Terrain, TileId, SAUCER_RADIUS};

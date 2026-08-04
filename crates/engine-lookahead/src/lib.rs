@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-use caravan_reference::{ReferenceWorldline, State};
+use caravan_reference::{state, ReferenceWorldline, State};
 use engine_branches::BranchKind;
 use engine_time::LogicalTime;
 
@@ -10,7 +10,7 @@ pub use engine_time::LogicalTime as QueryTime;
 
 /// Queries one fixed branch through the reference oracle.
 pub fn future(worldline: &ReferenceWorldline, logical_time: LogicalTime) -> State {
-    direct_query(worldline, logical_time)
+    state(worldline, logical_time)
 }
 
 /// Creates a read-only query view over one immutable branch.
@@ -37,10 +37,6 @@ impl<'a> BranchView<'a> {
 
     /// Queries this fixed branch through the reference oracle.
     pub fn query(self, logical_time: LogicalTime) -> State {
-        direct_query(self.worldline, logical_time)
+        state(self.worldline, logical_time)
     }
-}
-
-fn direct_query(worldline: &ReferenceWorldline, logical_time: LogicalTime) -> State {
-    caravan_reference::state(worldline, logical_time)
 }
