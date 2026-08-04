@@ -1,0 +1,106 @@
+# Caravan of Seasons
+
+Caravan of Seasons is a Rust workspace for a deterministic, directly indexed
+temporal game engine. Its reference query is:
+
+```text
+state(worldline, t_) -> game_state
+```
+
+Queries read an immutable worldline at any logical time. Presentation maps a
+playback time to a logical time and renders the resulting state; it does not
+advance or mutate a hidden current state.
+
+## Start Here
+
+- [Initial specification](spec/initial.md) - vocabulary, invariants, journal
+  semantics, lookahead, branches, and presentation.
+- [Roadmap](roadmap.md) - settled constraints, the completed anchor, remaining
+  work, and deferred decisions.
+- [Semantic contract](proposals/semantic-contract.md) - implementation-facing
+  decisions for the engine and the Caravan anchor.
+- [Cellular automata anchor](proposals/cellular-automata-anchor.md) - the
+  concrete radius-5, 91-tile fixture used by the implementation and tests.
+- [Discontinuity projection](proposals/discontinuity-projection.md) - the
+  immutable breakpoint, piece-selection, and projection contract.
+- [Build graph](build.vine) - the dependency-ordered implementation packets
+  and their acceptance criteria.
+
+## Workspace Components
+
+### Engine
+
+These crates provide the generic temporal engine and its public boundaries.
+
+| Crate | Description |
+| --- | --- |
+| [`engine-time`](crates/engine-time) | Distinct `LogicalTime` and `Tau` fixed-point time types, checked arithmetic, and tick conversions. |
+| [`engine-sdk`](crates/engine-sdk) | Generic immutable envelopes for contexts, journals, worldlines, game states, playback, and frames. |
+| [`engine-journal`](crates/engine-journal) | Immutable journal storage and the journal-owned monotonic `JournalWriter`. |
+| [`engine-branches`](crates/engine-branches) | Immutable actual, counterfactual, and corrected branch construction from journal prefixes and suffixes. |
+| [`engine-index`](crates/engine-index) | Direct indexed-query kernel plus engine-neutral discontinuity breakpoints and half-open pieces. |
+| [`engine-lookahead`](crates/engine-lookahead) | Future queries and read-only branch views using the same direct query path. |
+| [`engine-presentation`](crates/engine-presentation) | Playback, query/render composition, frames, and optional animation values. |
+| [`engine-persistence`](crates/engine-persistence) | Versioned save/load, encoding, branch lineage, and deterministic replay. |
+| [`engine-api`](crates/engine-api) | Game-facing facade that exposes the supported query, journal, branch, time, and domain APIs. |
+
+### Caravan Domain
+
+These crates define the concrete game fixture and its indexed rules.
+
+| Crate | Description |
+| --- | --- |
+| [`caravan-domain`](crates/caravan-domain) | Radius-5 axial saucer geometry, tiles, terrain, actors, effects, resources, identifiers, and journal payloads. |
+| [`caravan-vegetation`](crates/caravan-vegetation) | Indexed Farmer, Wheat, Forest, and Forester definitions, including movement and resource production. |
+| [`caravan-hazards`](crates/caravan-hazards) | Indexed Arsonist, Fire, Fighter, and Arborist rules, including spread, destruction, collisions, and conversion. |
+| [`caravan-seeded`](crates/caravan-seeded) | Deterministic seeded journal generation performed before evaluation. |
+| [`caravan-reference`](crates/caravan-reference) | The reference `state(worldline, t_)` oracle, discontinuity index, piecewise projection, snapshots, and bounded parity baseline. |
+
+### Executables and Validation
+
+| Component | Description |
+| --- | --- |
+| [`caravan-demo`](crates/caravan-demo) | Runnable terminal demonstration of the anchor, arbitrary sampling, lookahead, branches, and presentation. |
+| [`engine-benchmarks`](crates/engine-benchmarks) | Non-published release-build measurements for direct queries, scrubbing, branches, and frame production. |
+| [`purity-tests`](crates/purity-tests) | Runtime and `trybuild` compiler-boundary tests for immutable, data-only authoritative APIs. |
+| [`tests/conformance`](tests/conformance) | Separate workspace containing the executable conformance catalog and report generator. |
+
+## Evidence and Reports
+
+- [Conformance matrix](evidence/clause-to-test.md) - maps specification clauses
+  to executable cases and records explicit gaps.
+- [Conformance report](evidence/conformance-report.json) - machine-readable
+  results for the catalogued and supplemental cases.
+- [Benchmark report](evidence/benchmarks/anchor-report.json) - conditions and
+  measurements for the fixed anchor workloads.
+- [Demo trace](crates/caravan-demo/snapshots/anchor-trace.txt) - checked-in
+  deterministic output from the terminal demo.
+- [Projection parity snapshot](crates/caravan-reference/snapshots/discontinuity-parity.json)
+  - frozen observations and the scope of the historical-fold comparison.
+- [Productization review](proposals/productization-review.md) - current
+  product boundary and concerns intentionally deferred until requirements bind.
+
+## Common Commands
+
+Run these from the repository root:
+
+```text
+# Build and test the main workspace
+cargo test --workspace
+
+# Run the terminal anchor demo
+cargo run --manifest-path crates/caravan-demo/Cargo.toml
+
+# Run the independent conformance workspace
+cargo test --manifest-path tests/conformance/Cargo.toml
+cargo run --manifest-path tests/conformance/Cargo.toml -- --report evidence/conformance-report.json
+
+# Run compiler-boundary tests
+cargo test -p purity-tests
+
+# Reproduce the checked-in benchmark report
+cargo run --release --manifest-path crates/engine-benchmarks/Cargo.toml -- --iterations 10000 --warmup 1000 --report evidence/benchmarks/anchor-report.json
+```
+
+The `target/` directories contain generated build output and are not part of
+the component map.

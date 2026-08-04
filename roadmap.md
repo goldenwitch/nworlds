@@ -41,110 +41,58 @@ present(worldline, playback, tau) =
 
 ## Current Position
 
-The indexed anchor implementation exists and is covered by the demo,
-conformance report, persistence, benchmarks, compiler-boundary tests, and an
-independent frozen projection corpus. Its public query is direct, the retired
-tick-fold calculation is absent, and the reference oracle selects immutable
-discontinuity pieces before doing query-local rule calculation. The remaining
-roadmap work is the later closed temporal definition language and broader
-domain-composition decisions.
+The indexed anchor packet is complete. `build.vine` is complete, and its
+artifacts cover the demo, conformance report, persistence, benchmarks,
+compiler-boundary tests, and independent frozen projection corpus. The public
+query is direct, the retired tick-fold calculation is absent, and the reference
+oracle selects immutable discontinuity pieces before doing query-local rule
+calculation.
 
-The packet-level delegation plan is maintained in `build.vine`: each packet
-owns a disjoint path set and can be assigned to one Luna agent. The graph makes
-the parallel frontier explicit; this roadmap keeps the higher-level sequence.
+This is a deterministic reference/demo/evidence package, not yet a finished
+game or distribution platform.
 
-## Stages
+## Completed Anchor
 
-### 1. Contract and time
+The completed packet provides:
 
-Canonicalize the `i64` time wrappers, tick scale, checked arithmetic,
-out-of-domain results, and the way journal facts are visible to indexed
-queries.
+- typed logical and presentation time;
+- immutable SDK envelopes, journals, branches, and direct indexed queries;
+- the radius-5 Caravan domain and vegetation, hazard, and seeded fixtures;
+- discontinuity indexing and piecewise reference projection;
+- lookahead, playback, rendering, persistence, and deterministic replay; and
+- executable conformance, benchmark, demo, parity, and purity evidence.
 
-**Exit:** one contract, one time module, and a small domain-neutral fixture.
+The packet-level delegation plan and its path ownership remain in
+[build.vine](build.vine); this roadmap records the higher-level direction.
 
-### 2. Temporal DSL and index
+## Remaining Work
 
-Define closed data values for temporal definitions, journal facts, identifiers,
-and `GameState`. Implement the smallest direct query, for example:
+### Closed temporal definition language
 
-```text
-crop_position(crop_id, t_) -> Position | Absent | Error
-```
+Define closed data values for temporal definitions, identifiers, journal facts,
+and typed out-of-domain results where a definition genuinely has no value.
+Decide which compact journal entries expand into indexed domain elements and how
+their deterministic identity is represented.
 
-**Exit:** repeated queries at arbitrary times are equal and do not consume or
-mutate prior results.
+### Caravan vertical slice
 
-### 3. Journal writer and branches
+Turn the fixed anchor into the smallest recognizable game loop: one indexed
+quantity, one player event, journal writing, past/present/future lookup,
+lookahead, one branch choice, and presentation. Its trace must remain
+reproducible without hidden frame state.
 
-Replace caller-assigned timestamps with a journal-owned monotonic writer. Add
-explicit corrected-branch construction from an inclusive prefix and replacement
-suffix. Keep counterfactuals on the same branch machinery.
+### Broader domain composition
 
-**Exit:** late facts cannot enter the actual journal; parent and branch values
-remain independently evaluable.
+Extend the domain only when a concrete requirement identifies the additional
+definitions, composition rules, and evidence needed beyond the current anchor.
 
-### 4. Direct evaluator and presentation
+## Deferred Until Activated
 
-Make `evaluate` and lookahead use the same direct indexed query. Move playback,
-rendering, and animation onto the new values. Prove actual, counterfactual, and
-corrected branches use one presentation path.
+- Networking and synchronization
+- Branch merging
+- Looping and bounds
+- Final graphics/GPU architecture
+- Packaging, release targets, content tooling, audio, and device input
 
-**Exit:** query order, scrub direction, repeated samples, and branch selection do
-not change states or frames.
-
-### 5. Discontinuity index and piecewise projection
-
-Extract journal timestamps, game-tick boundaries, and actor/rule thresholds as
-an immutable ordered discontinuity index. Select a piece carrying immutable
-visible-entry inputs and a projection regime, then calculate terrain, actors,
-effects, and resources from that piece and requested `t_`; do not fold a
-current board through ticks. The historical fold remains available only as a
-test baseline when a comparison is meaningful.
-
-See [discontinuity-projection.md](proposals/discontinuity-projection.md).
-
-**Exit:** the reference oracle has no `WorkingState`/`transition` tick loop,
-malformed anchor entries fail explicitly, and all existing anchor,
-conformance, demo, persistence, benchmark, and presentation evidence passes.
-
-### 6. Caravan vertical slice
-
-Choose the smallest recognizable game loop that exercises one indexed quantity,
-one player event, journal writing, past/present/future lookup, lookahead, one
-branch choice, and presentation.
-
-**Exit:** a fixed playable trace is reproducible without engine exceptions or
-hidden frame state.
-
-### 7. Proof, persistence, and performance
-
-Build the skeptic-facing proof package: clause-to-test matrix, property tests,
-deterministic replay, and a conformance report. Then add save/load and measure
-query cost, journal length, branch count, scrub latency, and frame production.
-
-**Exit:** every claim is executable evidence or an explicit limitation; caches
-and indexes have measured identity/invalidation rules.
-
-### 8. Compiler-checked purity hardening
-
-This is deliberately last, after behavior, the game slice, proof, persistence,
-and workload are known. Narrow the public boundary with closed DSL types,
-private constructors, `#![forbid(unsafe_code)]`, and `trybuild` compile-fail
-tests for forbidden mutation, callback injection, caller-assigned timestamps,
-and mutation of published branches.
-
-Rust cannot prove arbitrary function bodies are pure. The hardening stage makes
-that question irrelevant at the authoritative boundary by admitting data-only
-DSL values instead of arbitrary callbacks. A custom lint may supplement this,
-but is not the guarantee.
-
-**Exit:** prohibited operations are ill-typed and earlier conformance evidence
-still passes.
-
-## Gates
-
-A stage advances when its decisions are recorded, its boundary has executable
-evidence, its demo or trace is reproducible, and its outputs do not mutate an
-earlier branch or depend on frame history. Compiler evidence is required only
-at Stage 8; earlier stages document and test their limitations.
+Activate one of these only when a concrete requirement supplies its target
+regime, owner, contract, dependency, and reproducible acceptance evidence.

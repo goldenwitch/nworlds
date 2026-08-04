@@ -1,8 +1,8 @@
 # Engine benchmarks
 
-This is a standalone benchmark package for the fixed Caravan anchor traces. It
-is intentionally not a member of the root workspace, so the root manifest and
-the existing engine crates remain unchanged.
+This is the non-published benchmark package for the fixed Caravan anchor
+traces. It is a member of the root workspace and can also be invoked directly
+with its manifest path.
 
 ## Reproduce
 
