@@ -3,7 +3,7 @@ prefix: caravan
 title: Caravan of Seasons build graph
 ---
 [root] Caravan anchor implementation (packet plan) (complete)
-Execute the independent packets below. Keep SDK objects separate from Caravan game objects, use direct indexed queries rather than interval stepping, and dispatch packets only after their dependencies are reviewed. The cellular automata anchor proposal is the shared behavior target. Files: proposals/cellular-automata-anchor.md; proposals/semantic-contract.md; roadmap.md; spec/initial.md
+Execute the independent packets below. Keep SDK objects separate from Caravan game objects, use direct indexed queries rather than interval stepping, and dispatch packets only after their dependencies are reviewed. The cellular automata anchor specification is the shared behavior target. Files: spec/cellular-automata-anchor.md; roadmap.md; spec/initial.md
 -> anchor-demo
 -> benchmarks
 -> branch-model
@@ -33,7 +33,7 @@ Execute the independent packets below. Keep SDK objects separate from Caravan ga
 @guidance text/markdown spec/initial.md
 ---
 [contract-gate] Anchor contract gate (complete)
-Files: spec/initial.md; roadmap.md; proposals/semantic-contract.md; proposals/cellular-automata-anchor.md; proposals/discontinuity-projection.md
+Files: spec/initial.md; roadmap.md; spec/cellular-automata-anchor.md; spec/discontinuity-projection.md
 Do: Keep the empty-journal anchor rule canonical, remove stale fold language, make unsupported CreateSaucer radii explicit failures, and keep the piece contract honest about query-local rule calculation over immutable piece inputs.
 Accept: Canonical spec, roadmap, proposals, and public query/error behavior agree; no malformed radius is silently ignored.
 > Decision: LogicalTime and Tau use signed i64 milliseconds (1,000 ticks per logical second); the automaton game tick remains one logical second.
@@ -48,7 +48,7 @@ Accept: Canonical spec, roadmap, proposals, and public query/error behavior agre
 ---
 [discontinuity-contract] Discontinuity and piecewise contract (complete)
 Do: Keep immutable half-open selection generic while making Caravan piece payloads carry immutable visible journal inputs and a projection regime. Document query-local rule calculation, same-tick terrain precedence, and collective live actor occupancy.
-Accept: Selected pieces expose their immutable visible inputs; the proposal does not claim callable projection functions are stored in generic pieces.
+Accept: Selected pieces expose their immutable visible inputs; the specification does not claim callable projection functions are stored in generic pieces.
 -> contract-gate
 > Indexed pieces are half-open intervals [start_t,end_t).
 > Exact journal timestamps and game-tick boundaries remain distinct discontinuities; entries inside a tick affect the next tick-boundary behavior, while entries on a tick boundary participate in that tick.
@@ -58,7 +58,7 @@ Accept: Selected pieces expose their immutable visible inputs; the proposal does
 > Same-tick terrain precedence is Caravan-owned: authored SetTerrain entries retain journal append order and precede derived terrain events on the same tile; derived events retain fixed source and actor/tile order.
 > The selected Caravan piece owns immutable visible journal inputs and a projection regime; rule calculation remains query-local.
 > The actor layer uses shared live occupancy across transitions, including spawn visibility, removals, movement, conflicts, and collisions.
-@guidance text/markdown proposals/discontinuity-projection.md
+@guidance text/markdown spec/discontinuity-projection.md
 ---
 [workspace-time] Workspace and time module (complete)
 Files: Cargo.toml; crates/engine-time/**
@@ -137,7 +137,7 @@ Accept: Same seed yields identical ordered journal entries on every supported ru
 [reference-oracle] Anchor state oracle (complete)
 Files: crates/caravan-reference/src/lib.rs; crates/caravan-reference/src/snapshot.rs; crates/caravan-reference/src/discontinuities.rs; crates/caravan-reference/src/projection.rs; crates/caravan-reference/tests/oracle.rs
 Do: Compose the game-domain definitions into the reference state(worldline, t_) oracle over terrain, actors, effects, and resources. Keep all derived results as query outputs and use one immutable context/journal input path. Do not introduce a mutable current board or interval stepping API.
-Do not edit crates/caravan-reference/src/evaluator.rs; the old fold path is retired only by the dependent retirement task after parity.
+The old fold path is retired only by the dependent retirement task after parity.
 Accept: The full anchor behavior is reproducible at arbitrary t_, in non-monotonic query order, over actual/counterfactual/corrected branches, with exact GameState logical time.
 -> branch-model
 -> discontinuity-contract
@@ -159,9 +159,9 @@ Accept: The frozen corpus and cfg(test)-only legacy comparison pass, with scope 
 [reference-fold-retirement] Reference fold retirement (complete)
 Files: crates/caravan-reference/src/legacy_evaluator.rs
 Do: Keep the production reference fold retired. Preserve the recovered historical implementation only as a cfg(test)-isolated baseline for bounded parity comparisons; do not expose it through state() or query().
-Accept: evaluator.rs is absent from production, legacy_evaluator.rs compiles only for tests, the shared-fixture comparison passes, and all anchor, conformance, demo, persistence, presentation, and purity tests pass.
+Accept: legacy_evaluator.rs compiles only for tests, the shared-fixture comparison passes, and all anchor, conformance, demo, persistence, presentation, and purity tests pass.
 -> discontinuity-parity
-> Decision: evaluator.rs is absent from production; legacy_evaluator.rs is test-only and isolated. The public state query uses projection, and the bounded legacy comparison plus anchor, conformance, demo, persistence, presentation, and purity tests pass.
+> Decision: legacy_evaluator.rs is test-only and isolated. The public state query uses projection, and the bounded legacy comparison plus anchor, conformance, demo, persistence, presentation, and purity tests pass.
 ---
 [lookahead] Indexed lookahead and branch views (complete)
 Files: crates/engine-lookahead/**; consume caravan-reference and engine-branches APIs
@@ -279,7 +279,7 @@ Accept: No default-looking SDK constructor remains for caller-assigned timestamp
 > Low-level SDK constructors are explicitly named from_assigned_time and from_assigned_entries and documented as interoperability escape hatches; JournalWriter remains the game-facing timestamp authority.
 ---
 [indexed-projection-contract] Close indexed projection contract (complete)
-Files: proposals/discontinuity-projection.md; proposals/semantic-contract.md; crates/caravan-reference/tests/projection.rs
+Files: spec/discontinuity-projection.md; crates/caravan-reference/tests/projection.rs
 Do: Decide the remaining direct-query shape for actor trajectories and game-tick boundaries. Resolve whether query-local transition iteration is permitted, what every piece must encode, and how complete tick breakpoint coverage is defined. Keep the generic engine neutral and record one implementation shape only after a discriminating test or measurement.
 Accept: The contract distinguishes selected immutable piece inputs from any query-local recurrence, states whether every game-tick boundary is indexed, and names the focused evidence needed before implementation.
 -> discontinuity-contract
@@ -302,7 +302,7 @@ Accept: Targeted behavior and shape tests pass, the production query has no hidd
 > Public state builds a query-scoped index through the requested sample time; reusable journal-only indices return InsufficientTrajectoryHorizon rather than silently dropping actors beyond their materialized horizon.
 ---
 [rule-composition-contract] Close cross-rule composition contract (complete)
-Files: proposals/semantic-contract.md; proposals/cellular-automata-anchor.md; proposals/discontinuity-projection.md; crates/caravan-reference/tests/projection.rs; crates/caravan-reference/tests/parity.rs
+Files: spec/cellular-automata-anchor.md; spec/discontinuity-projection.md; crates/caravan-reference/tests/projection.rs; crates/caravan-reference/tests/parity.rs
 Do: Define the value-level dependency and ordering between authored terrain, Farmer wheat, Arborist conversion, Fire ignition/spread/destruction, actor occupancy, and resource totals. Treat this as a contract ruling over existing rules; do not add new game behavior.
 Accept: An independent corpus covers derived terrain becoming burnable, same-tick precedence, actor/effect coexistence, and resource consequences without relying on implementation order.
 -> discontinuity-contract
@@ -322,7 +322,7 @@ Accept: The composition corpus passes for authored and derived terrain, fire ove
 > Production projection now builds authored-plus-vegetation terrain events before Fire ignition/spread and appends Fire destruction afterward. Derived terrain can be consumed by Fire at the same activation tick; the complete reference suite passes.
 ---
 [presentation-purity-contract] Close presentation purity boundary (complete)
-Files: proposals/semantic-contract.md; proposals/productization-review.md; crates/engine-presentation/src/**; crates/purity-tests/**
+Files: spec/initial.md; proposals/productization-review.md; crates/engine-presentation/src/**; crates/purity-tests/**
 Do: Decide the intended purity boundary for QueryAdapter closures, Renderer implementations, and Animation implementations. Distinguish authoritative-state purity from renderer/plugin trust, and choose either data-only inputs, a constrained API, or an explicit documented escape boundary.
 Accept: The contract and productization review state what is guaranteed and what remains trusted extension code; the compile-fail and runtime evidence targets are named before implementation.
 -> presentation
@@ -338,7 +338,7 @@ Accept: Presentation tests remain green, the chosen purity guarantee is mechanic
 -> presentation-purity-contract
 ---
 [sdk-timestamp-policy] Close low-level timestamp policy (complete)
-Files: proposals/semantic-contract.md; crates/engine-sdk/src/journal.rs; crates/engine-api/src/lib.rs; crates/engine-journal/src/writer.rs
+Files: spec/cellular-automata-anchor.md; crates/engine-sdk/src/journal.rs; crates/engine-api/src/lib.rs; crates/engine-journal/src/writer.rs
 Do: Decide whether assigned-time SDK imports remain public as an explicit interoperability boundary or become internal. Preserve JournalWriter as the game-facing authoring path and avoid silently reintroducing caller-default timestamp APIs.
 Accept: One policy is recorded, the public facade and low-level SDK documentation agree, and the required compile/API evidence is named before implementation.
 -> journal-writer

@@ -1,9 +1,9 @@
 # Discontinuity Projection
 
-This proposal freezes the discontinuity index and piecewise projection contract
+This specification defines the discontinuity index and piecewise projection contract
 for the direct indexed query. The reference oracle now uses this path; the
 historical tick fold is retained only as a test baseline where its semantics
-remain comparable. This proposal does not add actor rules.
+remain comparable. This specification does not add actor rules.
 All behavior referred to here is already defined by
 [cellular-automata-anchor.md](cellular-automata-anchor.md).
 
@@ -161,7 +161,8 @@ This rule does not suppress an exact-time change to a journal-visible layer.
 For example, a direct entry value may change at an inside-tick journal
 breakpoint while the automaton-derived value remains the value for the current
 tick until the next tick breakpoint. The existing Caravan definition decides
-which layers expose which values; this proposal adds no new actor behavior.
+which layers expose which values; this specification adds no new actor
+behavior.
 
 ## Negative Logical Time
 
@@ -237,8 +238,7 @@ while Caravan defines the payload meaning.
 
 ## Existing Discontinuity Sources
 
-The first index must be able to represent the sources already present in the
-anchor:
+The index represents the sources already present in the anchor:
 
 - `CreateSaucer` and postdated spawn/terrain entries at their assigned times;
 - one-second game-tick boundaries;
@@ -249,21 +249,8 @@ anchor:
 - existing resource counting or integration boundaries.
 
 These are indexed locations in returned values, never actions performed on
-objects. Each source must be traced to an existing anchor definition; this
-packet does not add or alter actor behavior.
-
-## Work Sequence
-
-1. Implement the immutable source-preserving breakpoint index and half-open
-    piece selection.
-2. Project each existing game layer from the selected piece and exact `t_`.
-3. Test exact journal timestamps, inside-tick activation, boundary activation,
-    equal-time append order, negative-time samples, arbitrary query order, and
-    branch isolation.
-4. Compare projection results with the current reference oracle over generated
-    traces and the existing anchor cases.
-5. Keep the historical fold, when useful, isolated to a test-only comparison
-   baseline; it is not part of the production query path.
+objects. Each source is traced to an existing anchor definition; this
+specification adds or alters no actor behavior.
 
 ## Acceptance
 

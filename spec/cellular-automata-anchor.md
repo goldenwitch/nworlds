@@ -1,6 +1,6 @@
 # Cellular Automata Anchor Case
 
-This proposal defines the first concrete test case for the engine. It is a
+This specification defines the first concrete test case for the engine. It is a
 small cellular automaton on a hexagonal saucer with radius 5, giving 91 tiles
 including the center.
 
@@ -29,7 +29,7 @@ tick_phase = 0 t_
 tick_index(t_) = floor(t_ / game_tick_period)
 ```
 
-All comparisons in this proposal hold one immutable worldline, including its
+All comparisons in this specification hold one immutable worldline, including its
 journal, fixed while queries are made. For that fixed worldline, the
 automaton-derived portion of the state is constant between game-tick
 boundaries when no journal-entry timestamp lies between the samples. A journal
@@ -158,9 +158,8 @@ value needed by the indexed definition.
 Actor = Farmer | Forester | Arsonist | Fighter | Arborist
 ```
 
-The first fixture should use one actor per tile. If a later rule requires
-co-location, that is a change to the actor-layer representation, not an
-implicit exception.
+The anchor uses one actor per tile. If a later rule requires co-location, that
+is a change to the actor-layer representation, not an implicit exception.
 
 ### Effects layer
 
@@ -359,7 +358,8 @@ The anchor is successful when:
 - the fixed seed reproduces the same journal and results;
 - every actor rule is tested as a pure difference between indexed snapshots.
 
-This proposal does not choose a rendering host, persistence format, network
-protocol, merge policy, or compiler-enforced purity boundary. Those remain
-later concerns. It does establish the first behavior fixture that the direct
-indexed engine must explain.
+This specification does not choose a rendering host, persistence format,
+network protocol, or merge policy. The authoritative engine boundary has
+compiler-checked purity evidence; renderer, animation, and query-adapter
+implementations remain trusted presentation extensions. The specification
+establishes the behavior fixture that the direct indexed engine explains.

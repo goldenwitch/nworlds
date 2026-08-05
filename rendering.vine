@@ -1,0 +1,68 @@
+vine 1.2.0
+prefix: rendering
+title: Caravan rendering layer
+---
+[root] Backend-neutral rendering slice (notstarted)
+Build the first concrete rendering layer on top of the completed indexed anchor. Keep this packet small: it should make a deterministic, inspectable render value from one immutable `GameState<Snapshot>` and one `Tau` through the existing engine-presentation boundary. It is a render-model and demo slice, not a final graphics architecture.
+Files: rendering.vine; spec/initial.md; proposals/productization-review.md; proposals/stage-layer.md; proposals/input-and-interaction.md; roadmap.md; crates/engine-presentation/**; crates/caravan-demo/**
+Do: Dispatch the contract, projection, demo wiring, and evidence tasks only after their dependencies are reviewed. Preserve the distinction between authoritative game state and owned render output.
+Accept: The branch has one settled rendering contract, one deterministic backend-neutral projection, a runnable demo observable, and focused evidence. The current anchor, presentation, conformance, and persistence behavior remains green.
+-> anchor
+-> render-contract
+-> render-demo
+-> render-evidence
+-> render-projection
+> Stage owns the canonical selected Worldline and Playback; PresentationHost is platform/execution plumbing.
+> Orchestrator is developer-authored ordinary imperative control code inside Stage. It chooses Tau samples, input orchestration, lookahead, branches, persistence, and presentation, but it may not own imperative game state.
+> Only publication of a new immutable journal/worldline value may change authoritative game state. InteractionDefinition returns closed Transformation data and cannot construct timestamped journal entries directly.
+---
+ref [anchor] Completed indexed anchor implementation (build.vine)
+The completed anchor supplies the immutable Snapshot, direct query, branches, persistence, presentation boundary, and existing evidence on which this rendering slice depends.
+---
+[render-contract] Rendering slice contract (notstarted)
+Files: proposals/rendering-contract.md
+Do: Record the first rendering boundary: immutable `GameState<Snapshot>` plus `Tau` in, owned backend-neutral render value out; exact sampled `LogicalTime` and `Tau` remain observable; tile order and independent terrain, actor, and effect layers remain stable; no frame history or authoritative mutation is admitted. Name the trust boundary of `Renderer` and `Animation` implementations and list the deferred graphics decisions without designing them here.
+Accept: One short contract names inputs, outputs, ownership, determinism, stable ordering, and the explicit non-goals. It agrees with the initial specification, semantic contract, productization review, and existing engine-presentation traits.
+-> anchor
+> The rendering seam remains GameState plus Tau to Frame/render output; rendering does not receive Orchestrator control state or frame history.
+> Renderer composition belongs to Stage; backend/device execution remains outside this rendering slice.
+@artifact text/markdown proposals/rendering-contract.md
+@guidance text/markdown spec/initial.md
+@guidance text/markdown proposals/productization-review.md
+@guidance text/markdown proposals/stage-layer.md
+@guidance text/markdown proposals/input-and-interaction.md
+@guidance text/markdown crates/engine-presentation/src/presentation.rs
+@guidance text/markdown crates/engine-presentation/src/renderer.rs
+@guidance text/markdown crates/engine-presentation/src/animation.rs
+---
+[render-projection] Snapshot render projection (notstarted)
+Files: crates/caravan-demo/src/render.rs
+Do: Implement one value-producing Renderer<Snapshot> projection for the fixed anchor. Preserve the sampled LogicalTime, enclosing Tau, ordered tiles, independent terrain/actor/effect layers, actor identity and kind, and global resources in owned render values. Keep the module backend-neutral and free of frame history, device state, GPU assumptions, and authoritative mutation.
+Accept: Focused unit evidence covers the empty result, the 91-tile saucer and stable tile order, independent layers, resources, exact sampled time, Tau, and repeated equal inputs. The projection uses the existing engine-presentation trait without expanding engine-api.
+-> anchor
+-> render-contract
+> The concrete anchor renderer is a value-producing projection of immutable GameState<Snapshot> and Tau. It must not mutate or become an alternate authoritative state store.
+@artifact text/plain crates/caravan-demo/src/render.rs
+@guidance text/markdown proposals/rendering-contract.md
+@guidance text/markdown crates/engine-presentation/src/renderer.rs
+@guidance text/markdown crates/engine-sdk/src/game_state.rs
+@guidance text/markdown crates/engine-sdk/src/frame.rs
+---
+[render-demo] Demo rendering wiring (notstarted)
+Files: crates/caravan-demo/src/main.rs
+Do: Replace the demo's private trace-only renderer wiring with the rendering slice while preserving the existing terminal observables and the SDK Frame boundary. Keep the demo deterministic across forward, reverse, repeated, actual, counterfactual, and corrected samples.
+Accept: One documented command still reproduces the anchor trace; the output continues to expose sampled game time, presentation Tau, actors, and resources without introducing a mutable current frame or a backend dependency.
+-> render-projection
+@artifact text/plain crates/caravan-demo/src/main.rs
+@guidance text/markdown proposals/rendering-contract.md
+@guidance text/markdown crates/caravan-demo/src/main.rs
+---
+[render-evidence] Rendering boundary evidence (notstarted)
+Files: crates/caravan-demo/tests/snapshot.rs; crates/caravan-demo/snapshots/anchor-trace.txt
+Do: Extend the smallest external evidence that proves the concrete renderer remains wired through the SDK Frame boundary. Keep value-level render tests in the projection task, use the terminal snapshot to cover the observable output and branch samples, and keep existing conformance and presentation coverage as regression evidence rather than duplicating their full catalogs.
+Accept: The projection task's focused unit evidence passes, the demo snapshot remains reproducible, parent worldlines remain unchanged, and existing workspace/conformance tests remain green.
+-> render-demo
+-> render-projection
+@artifact text/plain crates/caravan-demo/snapshots/anchor-trace.txt
+@guidance text/markdown proposals/rendering-contract.md
+@guidance text/markdown crates/caravan-demo/tests/snapshot.rs

@@ -17,14 +17,18 @@ advance or mutate a hidden current state.
   semantics, lookahead, branches, and presentation.
 - [Roadmap](roadmap.md) - settled constraints, the completed anchor, remaining
   work, and deferred decisions.
-- [Semantic contract](proposals/semantic-contract.md) - implementation-facing
-  decisions for the engine and the Caravan anchor.
-- [Cellular automata anchor](proposals/cellular-automata-anchor.md) - the
+- [Cellular automata anchor](spec/cellular-automata-anchor.md) - the
   concrete radius-5, 91-tile fixture used by the implementation and tests.
-- [Discontinuity projection](proposals/discontinuity-projection.md) - the
+- [Discontinuity projection](spec/discontinuity-projection.md) - the
   immutable breakpoint, piece-selection, and projection contract.
 - [Build graph](build.vine) - the dependency-ordered implementation packets
   and their acceptance criteria.
+- [Rendering plan](rendering.vine) - the focused backend-neutral rendering
+  slice planned on top of the completed anchor.
+- [Stage layer proposal](proposals/stage-layer.md) - the boundary between the
+  canonical logical game experience and platform presentation plumbing.
+- [Input and interaction boundary](proposals/input-and-interaction.md) - the
+  abstract packet set, interaction-definition, and buffering boundary.
 
 ## Workspace Components
 

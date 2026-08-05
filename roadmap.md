@@ -1,8 +1,8 @@
 # Caravan of Seasons Roadmap
 
 The abstract model is defined in [spec/initial.md](spec/initial.md). The
-implementation graph is [build.vine](build.vine); semantic decisions belong in
-[proposals/semantic-contract.md](proposals/semantic-contract.md).
+implementation graph is [build.vine](build.vine); canonical behavior lives in
+the specifications and active proposals that own each boundary.
 
 ## Target
 
@@ -67,24 +67,22 @@ The packet-level delegation plan and its path ownership remain in
 
 ## Remaining Work
 
-### Closed temporal definition language
+### Orchestrator-backed vertical slice
 
-Define closed data values for temporal definitions, identifiers, journal facts,
-and typed out-of-domain results where a definition genuinely has no value.
-Decide which compact journal entries expand into indexed domain elements and how
-their deterministic identity is represented.
-
-### Caravan vertical slice
-
-Turn the fixed anchor into the smallest recognizable game loop: one indexed
-quantity, one player event, journal writing, past/present/future lookup,
-lookahead, one branch choice, and presentation. Its trace must remain
-reproducible without hidden frame state.
+Build the smallest recognizable game loop with developer-authored Orchestrator
+code: one indexed quantity, one player event, packet interpretation, journal
+publication, past/present/future lookup, lookahead, one branch choice, and
+presentation. Its trace must remain reproducible without imperative game-owned
+state.
 
 ### Broader domain composition
 
 Extend the domain only when a concrete requirement identifies the additional
 definitions, composition rules, and evidence needed beyond the current anchor.
+
+Reusable DSL extraction and generic compact journal-entry expansion are
+deferred until Orchestrator prototypes reveal repeated patterns worth making
+canonical. They are not current implementation obligations.
 
 ## Deferred Until Activated
 
