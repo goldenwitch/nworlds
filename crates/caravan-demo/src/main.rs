@@ -1,11 +1,13 @@
 #![forbid(unsafe_code)]
 
+use caravan_demo::input::{Button, InputPacket};
+use caravan_demo::{CaravanInteraction, CaravanOrchestrator, CaravanStage};
 use caravan_domain::{ActorId, ActorKind, Effect, GameJournalEntry, Terrain, TileId};
 use caravan_reference::{actual, state, ReferenceWorldline, Snapshot};
 use caravan_seeded::generate_spawn_journal;
 use engine_journal::{Journal, JournalWriter};
 use engine_lookahead::{branch_view, future, ViewKind};
-use engine_presentation::{present, LinearPlayback, Renderer};
+use engine_presentation::{LinearPlayback, Renderer};
 use engine_sdk::{Frame, GameState};
 use engine_time::{LogicalTime, Tau, TICKS_PER_LOGICAL_SECOND};
 
@@ -167,26 +169,28 @@ fn main() {
         fork_label(corrected_view.fork_boundary()),
     );
 
-    let renderer = TraceRenderer;
-    let playback = LinearPlayback::one_to_one();
-    print_frame(
-        "actual",
-        present(&authored, &reference_query, &playback, &renderer, tau(10)),
+    let mut interaction_stage = stage(
+        actual(journal([(0, GameJournalEntry::create_saucer())])),
+        tau(0),
     );
-    print_frame(
-        "counterfactual",
-        present(
-            &counterfactual,
-            &reference_query,
-            &playback,
-            &renderer,
-            tau(10),
-        ),
+    interaction_stage.receive_packet(InputPacket::ButtonPressed(Button::Primary));
+    let applied = interaction_stage
+        .interact_and_apply()
+        .expect("demo interaction publication should succeed");
+    println!(
+        "orchestrator: primary_pressed applied={} journal_entries={} origin_terrain={:?}",
+        applied,
+        interaction_stage.orchestrator().worldline().journal().len(),
+        interaction_stage
+            .orchestrator()
+            .sample()
+            .payload()
+            .terrain_at(TileId::origin()),
     );
-    print_frame(
-        "corrected",
-        present(&corrected, &reference_query, &playback, &renderer, tau(10)),
-    );
+
+    print_frame("actual", stage(authored.clone(), tau(10)).present());
+    print_frame("counterfactual", stage(counterfactual, tau(10)).present());
+    print_frame("corrected", stage(corrected, tau(10)).present());
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -227,11 +231,18 @@ fn print_frame(label: &str, frame: Frame<RenderValue>) {
     );
 }
 
-fn reference_query(
-    worldline: &ReferenceWorldline,
-    logical_time: LogicalTime,
-) -> GameState<Snapshot> {
-    state(worldline, logical_time)
+fn stage(
+    worldline: ReferenceWorldline,
+    tau: Tau,
+) -> CaravanStage<CaravanInteraction, TraceRenderer> {
+    let orchestrator = CaravanOrchestrator::new(
+        worldline,
+        LinearPlayback::one_to_one(),
+        tau,
+        CaravanInteraction,
+    )
+    .expect("demo orchestrator should initialize");
+    CaravanStage::new(orchestrator, TraceRenderer)
 }
 
 fn journal(entries: impl IntoIterator<Item = (i64, GameJournalEntry)>) -> Journal {

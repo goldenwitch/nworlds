@@ -11,6 +11,7 @@ fire aging: t_=4 tile=(1, 0) terrain=Void actor=3 effect=None
 seeded journal: seed=0xCAFE horizon=20 entries=7 same_entries=true spawn_times=[10000, 10000, 10000, 20000, 20000, 20000]
 lookahead: fixed_entries=7 t_=30 tick_index=30 tiles=91 actors=0
 branch views: actual=Actual fork=- counterfactual=Counterfactual fork=5000 corrected=Corrected fork=5000
+orchestrator: primary_pressed applied=true journal_entries=2 origin_terrain=Some(Wheat)
 presentation actual: sdk_tau=10000 game_t_=10000 actor_ids=[1] wheat=0 wood=0
 presentation counterfactual: sdk_tau=10000 game_t_=10000 actor_ids=[2] wheat=0 wood=0
 presentation corrected: sdk_tau=10000 game_t_=10000 actor_ids=[3] wheat=0 wood=0

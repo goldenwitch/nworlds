@@ -9,6 +9,7 @@ dependencies = [
  "caravan-domain",
  "caravan-reference",
  "caravan-seeded",
+ "engine-branches",
  "engine-journal",
  "engine-lookahead",
  "engine-presentation",

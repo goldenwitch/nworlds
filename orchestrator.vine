@@ -2,20 +2,20 @@ vine 1.2.0
 prefix: orchestrator
 title: Caravan Orchestrator anchor
 ---
-[root] Caravan Orchestrator vertical slice (notstarted)
+[root] Caravan Orchestrator vertical slice (complete)
 Remap the completed Caravan anchor onto a developer-authored Stage and Orchestrator without changing the immutable engine semantics. Build one small working slice in ordinary Rust, then use its traces to learn which orchestration patterns are worth extracting later.
 Files: orchestrator.vine; proposals/caravan-orchestrator-anchor.md; spec/initial.md; spec/cellular-automata-anchor.md; spec/discontinuity-projection.md; proposals/stage-layer.md; proposals/input-and-interaction.md; crates/caravan-demo/**
 Do: Dispatch the stages only after their dependencies are reviewed. Keep each packet's file ownership disjoint, keep the Orchestrator as mutable control code rather than authoritative game state, and preserve the three immutable seams.
 Accept: A concrete Caravan Orchestrator can interpret one input packet set, produce one closed transformation, publish an immutable journal/worldline update, query arbitrary times, select a branch, and present a deterministic frame while all existing anchor evidence remains green.
 -> anchor
--> orchestrator-contract
--> input-model
--> transformation-model
--> journal-publication
--> orchestrator-core
--> stage-composition
 -> demo-wiring
+-> input-model
+-> journal-publication
+-> orchestrator-contract
+-> orchestrator-core
 -> orchestrator-evidence
+-> stage-composition
+-> transformation-model
 > The engine's authoritative state changes only through publication of a new immutable journal/worldline value.
 > The Orchestrator is ordinary developer-written imperative control code; no universal engine Orchestrator trait or loop API is introduced in this slice.
 > Worldline, Journal, and GameState remain immutable published values; the Orchestrator may replace selected values but may not own an imperative board, actor layer, resource counter, effect layer, or current GameState.
@@ -32,82 +32,82 @@ Files: proposals/caravan-orchestrator-anchor.md
 Do: Keep the remapping proposal aligned with the canonical specifications and the existing engine APIs. Record the three immutable seams, controlled Orchestrator mutation, closed typed journal/transformation values, journal-only authoritative ingress, and the explicit non-goals.
 Accept: The proposal is the single design brief for this graph; it does not claim proposed Stage, Orchestrator, InputPacket, InteractionDefinition, or Transformation types already exist.
 -> anchor
+@artifact text/markdown proposals/caravan-orchestrator-anchor.md
 @guidance text/markdown spec/initial.md
 @guidance text/markdown spec/cellular-automata-anchor.md
 @guidance text/markdown spec/discontinuity-projection.md
 @guidance text/markdown proposals/stage-layer.md
 @guidance text/markdown proposals/input-and-interaction.md
-@artifact text/markdown proposals/caravan-orchestrator-anchor.md
 ---
-[input-model] Abstract input packet seam (notstarted)
-Files: crates/caravan-demo/src/input.rs
+[input-model] Abstract input packet seam (complete)
+Files: crates/caravan-demo/src/lib.rs; crates/caravan-demo/src/input.rs
 Do: Define the smallest Caravan-facing InputPacket and InputPacketSet values plus the proposed InteractionDefinition seam. Keep host/device events out of the model, keep buffered and unbuffered construction invisible to the query, and make the query receive Tau and LogicalTime explicitly. Use closed static types; do not add host timestamps or a dynamic packet bag.
 Accept: Unit-level behavior proves equal packet sets with equal Tau and LogicalTime produce equal transformation results; the seam cannot access JournalWriter, Worldline mutation, prior GameState, host time, or an input-mode flag.
 -> orchestrator-contract
+@artifact text/plain crates/caravan-demo/src/input.rs
 @guidance text/markdown proposals/caravan-orchestrator-anchor.md
 @guidance text/markdown proposals/input-and-interaction.md
 @guidance text/markdown spec/initial.md
-@artifact text/plain crates/caravan-demo/src/input.rs
 ---
-[transformation-model] Closed Caravan transformations (notstarted)
-Files: crates/caravan-demo/src/transformation.rs
-Do: Define the first closed Caravan Transformation DU needed by one player event. Keep journal-authoring payloads distinct from Stage-local or branch operations, and provide the narrow conversion needed when an accepted transformation becomes a GameJournalEntry. Do not expose timestamped entry construction to InteractionDefinition.
+[transformation-model] Closed Caravan transformations (complete)
+Files: crates/caravan-demo/src/lib.rs; crates/caravan-demo/src/transformation.rs
+Do: Define the smallest closed Caravan Transformation DU needed by one player event. Keep journal-authoring payloads distinct from Stage-local or branch operations, and provide the narrow conversion needed when an accepted transformation becomes a GameJournalEntry. Do not expose timestamped entry construction to InteractionDefinition.
 Accept: The transformation type is statically exhaustive, contains no trait objects or Any, and one accepted variant can be converted into an existing Caravan journal payload without choosing its timestamp.
--> input-model
 -> anchor
+-> input-model
+@artifact text/plain crates/caravan-demo/src/transformation.rs
 @guidance text/markdown proposals/caravan-orchestrator-anchor.md
 @guidance text/markdown spec/cellular-automata-anchor.md
-@artifact text/plain crates/caravan-demo/src/transformation.rs
 ---
-[journal-publication] Immutable journal publication bridge (notstarted)
-Files: crates/caravan-demo/src/publication.rs
+[journal-publication] Immutable journal publication bridge (complete)
+Files: crates/caravan-demo/Cargo.toml; crates/caravan-demo/src/lib.rs; crates/caravan-demo/src/publication.rs
 Do: Apply accepted transformations through JournalWriter and publish a new immutable Journal/ReferenceWorldline value. Keep the selected parent value unchanged, preserve JournalWriter timestamp ownership, and use existing corrected/counterfactual branch construction for suffix changes rather than inserting into an actual journal.
 Accept: Tests prove immediate control-step application creates a new query-visible immutable worldline, parent and prior states remain unchanged, target-time visibility and append order remain intact, and corrected suffixes remain strictly after an inclusive fork boundary.
--> transformation-model
 -> anchor
+-> transformation-model
+@artifact text/plain crates/caravan-demo/src/publication.rs
 @guidance text/markdown proposals/caravan-orchestrator-anchor.md
 @guidance text/markdown spec/cellular-automata-anchor.md
-@artifact text/plain crates/caravan-demo/src/publication.rs
 ---
-[orchestrator-core] Developer-authored Orchestrator control (notstarted)
-Files: crates/caravan-demo/src/orchestrator.rs
-Do: Implement the ordinary mutable control object that owns the selected ReferenceWorldline, JournalWriter/publication path, Playback, Tau selection, packet accumulation, InteractionDefinition, branch/lookahead choices, and save/presentation decisions. Permit a literal loop or explicit step method as an application choice. Keep all authoritative game data in immutable published values.
+[orchestrator-core] Developer-authored Orchestrator control (complete)
+Files: crates/caravan-demo/src/lib.rs; crates/caravan-demo/src/orchestrator.rs; crates/caravan-demo/Cargo.toml
+Do: Implement the ordinary mutable CaravanOrchestrator control object that owns the selected ReferenceWorldline, JournalWriter/publication path, Playback, Tau selection, packet accumulation, InteractionDefinition, branch/lookahead choices, and save/presentation decisions. Permit a literal loop or explicit step method as an application choice. Keep all authoritative game data in immutable published values.
 Accept: The Orchestrator can choose a Tau, derive LogicalTime through Playback, query arbitrary past/present/future samples, run the interaction seam, accept or reject transformations, replace its selected immutable worldline, and expose no mutable board/actor/resource/effect/GameState store.
 -> input-model
--> transformation-model
 -> journal-publication
+-> transformation-model
+@artifact text/plain crates/caravan-demo/src/orchestrator.rs
 @guidance text/markdown proposals/caravan-orchestrator-anchor.md
 @guidance text/markdown proposals/stage-layer.md
 @guidance text/markdown proposals/input-and-interaction.md
-@artifact text/plain crates/caravan-demo/src/orchestrator.rs
 ---
-[stage-composition] Caravan Stage composition (notstarted)
-Files: crates/caravan-demo/src/stage.rs
+[stage-composition] Caravan Stage composition (complete)
+Files: crates/caravan-demo/src/lib.rs; crates/caravan-demo/src/stage.rs; crates/caravan-demo/src/orchestrator.rs
 Do: Compose the Orchestrator with the existing generic presentation renderer and query path behind a concrete CaravanStage boundary. Keep the host-facing surface small; the host supplies execution opportunities and abstract packets, while Stage owns the selected worldline, temporal orchestration, interaction, and rendering composition.
 Accept: Stage owns its Orchestrator transitively, the host does not select logical time or branch semantics, explicit Tau sampling remains available for replay/tests, and rendering receives only the selected GameState and Tau.
--> orchestrator-core
 -> anchor
+-> orchestrator-core
+@artifact text/plain crates/caravan-demo/src/stage.rs
 @guidance text/markdown proposals/caravan-orchestrator-anchor.md
 @guidance text/markdown proposals/stage-layer.md
 @guidance text/markdown crates/engine-presentation/src/presentation.rs
-@artifact text/plain crates/caravan-demo/src/stage.rs
 ---
-[demo-wiring] Runnable Caravan Orchestrator demo (notstarted)
-Files: crates/caravan-demo/src/main.rs
+[demo-wiring] Runnable Caravan Orchestrator demo (complete)
+Files: crates/caravan-demo/src/main.rs; crates/caravan-demo/src/lib.rs; crates/caravan-demo/src/orchestrator.rs; crates/caravan-demo/src/stage.rs; crates/caravan-demo/snapshots/anchor-trace.txt
 Do: Wire CaravanStage into the existing deterministic terminal demo without changing the anchor trace's meaning. Show one input-to-transformation-to-journal publication path, arbitrary time queries, one branch choice, persistence/presentation choice, and the existing renderer/frame observables.
 Accept: One deterministic command reproduces the new Orchestrator trace; it demonstrates journal-only game-state change, parent isolation, explicit Tau/LogicalTime sampling, and the existing anchor behavior remains visible.
 -> stage-composition
+@artifact text/plain crates/caravan-demo/src/main.rs
 @guidance text/markdown proposals/caravan-orchestrator-anchor.md
 @guidance text/markdown crates/caravan-demo/src/main.rs
-@artifact text/plain crates/caravan-demo/src/main.rs
 ---
-[orchestrator-evidence] Orchestrator acceptance evidence (notstarted)
+[orchestrator-evidence] Orchestrator acceptance evidence (complete)
 Files: crates/caravan-demo/tests/orchestrator.rs; crates/caravan-demo/snapshots/orchestrator-trace.txt
 Do: Add focused tests for the three seams and controlled mutation boundary: state queries remain direct, render output depends on GameState and Tau, interaction produces closed transformations, publication creates new immutable worldlines, branches isolate parents, and repeated/non-monotonic samples remain deterministic.
 Accept: The focused Orchestrator tests and trace pass; existing workspace, conformance, persistence, presentation, purity, and demo evidence remains green. No test introduces an imperative game-owned state shadow.
+-> demo-wiring
 -> orchestrator-core
 -> stage-composition
--> demo-wiring
+@artifact text/plain crates/caravan-demo/snapshots/orchestrator-trace.txt
 @guidance text/markdown proposals/caravan-orchestrator-anchor.md
 @guidance text/markdown spec/initial.md
-@artifact text/plain crates/caravan-demo/snapshots/orchestrator-trace.txt

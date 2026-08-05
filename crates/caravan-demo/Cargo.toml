@@ -7,6 +7,7 @@ edition = "2021"
 caravan-domain = { path = "../caravan-domain" }
 caravan-reference = { path = "../caravan-reference" }
 caravan-seeded = { path = "../caravan-seeded" }
+engine-branches = { path = "../engine-branches" }
 engine-journal = { path = "../engine-journal" }
 engine-lookahead = { path = "../engine-lookahead" }
 engine-presentation = { path = "../engine-presentation" }
