@@ -214,7 +214,8 @@ presentation-time policy once a `Tau` exists.
 
 This proposal does not:
 
-- add a `Stage` type to the workspace;
+- add `Stage` or `Orchestrator` types to the generic engine; the experimental
+    `CaravanStage` and `CaravanOrchestrator` live in the application layer;
 - change `spec/initial.md`;
 - redefine `Worldline`, `LogicalTime`, `Tau`, `Playback`, `GameState`, or
   `Frame`;

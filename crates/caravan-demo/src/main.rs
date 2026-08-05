@@ -178,19 +178,40 @@ fn main() {
         .interact_and_apply()
         .expect("demo interaction publication should succeed");
     println!(
-        "orchestrator: primary_pressed applied={} journal_entries={} origin_terrain={:?}",
+        "orchestrator: primary_pressed applied={} journal_entries={} origin_terrain={:?} saved_bytes={}",
         applied,
         interaction_stage.orchestrator().worldline().journal().len(),
         interaction_stage
             .orchestrator()
             .sample()
+            .expect("orchestrator sample should be valid")
             .payload()
             .terrain_at(TileId::origin()),
+        interaction_stage
+            .orchestrator()
+            .save_selected()
+            .expect("selected worldline should save")
+            .len(),
     );
 
-    print_frame("actual", stage(authored.clone(), tau(10)).present());
-    print_frame("counterfactual", stage(counterfactual, tau(10)).present());
-    print_frame("corrected", stage(corrected, tau(10)).present());
+    print_frame(
+        "actual",
+        stage(authored.clone(), tau(10))
+            .present()
+            .expect("actual stage frame should be valid"),
+    );
+    print_frame(
+        "counterfactual",
+        stage(counterfactual, tau(10))
+            .present()
+            .expect("counterfactual stage frame should be valid"),
+    );
+    print_frame(
+        "corrected",
+        stage(corrected, tau(10))
+            .present()
+            .expect("corrected stage frame should be valid"),
+    );
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]

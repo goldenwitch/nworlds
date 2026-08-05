@@ -1,12 +1,13 @@
 # Caravan Orchestrator Anchor
 
-This proposal remaps the completed Caravan anchor onto the Stage and
-Orchestrator boundaries. It is an implementation target for the next vertical
-slice, not a replacement for the canonical anchor specifications.
+This proposal records the remapping of the completed Caravan anchor onto the
+Stage and Orchestrator boundaries. Its initial application prototype is now
+implemented; the proposal remains the design boundary for future extraction
+and refinement, not a replacement for the canonical anchor specifications.
 
 The purpose is to exercise the new composition with ordinary developer-written
 Rust while preserving the existing indexed-engine invariants. The first
-Orchestrator is an experiment in orchestration shape; it is not yet a generic
+Orchestrator is an experiment in orchestration shape; it is not a generic
 engine abstraction or a claim that a universal game DSL has been found.
 
 ## Existing Anchor
@@ -50,10 +51,10 @@ CaravanOrchestrator
     query, branch, save, and presentation decisions
 ```
 
-The exact Rust structs and host entrypoint are intentionally not fixed here.
-The first implementation may be an ordinary type in `caravan-demo` or another
-application-facing crate. No engine-wide `Orchestrator` trait is required until
-multiple concrete orchestrators reveal a stable variation boundary.
+The initial Rust structs and host entrypoint live in `caravan-demo`; their
+shape is intentionally still application-owned. No engine-wide
+`Orchestrator` trait is required until multiple concrete orchestrators reveal a
+stable variation boundary.
 
 Rust's static composition remains preferred: the concrete Caravan query,
 interaction definition, renderer, and persistence components are composed as
@@ -95,9 +96,9 @@ reason over heterogeneous journal facts with ordinary Rust `match`,
 `filter_map`, and iterator expressions. The first Orchestrator does not use
 `Box<dyn Trait>`, `Any`, or untyped payloads for journal facts.
 
-The same rule applies to the proposed transformations: a concrete Caravan
-`Transformation` will be a closed data type whose variants may describe journal
-authoring, branch operations, Stage-local changes, or rejection. A future
+The same rule applies to the application `Transformation`: it is a closed data
+type whose variants may describe journal authoring, branch operations,
+Stage-local changes, or rejection. A future
 convenience filter or wrapper is syntactic sugar over these typed values, not a
 second dynamic journal model.
 
@@ -146,11 +147,12 @@ interaction_query(
 ) -> transformation
 ```
 
-The proposed `InteractionDefinition` is the current pure seam where the
-developer will write interaction reasoning. It receives abstract packets and
-the selected sample; it does not receive host events, host time, a journal
-writer, or a mutable board. It will return proposed closed `Transformation`
-data rather than a timestamped journal entry or an arbitrary mutation callback.
+The application prototype's `InteractionDefinition` is the current pure seam
+where the developer writes interaction reasoning. It receives abstract packets
+and the selected sample; it does not receive host events, host time, a journal
+writer, or a mutable board. It returns closed `Transformation` data rather than
+a timestamped journal entry or an arbitrary mutation callback. These are
+application-level types, not generic engine APIs.
 
 The query is identical for samples in the past, present, or future. Whether the
 packet set was delivered directly or retained by Orchestrator input
@@ -254,7 +256,7 @@ The remapping is successful when a concrete Caravan Orchestrator demonstrates:
 - it selects `Tau` and obtains `LogicalTime` through the selected `Playback`;
 - it queries arbitrary past, present, and future times through the existing
   direct reference oracle;
-- the proposed `InteractionDefinition` seam returns proposed closed
+- the application `InteractionDefinition` seam returns closed
   `Transformation` data from an
   `InputPacketSet` and selected sample;
 - accepted authoritative transformations publish new immutable journal or
@@ -276,16 +278,16 @@ This proposal does not:
 - define a universal Orchestrator trait or loop API;
 - introduce imperative game-owned state;
 - add `InputTime` or packet timestamps;
-- settle the concrete `InputPacket` or `Transformation` enums; these names are
-  proposal vocabulary, not current engine APIs;
+- generalize the initial application `InputPacket` or `Transformation` enums
+  into engine-wide APIs;
 - choose camera, HUD, coordinate projection, assets, GPU, windowing, or device
   architecture; or
 - extract a reusable DSL before concrete Orchestrator behavior exists.
 
 ## Open Questions
 
-1. What is the smallest Caravan transformation that exercises journal
-   publication without inventing a new domain rule?
+1. Which additional Caravan transformations should be added after the initial
+  `SetTerrain`/`Noop` prototype without inventing unnecessary domain rules?
 2. Which Orchestrator control state must survive persistence or replay, and
    which is disposable execution state?
 3. What host execution-opportunity shape gives a useful demo without making

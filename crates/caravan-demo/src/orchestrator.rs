@@ -1,5 +1,5 @@
 use caravan_domain::{Terrain, TileId};
-use caravan_reference::{state, ReferenceWorldline, State, Worldline};
+use caravan_reference::{try_state, ProjectionError, ReferenceWorldline, State, Worldline};
 use engine_branches::BranchError;
 use engine_journal::{Journal, JournalWriter, JournalWriterError};
 use engine_presentation::LinearPlayback;
@@ -7,14 +7,17 @@ use engine_sdk::Playback;
 use engine_time::{LogicalTime, Tau};
 
 use crate::input::{interaction_query, Button, InputPacket, InputPacketSet, InteractionDefinition};
-use crate::publication::{writer_from_journal, PublicationError};
+use crate::publication::{
+    publish_corrected, publish_counterfactual, writer_from_journal, PublicationError,
+};
 use crate::transformation::Transformation;
 
 /// Errors raised while coordinating mutable Orchestrator control state.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum OrchestratorError {
     Publication(PublicationError),
-    NonActualAppend,
+    AppendRequiresActualWorldline,
+    Projection(ProjectionError),
     TauOverflow,
 }
 
@@ -33,6 +36,12 @@ impl From<BranchError> for OrchestratorError {
 impl From<JournalWriterError> for OrchestratorError {
     fn from(error: JournalWriterError) -> Self {
         Self::Publication(PublicationError::JournalWriter(error))
+    }
+}
+
+impl From<ProjectionError> for OrchestratorError {
+    fn from(error: ProjectionError) -> Self {
+        Self::Projection(error)
     }
 }
 
@@ -127,13 +136,13 @@ where
     }
 
     /// Queries the selected worldline at the current Stage sample.
-    pub fn sample(&self) -> State {
-        state(&self.worldline, self.logical_time())
+    pub fn sample(&self) -> Result<State, OrchestratorError> {
+        Ok(try_state(&self.worldline, self.logical_time())?)
     }
 
     /// Performs a direct lookahead query without changing the selected sample.
-    pub fn lookahead_at(&self, logical_time: LogicalTime) -> State {
-        state(&self.worldline, logical_time)
+    pub fn lookahead_at(&self, logical_time: LogicalTime) -> Result<State, OrchestratorError> {
+        Ok(try_state(&self.worldline, logical_time)?)
     }
 
     /// Adds one abstract packet to the current packet accumulation.
@@ -177,11 +186,51 @@ where
             return Ok(false);
         };
         if !self.worldline.is_actual() {
-            return Err(OrchestratorError::NonActualAppend);
+            return Err(OrchestratorError::AppendRequiresActualWorldline);
         }
 
         self.writer.record(payload);
         self.worldline = Worldline::new(self.worldline.context().clone(), self.writer.snapshot());
+        Ok(true)
+    }
+
+    /// Publishes an accepted transformation as a new counterfactual child.
+    pub fn apply_counterfactual(
+        &mut self,
+        fork_boundary: LogicalTime,
+        authoring_time: LogicalTime,
+        transformation: Transformation,
+    ) -> Result<bool, OrchestratorError> {
+        if transformation.into_journal_entry().is_none() {
+            return Ok(false);
+        }
+        let child = publish_counterfactual(
+            &self.worldline,
+            fork_boundary,
+            authoring_time,
+            transformation,
+        )?;
+        self.replace_worldline(child)?;
+        Ok(true)
+    }
+
+    /// Publishes an accepted transformation as a new corrected child.
+    pub fn apply_corrected(
+        &mut self,
+        fork_boundary: LogicalTime,
+        authoring_time: LogicalTime,
+        transformation: Transformation,
+    ) -> Result<bool, OrchestratorError> {
+        if transformation.into_journal_entry().is_none() {
+            return Ok(false);
+        }
+        let child = publish_corrected(
+            &self.worldline,
+            fork_boundary,
+            authoring_time,
+            transformation,
+        )?;
+        self.replace_worldline(child)?;
         Ok(true)
     }
 
@@ -192,9 +241,7 @@ where
         suffix: &Journal,
     ) -> Result<(), OrchestratorError> {
         let child = self.worldline.counterfactual(fork_boundary, suffix)?;
-        self.writer = writer_from_journal(child.journal())?;
-        self.worldline = child;
-        Ok(())
+        self.replace_worldline(child)
     }
 
     /// Selects an immutable corrected child and refreshes authoring state.
@@ -204,8 +251,20 @@ where
         suffix: &Journal,
     ) -> Result<(), OrchestratorError> {
         let child = self.worldline.corrected_suffix(fork_boundary, suffix)?;
-        self.writer = writer_from_journal(child.journal())?;
-        self.worldline = child;
+        self.replace_worldline(child)
+    }
+
+    /// Serializes the selected immutable worldline for an Orchestrator save choice.
+    pub fn save_selected(&self) -> Result<Vec<u8>, engine_persistence::PersistenceError> {
+        engine_persistence::encode(&self.worldline)
+    }
+
+    fn replace_worldline(
+        &mut self,
+        worldline: ReferenceWorldline,
+    ) -> Result<(), OrchestratorError> {
+        self.writer = writer_from_journal(worldline.journal())?;
+        self.worldline = worldline;
         Ok(())
     }
 }
@@ -214,8 +273,9 @@ where
 mod tests {
     use super::{CaravanInteraction, CaravanOrchestrator, OrchestratorError};
     use crate::input::{Button, InputPacket};
+    use crate::transformation::Transformation;
     use caravan_domain::GameJournalEntry;
-    use caravan_reference::{actual, state};
+    use caravan_reference::{actual, state, ProjectionError};
     use engine_journal::JournalWriter;
     use engine_presentation::LinearPlayback;
     use engine_time::{LogicalTime, Tau};
@@ -240,10 +300,26 @@ mod tests {
     fn orchestrator_chooses_tau_and_queries_through_playback() {
         let mut orchestrator = orchestrator();
         orchestrator.set_tau(Tau::from_ticks(time(4).ticks()));
+        let original_worldline = orchestrator.worldline().clone();
+        let original_tau = orchestrator.tau();
 
         assert_eq!(orchestrator.logical_time(), time(4));
-        assert_eq!(orchestrator.sample().logical_time(), time(4));
-        assert_eq!(orchestrator.lookahead_at(time(8)).logical_time(), time(8));
+        assert_eq!(
+            orchestrator
+                .sample()
+                .expect("sample should be valid")
+                .logical_time(),
+            time(4)
+        );
+        assert_eq!(
+            orchestrator
+                .lookahead_at(time(8))
+                .expect("lookahead should be valid")
+                .logical_time(),
+            time(8)
+        );
+        assert_eq!(orchestrator.worldline(), &original_worldline);
+        assert_eq!(orchestrator.tau(), original_tau);
     }
 
     #[test]
@@ -266,6 +342,7 @@ mod tests {
         assert_eq!(
             orchestrator
                 .sample()
+                .expect("published sample should be valid")
                 .payload()
                 .terrain_at(caravan_domain::TileId::origin()),
             Some(caravan_domain::Terrain::Wheat)
@@ -286,11 +363,120 @@ mod tests {
         orchestrator
             .select_counterfactual(time(0), &suffix)
             .expect("counterfactual selection succeeds");
+        let child_before_rejected_append = orchestrator.worldline().clone();
         orchestrator.receive_packet(InputPacket::ButtonPressed(Button::Primary));
 
         assert_eq!(
             orchestrator.interact_and_apply(),
-            Err(OrchestratorError::NonActualAppend)
+            Err(OrchestratorError::AppendRequiresActualWorldline)
         );
+        assert_eq!(
+            orchestrator.worldline(),
+            &child_before_rejected_append,
+            "rejected child append must not publish a replacement"
+        );
+    }
+
+    #[test]
+    fn orchestrator_appends_at_writer_cursor_not_selected_tau() {
+        let mut writer = JournalWriter::new();
+        writer.record(GameJournalEntry::create_saucer());
+        writer
+            .advance_to(time(7))
+            .expect("postdated time is forward");
+        writer.record(GameJournalEntry::SetTerrain {
+            tile: caravan_domain::TileId::origin(),
+            terrain: caravan_domain::Terrain::Forest,
+        });
+        let mut orchestrator = CaravanOrchestrator::new(
+            caravan_reference::actual(writer.finish()),
+            LinearPlayback::one_to_one(),
+            Tau::from_ticks(time(2).ticks()),
+            CaravanInteraction,
+        )
+        .expect("postdated orchestrator should initialize");
+        orchestrator.receive_packet(InputPacket::ButtonPressed(Button::Primary));
+
+        orchestrator
+            .interact_and_apply()
+            .expect("publication should use the writer cursor");
+
+        assert_eq!(orchestrator.worldline().journal().len(), 3);
+        assert_eq!(
+            orchestrator
+                .worldline()
+                .journal()
+                .get(2)
+                .unwrap()
+                .logical_time(),
+            time(7)
+        );
+        assert_ne!(
+            orchestrator
+                .worldline()
+                .journal()
+                .get(2)
+                .unwrap()
+                .logical_time(),
+            LogicalTime::from_ticks(orchestrator.tau().ticks())
+        );
+    }
+
+    #[test]
+    fn accepted_transformations_can_publish_explicit_child_branches() {
+        let mut orchestrator = orchestrator();
+        let parent = orchestrator.worldline().clone();
+
+        assert!(orchestrator
+            .apply_counterfactual(
+                time(0),
+                time(1),
+                Transformation::SetTerrain {
+                    tile: caravan_domain::TileId::origin(),
+                    terrain: caravan_domain::Terrain::Forest,
+                },
+            )
+            .expect("counterfactual publication succeeds"));
+        assert_eq!(
+            orchestrator.worldline().kind(),
+            engine_branches::BranchKind::Counterfactual
+        );
+        assert_eq!(parent.journal().len(), 1);
+        assert_eq!(orchestrator.worldline().journal().len(), 2);
+
+        assert!(orchestrator
+            .apply_corrected(
+                time(0),
+                time(2),
+                Transformation::SetTerrain {
+                    tile: caravan_domain::TileId::origin(),
+                    terrain: caravan_domain::Terrain::Wheat,
+                },
+            )
+            .expect("corrected publication succeeds"));
+        assert_eq!(
+            orchestrator.worldline().kind(),
+            engine_branches::BranchKind::Corrected
+        );
+    }
+
+    #[test]
+    fn malformed_radius_is_an_explicit_projection_error() {
+        let mut writer = JournalWriter::new();
+        writer.record(GameJournalEntry::CreateSaucer { radius: 4 });
+        let orchestrator = CaravanOrchestrator::new(
+            caravan_reference::actual(writer.finish()),
+            LinearPlayback::one_to_one(),
+            Tau::zero(),
+            CaravanInteraction,
+        )
+        .expect("authoring cursor can represent malformed payloads");
+
+        assert!(matches!(
+            orchestrator.sample(),
+            Err(OrchestratorError::Projection(
+                ProjectionError::UnsupportedSaucerRadius { found: 4, .. }
+            ))
+        ));
     }
 }

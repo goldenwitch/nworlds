@@ -46,7 +46,8 @@ artifacts cover the demo, conformance report, persistence, benchmarks,
 compiler-boundary tests, and independent frozen projection corpus. The public
 query is direct, the retired tick-fold calculation is absent, and the reference
 oracle selects immutable discontinuity pieces before doing query-local rule
-calculation.
+calculation. The first application-level Caravan Orchestrator slice is also
+implemented and tested; it does not add a generic engine Orchestrator API.
 
 This is a deterministic reference/demo/evidence package, not yet a finished
 game or distribution platform.
@@ -65,17 +66,12 @@ The completed packet provides:
 The packet-level delegation plan and its path ownership remain in
 [build.vine](build.vine); this roadmap records the higher-level direction.
 
+The Orchestrator experiment provides a mutable control layer over immutable
+worldline, journal, and game-state values. Its input, transformation,
+publication, Stage, persistence, and presentation evidence is in
+[orchestrator.vine](orchestrator.vine).
+
 ## Remaining Work
-
-### Orchestrator-backed vertical slice
-
-Build the smallest recognizable game loop with developer-authored Orchestrator
-code: one indexed quantity, one player event, packet interpretation, journal
-publication, past/present/future lookup, lookahead, one branch choice, and
-presentation. Its trace must remain reproducible without imperative game-owned
-state. The proposed remapping is documented in
-[caravan-orchestrator-anchor.md](proposals/caravan-orchestrator-anchor.md).
-Its staged implementation graph is [orchestrator.vine](orchestrator.vine).
 
 ### Broader domain composition
 

@@ -1,6 +1,6 @@
-use caravan_reference::{state, ReferenceWorldline, Snapshot};
-use engine_presentation::{present, Renderer};
-use engine_sdk::{Frame, GameState};
+use caravan_reference::{try_state, Snapshot};
+use engine_presentation::Renderer;
+use engine_sdk::{Frame, GameState, Playback};
 use engine_time::{LogicalTime, Tau};
 
 use crate::input::{InputPacket, InteractionDefinition};
@@ -31,14 +31,19 @@ where
         &self.orchestrator
     }
 
-    /// Mutably borrows the Stage's Orchestrator control state.
-    pub fn orchestrator_mut(&mut self) -> &mut CaravanOrchestrator<I> {
-        &mut self.orchestrator
-    }
-
     /// Receives one abstract packet through the Stage boundary.
     pub fn receive_packet(&mut self, packet: InputPacket) {
         self.orchestrator.receive_packet(packet);
+    }
+
+    /// Sets the Stage-owned presentation sample.
+    pub fn set_tau(&mut self, tau: Tau) {
+        self.orchestrator.set_tau(tau);
+    }
+
+    /// Advances the Stage-owned presentation sample by signed ticks.
+    pub fn advance_tau(&mut self, ticks: i64) -> Result<Tau, OrchestratorError> {
+        self.orchestrator.advance_tau(ticks)
     }
 
     /// Runs interaction and publication through the Stage's Orchestrator.
@@ -46,23 +51,38 @@ where
         self.orchestrator.interact_and_apply()
     }
 
+    /// Publishes a transformation as a counterfactual child through Stage.
+    pub fn apply_counterfactual(
+        &mut self,
+        fork_boundary: LogicalTime,
+        authoring_time: LogicalTime,
+        transformation: Transformation,
+    ) -> Result<bool, OrchestratorError> {
+        self.orchestrator
+            .apply_counterfactual(fork_boundary, authoring_time, transformation)
+    }
+
+    /// Publishes a transformation as a corrected child through Stage.
+    pub fn apply_corrected(
+        &mut self,
+        fork_boundary: LogicalTime,
+        authoring_time: LogicalTime,
+        transformation: Transformation,
+    ) -> Result<bool, OrchestratorError> {
+        self.orchestrator
+            .apply_corrected(fork_boundary, authoring_time, transformation)
+    }
+
     /// Presents the Orchestrator's currently selected Tau.
-    pub fn present(&self) -> Frame<R::Output> {
+    pub fn present(&self) -> Result<Frame<R::Output>, OrchestratorError> {
         self.present_at(self.orchestrator.tau())
     }
 
     /// Presents one explicit Tau without changing the Orchestrator cursor.
-    pub fn present_at(&self, tau: Tau) -> Frame<R::Output> {
-        let query = |worldline: &ReferenceWorldline, logical_time: LogicalTime| {
-            state(worldline, logical_time)
-        };
-        present(
-            self.orchestrator.worldline(),
-            &query,
-            &self.orchestrator.playback(),
-            &self.renderer,
-            tau,
-        )
+    pub fn present_at(&self, tau: Tau) -> Result<Frame<R::Output>, OrchestratorError> {
+        let logical_time = self.orchestrator.playback().logical_time_at(tau);
+        let state = try_state(self.orchestrator.worldline(), logical_time)?;
+        Ok(Frame::new(tau, self.renderer.render(&state, tau)))
     }
 }
 
@@ -113,9 +133,9 @@ mod tests {
                 .expect("test game time is representable")
                 .ticks(),
         );
-        stage.orchestrator_mut().set_tau(tau);
+        stage.set_tau(tau);
 
-        let frame = stage.present();
+        let frame = stage.present().expect("stage sample should be valid");
 
         assert_eq!(frame.tau(), tau);
         assert_eq!(
@@ -129,7 +149,9 @@ mod tests {
         let stage = stage();
         let explicit_tau = Tau::from_ticks(9);
 
-        let frame = stage.present_at(explicit_tau);
+        let frame = stage
+            .present_at(explicit_tau)
+            .expect("explicit stage sample should be valid");
 
         assert_eq!(frame.tau(), explicit_tau);
         assert_eq!(stage.orchestrator().tau(), Tau::zero());

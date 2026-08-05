@@ -1,5 +1,5 @@
 use caravan_domain::GameJournalEntry;
-use caravan_reference::{ReferenceWorldline, Worldline};
+use caravan_reference::ReferenceWorldline;
 use engine_branches::BranchError;
 use engine_journal::{Journal, JournalWriter, JournalWriterError};
 use engine_time::LogicalTime;
@@ -24,20 +24,6 @@ impl From<BranchError> for PublicationError {
     fn from(error: BranchError) -> Self {
         Self::Branch(error)
     }
-}
-
-/// Appends an accepted transformation to an actual worldline as a new value.
-pub fn publish_actual_append(
-    parent: &ReferenceWorldline,
-    authoring_time: LogicalTime,
-    transformation: Transformation,
-) -> Result<ReferenceWorldline, PublicationError> {
-    let payload = journal_payload(transformation)?;
-    let mut writer = writer_from_journal(parent.journal())?;
-    writer.advance_to(authoring_time)?;
-    writer.record(payload);
-
-    Ok(Worldline::new(parent.context().clone(), writer.finish()))
 }
 
 /// Builds a counterfactual child with one accepted transformation after a fork.
@@ -91,7 +77,7 @@ fn journal_payload(transformation: Transformation) -> Result<GameJournalEntry, P
 
 #[cfg(test)]
 mod tests {
-    use super::{publish_actual_append, publish_corrected, PublicationError};
+    use super::{publish_corrected, PublicationError};
     use crate::transformation::Transformation;
     use caravan_domain::{GameJournalEntry, Terrain, TileId};
     use caravan_reference::{actual, state};
@@ -106,36 +92,6 @@ mod tests {
         let mut writer = JournalWriter::new();
         writer.record(GameJournalEntry::create_saucer());
         actual(writer.finish())
-    }
-
-    #[test]
-    fn actual_publication_creates_visible_value_without_mutating_parent() {
-        let parent = parent();
-        let published = publish_actual_append(
-            &parent,
-            time(4),
-            Transformation::SetTerrain {
-                tile: TileId::origin(),
-                terrain: Terrain::Wheat,
-            },
-        )
-        .expect("forward authoring should publish");
-
-        assert_eq!(parent.journal().len(), 1);
-        assert_eq!(published.journal().len(), 2);
-        assert_eq!(
-            state(&parent, time(4))
-                .payload()
-                .terrain_at(TileId::origin()),
-            Some(Terrain::Void)
-        );
-        assert_eq!(
-            state(&published, time(4))
-                .payload()
-                .terrain_at(TileId::origin()),
-            Some(Terrain::Wheat)
-        );
-        assert_eq!(published.journal().get(1).unwrap().logical_time(), time(4));
     }
 
     #[test]

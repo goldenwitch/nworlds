@@ -12,6 +12,7 @@ dependencies = [
  "engine-branches",
  "engine-journal",
  "engine-lookahead",
+ "engine-persistence",
  "engine-presentation",
  "engine-sdk",
  "engine-time",

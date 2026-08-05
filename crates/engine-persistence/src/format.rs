@@ -152,7 +152,7 @@ impl From<BranchError> for PersistenceError {
 /// The record contains the reference context definition, branch lineage, and
 /// append-ordered SDK journal envelopes. It contains no frames, snapshots, or
 /// presentation history.
-pub fn encode(worldline: &ReferenceWorldline) -> Vec<u8> {
+pub fn encode(worldline: &ReferenceWorldline) -> Result<Vec<u8>, PersistenceError> {
     let mut writer = Writer::new();
     writer.bytes(&FORMAT_MAGIC);
     writer.u16(FORMAT_VERSION);
@@ -173,11 +173,12 @@ pub fn encode(worldline: &ReferenceWorldline) -> Vec<u8> {
 
     writer.u64(worldline.journal().len() as u64);
     for entry in worldline.journal().iter() {
+        validate_payload(entry.payload())?;
         writer.i64(entry.logical_time().ticks());
         encode_payload(&mut writer, entry.payload());
     }
 
-    writer.finish()
+    Ok(writer.finish())
 }
 
 /// Decodes one reference worldline record.
@@ -214,7 +215,7 @@ pub fn save(
     worldline: &ReferenceWorldline,
     path: impl AsRef<Path>,
 ) -> Result<(), PersistenceError> {
-    fs::write(path, encode(worldline)).map_err(PersistenceError::Io)
+    fs::write(path, encode(worldline)?).map_err(PersistenceError::Io)
 }
 
 /// Loads a worldline from a deterministic binary format file.
