@@ -90,6 +90,7 @@ Accept: Writer tests cover advance_to, record, postdated visibility, backward re
 -> domain-model
 -> sdk-envelopes
 @artifact text/plain crates/engine-journal/src/lib.rs
+> Journal heterogeneity is represented by one closed game-owned payload type; the low-level SDK envelope is generic, while the current game-facing journal/branch facades remain Caravan-bound. Neither layer becomes a runtime object collection or untyped bag.
 ---
 [branch-model] Counterfactual and corrected branches (complete)
 Files: crates/engine-branches/**; consume engine-sdk and engine-journal APIs

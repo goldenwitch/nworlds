@@ -73,7 +73,9 @@ Build the smallest recognizable game loop with developer-authored Orchestrator
 code: one indexed quantity, one player event, packet interpretation, journal
 publication, past/present/future lookup, lookahead, one branch choice, and
 presentation. Its trace must remain reproducible without imperative game-owned
-state.
+state. The proposed remapping is documented in
+[caravan-orchestrator-anchor.md](proposals/caravan-orchestrator-anchor.md).
+Its staged implementation graph is [orchestrator.vine](orchestrator.vine).
 
 ### Broader domain composition
 

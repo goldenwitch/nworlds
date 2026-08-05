@@ -29,6 +29,11 @@ advance or mutate a hidden current state.
   canonical logical game experience and platform presentation plumbing.
 - [Input and interaction boundary](proposals/input-and-interaction.md) - the
   abstract packet set, interaction-definition, and buffering boundary.
+- [Caravan Orchestrator anchor](proposals/caravan-orchestrator-anchor.md) -
+  the next remapping checkpoint for exercising Stage and Orchestrator around
+  the existing immutable engine seams.
+- [Orchestrator build graph](orchestrator.vine) - the staged implementation
+  plan for the first developer-authored Caravan Orchestrator.
 
 ## Workspace Components
 
