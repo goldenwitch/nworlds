@@ -10,6 +10,15 @@ Rust while preserving the existing indexed-engine invariants. The first
 Orchestrator is an experiment in orchestration shape; it is not a generic
 engine abstraction or a claim that a universal game DSL has been found.
 
+## Vocabulary Convention
+
+Conceptual terms in this proposal are **bold** when defined or emphasized.
+Exact Rust/API spellings remain in backticks. The Stage and host proposals own
+the meanings of **Stage**, **Orchestrator**, and **presentation host**; this
+document owns their Caravan composition. The initial specification owns the
+formal meanings of **worldline**, **game state**, **Tau**, **LogicalTime**,
+**playback**, and **frame**.
+
 ## Existing Anchor
 
 The current anchor already provides the authoritative machinery:
@@ -174,15 +183,16 @@ These are orchestration values, not a second game-state model. The Orchestrator
 must not own or mutate an imperative board, actor set, terrain layer, effect
 layer, resource counter, or current `GameState`.
 
-The host supplies execution opportunities and abstract `InputPacket` values.
-The Orchestrator decides what the opportunity means for the game experience:
-which `Tau` to sample, whether presentation time advances, whether to query,
-which branch to view, which values to save, and which frame to present. The
-host does not become the owner of logical time or journal semantics.
+The Orchestrator owns control flow and may run a literal loop or pull loop over
+host capabilities. It requests platform input, storage, clock observations, or
+backend work when needed. It decides which `Tau` to sample, whether
+presentation time advances, whether to query, which branch to view, which
+values to save, and which frame to present. The host does not become the owner
+of logical time or journal semantics.
 
-A literal `while (true)` loop, a host callback, a replay driver, or a test
-harness are all valid first orchestration shapes. The engine does not impose a
-static clock or a universal loop frequency at this stage.
+A literal `while (true)` loop, a replay driver, or a test harness are all valid
+first orchestration shapes. The engine does not impose a static clock or a
+universal loop frequency at this stage.
 
 ## Transformation and Journal Publication
 
@@ -228,9 +238,9 @@ render choice does not change authoritative game state.
 A first implementation may follow this developer-authored control flow:
 
 ```text
-orchestrator execution opportunity
-    -> acquire or receive abstract InputPacket values
-    -> construct the InputPacketSet
+Orchestrator control-flow iteration
+  -> drain InputIngress for abstract input packets
+  -> construct the InputPacketSet
     -> choose Tau and the viewed ReferenceWorldline
     -> Playback maps Tau -> LogicalTime
     -> query ReferenceWorldline -> GameState<Snapshot>
@@ -290,7 +300,7 @@ This proposal does not:
   `SetTerrain`/`Noop` prototype without inventing unnecessary domain rules?
 2. Which Orchestrator control state must survive persistence or replay, and
    which is disposable execution state?
-3. What host execution-opportunity shape gives a useful demo without making
-   host cadence or host time authoritative?
+3. Which host capabilities should the first Orchestrator call without making
+  platform timing authoritative?
 4. Which repeated Orchestrator patterns are strong enough to extract after the
    first working traces?

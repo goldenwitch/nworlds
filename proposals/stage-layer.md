@@ -2,32 +2,51 @@
 
 This proposal defines the boundary between the canonical logical game
 experience and the platform plumbing that hosts it. It introduces a
-developer-authored `Orchestrator` as ordinary mutable control code inside the
-Stage composition; it does not change the authoritative `Worldline`,
-`GameState`, or rendering contract in [spec/initial.md](../spec/initial.md).
+developer-authored **Orchestrator** as ordinary mutable control code inside the
+**Stage** composition; it does not change the authoritative **worldline**,
+**game state**, or rendering contract in [spec/initial.md](../spec/initial.md).
 
 ## Boundary
 
 The presentation system has two conceptual layers:
 
 ```text
-PresentationHost
-    platform and execution plumbing
+ApplicationHost
+    composes Stage with narrow presentation-host ports
 
-    composes
+    is composed with and called by
 
 Stage
     canonical logical game experience
 ```
 
-`Stage` defines what the game experience is for the selected view. The
-`PresentationHost` makes that experience executable in a particular operating
-system, device, window, surface, or rendering environment.
+**Stage** defines what the game experience is for the selected view. The
+**application host** composes it with the passive **presentation host** ports
+needed by a particular operating system, device, window, surface, or rendering
+environment.
 
-The Stage is canonical within presentation. It does not replace the domain
+The **Stage** is canonical within presentation. It does not replace the domain
 model or the reference oracle: those define game meaning and authoritative
 state. Stage composes those values into the logical experience a user is
 viewing.
+
+## Vocabulary
+
+This proposal uses **bold** for conceptual vocabulary and backticks for exact
+Rust/API spellings. The owning concepts are:
+
+> **Stage**: The canonical logical game experience for a selected view. It
+> owns the selected worldline, temporal policy, Orchestrator, and presentation
+> composition, but it is not a generic engine type yet.
+>
+> **Orchestrator**: Developer-authored ordinary mutable control code inside a
+> Stage. It owns orchestration state and decisions, but it cannot own a second
+> authoritative game-state model.
+>
+> **presentation host**: Passive platform capability and execution plumbing
+> composed with Stage. It does not own Stage control flow, game time, branch
+> meaning, or journal semantics. Its prototype/API spelling is
+> `PresentationHost`.
 
 ## Stage Responsibilities
 
@@ -53,9 +72,9 @@ direct evaluation of immutable inputs.
 ## Orchestrator
 
 The `Orchestrator` is where the developer writes ordinary game control code.
-It may use a literal `while (true)` loop, a host callback, a replay driver, or
-another application-specific execution shape. The engine does not impose a
-static clock or a universal loop API at this stage.
+It may use a literal `while (true)` loop, a pull loop over host capabilities,
+a replay driver, or another application-specific execution shape. The engine
+does not impose a static clock or a universal loop API at this stage.
 
 The Orchestrator owns decisions that are not yet reusable abstractions:
 
@@ -109,28 +128,23 @@ Stage.present(tau)
     -> Frame
 ```
 
-The host may supply successive `Tau` samples from a platform clock, but Stage
-owns the meaning and use of those samples. Explicit `Tau` values remain valid
-for scrubbing, replay, testing, and deterministic presentation.
+The Orchestrator chooses `Tau` samples and owns their meaning. No clock port is
+part of the current host/Stage composition, and no host scheduler supplies or
+advances Stage time. Explicit `Tau` values remain valid for scrubbing, replay,
+testing, and deterministic presentation.
 
 ## PresentationHost Responsibilities
 
 `PresentationHost` owns platform and execution concerns that do not define the
-logical game experience:
-
-- operating-system lifecycle and event-loop integration;
-- acquisition of a host or device clock;
-- window, surface, and display integration;
-- hardware and device configuration;
-- platform input acquisition and translation infrastructure; and
-- backend, resource, and device lifecycle plumbing.
+logical game experience. The detailed host boundary is maintained in the
+[Presentation Host proposal](presentation-host.md).
 
 The host must not decide which worldline or branch is canonical for a Stage,
 how Stage time maps to logical time, or what a Caravan domain value means.
 
-The host may compose concrete Stage dependencies at compile time and may
-provide the capabilities needed to execute them. It remains an adapter around
-Stage rather than the owner of the game experience.
+The application host composes concrete Stage dependencies and narrow host ports
+at compile time. It remains an adapter around Stage rather than the owner of the
+game experience.
 
 ## Static Composition
 
@@ -156,11 +170,11 @@ struct Orchestrator<W, P, Q, I> {
     tau: Tau,
 }
 
-struct PresentationHost<S, Clock, Platform, Backend> {
+struct ApplicationHost<S, InputIngress, RenderSink, Storage> {
     stage: S,
-    clock: Clock,
-    platform: Platform,
-    backend: Backend,
+    input_ingress: InputIngress,
+    render_sink: RenderSink,
+    storage: Storage,
 }
 ```
 
@@ -185,8 +199,9 @@ proposal:
 
 ### Input
 
-The host supplies abstract `InputPacket` values. The Stage's Orchestrator owns
-the `InteractionDefinition` that reasons over an `InputPacketSet`, as well as
+The Orchestrator requests abstract `InputPacket` values from host capabilities.
+The Stage's Orchestrator owns the `InteractionDefinition` that reasons over an
+`InputPacketSet`, as well as
 the input orchestration that constructs that set. Packets may be delivered
 directly or retained across calls. The canonical query takes the packet set,
 `Tau`, and `LogicalTime`; its boundary is recorded in
@@ -204,11 +219,11 @@ Stage owns the logical renderer abstraction and composition. The division
 between backend-neutral renderer output and host-owned device execution is
 still open.
 
-### Clock intersection
+### Future timing observations
 
-The host may provide a clock, but the contract for converting host clock samples
-into explicit `Tau` values is not decided here. Stage remains the owner of the
-presentation-time policy once a `Tau` exists.
+No clock port is part of the current host/Stage composition. If a future
+requirement needs a platform timing observation, it gets a separate narrow
+proposal; Stage remains the owner of any resulting presentation-time policy.
 
 ## Non-Goals
 
@@ -228,10 +243,10 @@ This proposal does not:
 
 1. What is the smallest concrete Stage composition that exercises worldline
    ownership, playback ownership, lookahead, branch selection, and presentation?
-2. What host execution-opportunity shape best drives an Orchestrator without
-    making host timing authoritative game time?
+2. What host capability interface should an Orchestrator call without making
+    platform timing authoritative game time?
 3. Which Stage operations are view-local changes and which author journal facts
     or create branches?
 4. What renderer output crosses from Stage into host/backend plumbing?
-5. How should host clock samples become explicit `Tau` values without making
-   host time authoritative game time?
+5. What future timing observation, if any, would justify a narrow host port
+    without making platform time authoritative game time?

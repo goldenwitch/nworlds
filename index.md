@@ -27,6 +27,8 @@ advance or mutate a hidden current state.
   slice planned on top of the completed anchor.
 - [Stage layer proposal](proposals/stage-layer.md) - the boundary between the
   canonical logical game experience and platform presentation plumbing.
+- [Presentation host proposal](proposals/presentation-host.md) - the platform
+  and execution responsibilities surrounding Stage.
 - [Input and interaction boundary](proposals/input-and-interaction.md) - the
   abstract packet set, interaction-definition, and buffering boundary.
 - [Caravan Orchestrator anchor](proposals/caravan-orchestrator-anchor.md) -

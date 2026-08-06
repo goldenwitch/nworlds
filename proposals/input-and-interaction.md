@@ -4,25 +4,49 @@ This proposal records the smallest Stage-facing input boundary currently
 agreed. It keeps input abstract and value-producing; it does not define an OS
 event model, a device protocol, or journal authoring commands.
 
+## Vocabulary
+
+This proposal uses **bold** for conceptual vocabulary and backticks for exact
+Rust/API spellings:
+
+> **input packet**: One abstract platform observation supplied to Stage. Its
+> prototype/API spelling is `InputPacket`.
+>
+> **input packet set**: The finite set supplied to one pure interaction query.
+> Its prototype/API spelling is `InputPacketSet`.
+>
+> **interaction definition**: Developer-authored pure logic that interprets an
+> input packet set at a selected **Tau** and **LogicalTime**. Its
+> prototype/API spelling is `InteractionDefinition`.
+>
+> **transformation**: Closed data returned by an interaction definition. It
+> describes a requested Stage or game change without being a timestamped
+> journal entry. Its prototype/API spelling is `Transformation`.
+>
+> **input ingress**: The conceptual boundary where platform interrupts become
+> abstract input packets available to the Orchestrator. `InputChannel` is one
+> possible implementation.
+
 ## Two Concepts
 
 The input boundary contains two distinct concepts:
 
-1. `InputPacket` values are abstract observations supplied by the host.
-2. An `InteractionDefinition` is developer-authored Stage logic describing how
+1. **input packet** values are abstract observations supplied by the host.
+2. An **interaction definition** is developer-authored **Stage** logic describing how
    to reason over a set of those packets.
 
-The host supplies data. The developer supplies interpretation. Neither concept
-is an authoritative journal fact.
+The input ingress supplies data. The developer supplies interpretation. Neither
+concept is an authoritative journal fact.
 
-`PresentationHost` acquires platform input, converts it to abstract packets,
-and presents a packet set to Stage. Stage does not receive operating-system
-events, device objects, host-clock values, or backend-specific coordinates as
-part of this boundary.
+The Orchestrator drains the input ingress, converts packets to the semantic
+packet set, and constructs the query input. Stage does not receive
+operating-system events, device objects, host-clock values, or
+backend-specific coordinates as part of this boundary.
 
 ```text
-PresentationHost
-  platform input
+InputIngress
+  abstract input packets
+    -> Orchestrator
     -> InputPacketSet
 
 Stage
@@ -99,8 +123,9 @@ the same selected sample, they must produce equal interaction results. If a
 retained packet remains in the set, its presence may affect gameplay; that is a
 property of the packet-set contents, not a mode flag.
 
-The host may queue platform events as plumbing, but it does not decide which
-abstract packets remain semantically active for a Stage query. Retention,
+The host may queue platform events as plumbing behind the input ingress, but it
+does not decide which abstract packets remain semantically active for a Stage
+query. Retention,
 flush, consume, and expiry are part of Stage's game logic and orchestration,
 not a separate packet-policy dependency. The pure interaction query still
 receives an explicit set rather than hidden input history, and buffering does
@@ -176,9 +201,9 @@ Stage
 author input facts. `InteractionDefinition` is a current seam inside the
 Orchestrator, not a second source of authoritative state.
 
-`PresentationHost` remains plumbing. It acquires platform input, converts it
-to abstract `InputPacket` values, and executes the Stage's resulting logical
-outputs in its environment.
+`PresentationHost` remains plumbing behind the input ingress and other narrow
+host ports. The Orchestrator drains the ingress, converts input to abstract
+`InputPacket` values, and owns the resulting logical outputs.
 
 ## Non-Goals
 

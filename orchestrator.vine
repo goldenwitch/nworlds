@@ -4,7 +4,7 @@ title: Caravan Orchestrator anchor
 ---
 [root] Caravan Orchestrator vertical slice (complete)
 Remap the completed Caravan anchor onto a developer-authored Stage and Orchestrator without changing the immutable engine semantics. Build one small working slice in ordinary Rust, then use its traces to learn which orchestration patterns are worth extracting later.
-Files: orchestrator.vine; proposals/caravan-orchestrator-anchor.md; spec/initial.md; spec/cellular-automata-anchor.md; spec/discontinuity-projection.md; proposals/stage-layer.md; proposals/input-and-interaction.md; crates/caravan-demo/**
+Files: orchestrator.vine; proposals/caravan-orchestrator-anchor.md; proposals/presentation-host.md; spec/initial.md; spec/cellular-automata-anchor.md; spec/discontinuity-projection.md; proposals/stage-layer.md; proposals/input-and-interaction.md; crates/caravan-demo/**
 Do: Dispatch the stages only after their dependencies are reviewed. Keep each packet's file ownership disjoint, keep the Orchestrator as mutable control code rather than authoritative game state, and preserve the three immutable seams.
 Accept: A concrete Caravan Orchestrator can interpret one input packet set, produce one closed transformation, publish an immutable journal/worldline update, query arbitrary times, select a branch, and present a deterministic frame while all existing anchor evidence remains green.
 -> anchor
@@ -23,6 +23,7 @@ Accept: A concrete Caravan Orchestrator can interpret one input packet set, prod
 > Journal heterogeneity uses one closed game-owned enum/DU payload type; no runtime object collection, Any, or untyped journal bag.
 > JournalWriter is the game-facing timestamp authority. No InputTime or packet timestamp is added.
 > Camera, HUD, backend, device, host clock, and reusable DSL extraction are outside this slice.
+> InputIngress is the conceptual interrupt boundary; InputChannel is one possible implementation. The first composition has no clock port and no broad capabilities object.
 ---
 ref [anchor] Completed indexed anchor (build.vine)
 The completed anchor supplies ReferenceWorldline, JournalWriter, immutable branches, direct state queries, Playback, presentation, persistence, and the existing evidence required by this slice.
@@ -38,6 +39,7 @@ Accept: The proposal is the single design brief for this graph; the initial Stag
 @guidance text/markdown spec/discontinuity-projection.md
 @guidance text/markdown proposals/stage-layer.md
 @guidance text/markdown proposals/input-and-interaction.md
+@guidance text/markdown proposals/presentation-host.md
 ---
 [input-model] Abstract input packet seam (complete)
 Files: crates/caravan-demo/src/lib.rs; crates/caravan-demo/src/input.rs
@@ -48,6 +50,7 @@ Accept: Unit-level behavior proves equal packet sets with equal Tau and LogicalT
 @guidance text/markdown proposals/caravan-orchestrator-anchor.md
 @guidance text/markdown proposals/input-and-interaction.md
 @guidance text/markdown spec/initial.md
+@guidance text/markdown proposals/presentation-host.md
 ---
 [transformation-model] Closed Caravan transformations (complete)
 Files: crates/caravan-demo/src/transformation.rs
@@ -83,7 +86,7 @@ Accept: The Orchestrator can choose a Tau, derive LogicalTime through Playback, 
 ---
 [stage-composition] Caravan Stage composition (complete)
 Files: crates/caravan-demo/src/stage.rs
-Do: Compose the Orchestrator with the existing generic presentation renderer and query path behind a concrete CaravanStage boundary. Keep the host-facing surface small; the host supplies execution opportunities and abstract packets, while Stage owns the selected worldline, temporal orchestration, interaction, and rendering composition.
+Do: Compose the Orchestrator with the existing generic presentation renderer and query path behind a concrete CaravanStage boundary. Keep the host-facing surface small; the Orchestrator calls narrow host ports such as InputIngress, render sink, and storage, while Stage owns the selected worldline, temporal orchestration, interaction, and rendering composition.
 Accept: Stage owns its Orchestrator transitively, the host does not select logical time or branch semantics, explicit Tau sampling remains available for replay/tests, and rendering receives only the selected GameState and Tau.
 -> anchor
 -> orchestrator-core

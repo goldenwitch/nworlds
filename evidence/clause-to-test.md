@@ -39,5 +39,3 @@ test additionally checks the complete stdout trace against
   `crates/purity-tests`. Rust cannot prove arbitrary `QueryAdapter`, `Renderer`,
   or `Animation` implementation bodies have no side effects; those remain a
   trusted presentation extension boundary.
-- `LogicalTime` and `Tau` are distinct APIs and are exercised as such, but this
-  package does not add compile-fail tests for accidental interchange.

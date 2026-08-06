@@ -25,11 +25,6 @@ pub const GAPS: &[Gap] = &[
         status: "explicit",
         description: "The authoritative engine boundary has compiler-checked purity evidence. Rust cannot prove arbitrary QueryAdapter, Renderer, or Animation extension bodies have no side effects; those implementations are trusted extensions receiving immutable values and returning owned values.",
     },
-    Gap {
-        id: "static-time-distinction",
-        status: "partial",
-        description: "LogicalTime and Tau are separate public types and are exercised through their APIs; this package does not add compile-fail evidence for accidental interchange.",
-    },
 ];
 
 pub const SUPPLEMENTAL_CASES: &[(&str, &str, &str)] = &[

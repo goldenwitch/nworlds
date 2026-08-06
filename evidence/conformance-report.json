@@ -30,7 +30,6 @@
     {"id":"timestamp-facade","status":"pass","test":"no_low_level_timestamp_import","artifact":"crates/purity-tests/tests/ui/no_low_level_timestamp_import.rs"}
   ],
   "gaps": [
-    {"id":"presentation-extension-trust","status":"explicit","description":"The authoritative engine boundary has compiler-checked purity evidence. Rust cannot prove arbitrary QueryAdapter, Renderer, or Animation extension bodies have no side effects; those implementations are trusted extensions receiving immutable values and returning owned values."},
-    {"id":"static-time-distinction","status":"partial","description":"LogicalTime and Tau are separate public types and are exercised through their APIs; this package does not add compile-fail evidence for accidental interchange."}
+    {"id":"presentation-extension-trust","status":"explicit","description":"The authoritative engine boundary has compiler-checked purity evidence. Rust cannot prove arbitrary QueryAdapter, Renderer, or Animation extension bodies have no side effects; those implementations are trusted extensions receiving immutable values and returning owned values."}
   ]
 }

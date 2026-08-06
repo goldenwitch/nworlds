@@ -26,8 +26,7 @@ not a new distribution or runtime layer.
   observable, not a platform commitment.
 - The conformance report records all listed cases as passing. The authoritative
   boundary has compiler-checked purity tests; renderer, animation, and query
-  adapter bodies remain an explicit trusted extension boundary. Static
-  `LogicalTime`/`Tau` interchange has behavioral but not compile-fail evidence.
+  adapter bodies remain an explicit trusted extension boundary.
 - The benchmark report measures the unreplaced reference path on fixed small
   workloads in a release build, with no cache or optimization. It records
   direct queries, non-monotonic scrubbing, and frame production, but supplies
