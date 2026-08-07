@@ -19,7 +19,7 @@ Accept: A concrete Caravan Orchestrator can interpret one input packet set, prod
 > The engine's authoritative state changes only through publication of a new immutable journal/worldline value.
 > The Orchestrator is ordinary developer-written imperative control code; no universal engine Orchestrator trait or loop API is introduced in this slice.
 > Worldline, Journal, and GameState remain immutable published values; the Orchestrator may replace selected values but may not own an imperative board, actor layer, resource counter, effect layer, or current GameState.
-> InteractionDefinition is the current pure seam: GameState + InputPacketSet + Tau + LogicalTime -> Transformation.
+> InteractionDefinition is the current pure seam: GameState + InputPacketSet + Tau -> Transformation.
 > Journal heterogeneity uses one closed game-owned enum/DU payload type; no runtime object collection, Any, or untyped journal bag.
 > JournalWriter is the game-facing timestamp authority. No InputTime or packet timestamp is added.
 > Camera, HUD, backend, device, host clock, and reusable DSL extraction are outside this slice.
@@ -43,8 +43,8 @@ Accept: The proposal is the single design brief for this graph; the initial Stag
 ---
 [input-model] Abstract input packet seam (complete)
 Files: crates/caravan-demo/src/lib.rs; crates/caravan-demo/src/input.rs
-Do: Define the smallest Caravan-facing InputPacket and InputPacketSet values plus the application InteractionDefinition seam. Keep host/device events out of the model, keep buffered and unbuffered construction invisible to the query, and make the query receive the selected read-only GameState, Tau, and LogicalTime explicitly. Use closed static types; do not add host timestamps or a dynamic packet bag.
-Accept: Unit-level behavior proves equal selected GameState values, packet sets, Tau, and LogicalTime produce equal transformation results; the seam cannot access JournalWriter, Worldline mutation, Frame, rendered output, host time, or an input-mode flag.
+Do: Define the smallest Caravan-facing InputPacket and InputPacketSet values plus the application InteractionDefinition seam. Keep host/device events out of the model, keep buffered and unbuffered construction invisible to the query, and make the query receive the selected read-only GameState and Tau explicitly. Use closed static types; do not add host timestamps or a dynamic packet bag.
+Accept: Unit-level behavior proves equal selected GameState values, packet sets, and Tau produce equal transformation results; the seam cannot access JournalWriter, Worldline mutation, Frame, rendered output, host time, or an input-mode flag.
 -> orchestrator-contract
 @artifact text/plain crates/caravan-demo/src/input.rs
 @guidance text/markdown proposals/caravan-orchestrator-anchor.md

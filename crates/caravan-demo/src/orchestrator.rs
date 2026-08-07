@@ -50,13 +50,7 @@ pub struct CaravanInteraction;
 impl InteractionDefinition for CaravanInteraction {
     type Transformation = Transformation;
 
-    fn query(
-        &self,
-        _state: &State,
-        packets: &InputPacketSet,
-        _tau: Tau,
-        _logical_time: LogicalTime,
-    ) -> Self::Transformation {
+    fn query(&self, _state: &State, packets: &InputPacketSet, _tau: Tau) -> Self::Transformation {
         if packets.contains(&InputPacket::ButtonPressed(Button::Primary)) {
             Transformation::SetTerrain {
                 tile: TileId::origin(),
@@ -167,7 +161,6 @@ where
             &state,
             &self.packets,
             self.tau,
-            self.logical_time(),
         ))
     }
 

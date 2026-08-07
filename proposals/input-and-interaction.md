@@ -16,8 +16,8 @@ Rust/API spellings:
 > Its prototype/API spelling is `InputPacketSet`.
 >
 > **interaction definition**: Developer-authored pure logic that interprets an
-> selected read-only **GameState** and input packet set at a selected **Tau**
-> and **LogicalTime**. Its
+> selected read-only **GameState** and input packet set at a selected **Tau**.
+> Its
 > prototype/API spelling is `InteractionDefinition`.
 >
 > **transformation**: Closed data returned by an interaction definition. It
@@ -77,22 +77,21 @@ InteractionDefinition
   x read-only GameState
   x InputPacketSet
   x Tau
-  x LogicalTime
   -> Transformation
 ```
 
 The canonical query boundary is:
 
 ```text
-interaction_query(definition, state, packets, tau, logical_time)
+interaction_query(definition, state, packets, tau)
   -> Transformation
 ```
 
 The definition, selected read-only `GameState`, and packet set are present for
-every call. The Orchestrator queries the selected immutable `Worldline` at
-`LogicalTime` and passes that result to the interaction definition. `LogicalTime`
-selects authoritative game state; `Tau` selects only presentation sampling and
-never selects logical state. The definition remains part of the
+every call. The Orchestrator queries the selected immutable `Worldline` at its
+selected `LogicalTime` and passes that result to the interaction definition.
+The exact logical time is carried by `GameState`; `Tau` selects only
+presentation sampling and never selects logical state. The definition remains part of the
 Stage's static composition.
 
 The query does not inspect a host clock, mutate a worldline, append a journal
@@ -125,8 +124,8 @@ Stage behaviors internally:
 
 Neither label is visible to `InteractionDefinition` or
 `interaction_query`. The query receives the selected read-only `GameState`, the
-resulting packet set, `Tau`, and `LogicalTime`. If two construction strategies
-produce equal packet sets for the same selected state and times, they must
+resulting packet set, and `Tau`. If two construction strategies produce equal
+packet sets for the same selected state and `Tau`, they must
 produce equal interaction results. If a retained packet remains in the set, its
 presence may affect gameplay; that is a property of the packet-set contents,
 not a mode flag.
@@ -188,8 +187,9 @@ GameState    authoritative result at LogicalTime
 Frame        presentation result at Tau
 ```
 
-The canonical query takes `Tau` and `LogicalTime` explicitly. It does not take
-an SDK `Frame`; host time is not authoritative game time.
+The canonical interaction query takes the selected `GameState` and `Tau`
+explicitly. It does not take an SDK `Frame`; host time is not authoritative
+game time.
 
 ## Composition
 

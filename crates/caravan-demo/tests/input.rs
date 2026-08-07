@@ -11,15 +11,8 @@ struct StateAwareInteraction;
 impl InteractionDefinition for StateAwareInteraction {
     type Transformation = Transformation;
 
-    fn query(
-        &self,
-        state: &State,
-        packets: &InputPacketSet,
-        tau: Tau,
-        logical_time: LogicalTime,
-    ) -> Self::Transformation {
+    fn query(&self, state: &State, packets: &InputPacketSet, tau: Tau) -> Self::Transformation {
         assert!(packets.contains(&InputPacket::ButtonPressed(Button::Primary)));
-        assert_eq!(state.logical_time(), logical_time);
         assert_eq!(tau, Tau::from_ticks(7));
 
         match state.payload().terrain_at(TileId::origin()) {

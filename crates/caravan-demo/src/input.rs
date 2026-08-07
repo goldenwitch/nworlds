@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use caravan_reference::State;
-use engine_time::{LogicalTime, Tau};
+use engine_time::Tau;
 
 /// A closed, platform-neutral input packet used by the Caravan Stage.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -88,14 +88,8 @@ pub trait InteractionDefinition {
     /// The closed value returned by one interaction query.
     type Transformation;
 
-    /// Interprets one packet set at one explicit presentation and game sample.
-    fn query(
-        &self,
-        state: &State,
-        packets: &InputPacketSet,
-        tau: Tau,
-        logical_time: LogicalTime,
-    ) -> Self::Transformation;
+    /// Interprets one packet set at one selected state and presentation sample.
+    fn query(&self, state: &State, packets: &InputPacketSet, tau: Tau) -> Self::Transformation;
 }
 
 /// Applies a statically composed interaction definition at the canonical seam.
@@ -104,12 +98,11 @@ pub fn interaction_query<D>(
     state: &State,
     packets: &InputPacketSet,
     tau: Tau,
-    logical_time: LogicalTime,
 ) -> D::Transformation
 where
     D: InteractionDefinition,
 {
-    definition.query(state, packets, tau, logical_time)
+    definition.query(state, packets, tau)
 }
 
 #[cfg(test)]
@@ -124,7 +117,6 @@ mod tests {
         state_logical_time: LogicalTime,
         packets: InputPacketSet,
         tau: Tau,
-        logical_time: LogicalTime,
     }
 
     struct Observe;
@@ -137,13 +129,11 @@ mod tests {
             state: &caravan_reference::State,
             packets: &InputPacketSet,
             tau: Tau,
-            logical_time: LogicalTime,
         ) -> Self::Transformation {
             ObservedInput {
                 state_logical_time: state.logical_time(),
                 packets: packets.clone(),
                 tau,
-                logical_time,
             }
         }
     }
@@ -174,11 +164,11 @@ mod tests {
         let state = reference_state(&worldline, logical_time);
 
         assert_eq!(
-            interaction_query(&Observe, &state, &direct, tau, logical_time),
-            interaction_query(&Observe, &state, &retained, tau, logical_time),
+            interaction_query(&Observe, &state, &direct, tau),
+            interaction_query(&Observe, &state, &retained, tau),
         );
         assert_eq!(
-            interaction_query(&Observe, &state, &direct, tau, logical_time).state_logical_time,
+            interaction_query(&Observe, &state, &direct, tau).state_logical_time,
             logical_time,
         );
     }

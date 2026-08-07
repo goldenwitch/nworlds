@@ -153,13 +153,13 @@ interaction_query(
     game_state,
     input_packet_set,
     tau,
-    logical_time,
 ) -> transformation
 ```
 
 The application prototype's `InteractionDefinition` is the current pure seam
 where the developer writes interaction reasoning. It receives abstract packets
-and the selected read-only `GameState` together with `Tau` and `LogicalTime`; it
+and the selected read-only `GameState` together with `Tau`; the state's exact
+logical time is already carried by `GameState`. It
 does not receive host events, host time, a journal writer, or a mutable board.
 It returns closed `Transformation` data rather than a timestamped journal entry
 or an arbitrary mutation callback. These are application-level types, not
@@ -202,7 +202,7 @@ An interaction result changes authoritative game state only through journal or
 branch publication:
 
 ```text
-GameState + InputPacketSet + Tau + LogicalTime
+GameState + InputPacketSet + Tau
     -> InteractionDefinition
     -> Transformation
     -> Orchestrator accepts or rejects
@@ -269,7 +269,7 @@ The remapping is successful when a concrete Caravan Orchestrator demonstrates:
   direct reference oracle;
 - the application `InteractionDefinition` seam returns closed
   `Transformation` data from the selected read-only `GameState`,
-  `InputPacketSet`, `Tau`, and `LogicalTime`;
+  `InputPacketSet`, and `Tau`;
 - accepted authoritative transformations publish new immutable journal or
   branch values;
 - rejected transformations do not alter the selected worldline;

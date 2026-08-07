@@ -96,7 +96,7 @@ new immutable journal/worldline values.
 The controlled transformation path is:
 
 ```text
-GameState + InputPacketSet + Tau + LogicalTime
+GameState + InputPacketSet + Tau
         -> InteractionDefinition
         -> closed Transformation
         -> Orchestrator admission
