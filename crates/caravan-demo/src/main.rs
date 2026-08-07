@@ -7,7 +7,7 @@ use caravan_reference::{actual, state, ReferenceWorldline, Snapshot};
 use caravan_seeded::generate_spawn_journal;
 use engine_journal::{Journal, JournalWriter};
 use engine_lookahead::{branch_view, future, ViewKind};
-use engine_presentation::{LinearPlayback, Renderer};
+use engine_presentation::Renderer;
 use engine_sdk::{Frame, GameState};
 use engine_time::{LogicalTime, Tau, TICKS_PER_LOGICAL_SECOND};
 
@@ -171,6 +171,7 @@ fn main() {
 
     let mut interaction_stage = stage(
         actual(journal([(0, GameJournalEntry::create_saucer())])),
+        time(0),
         tau(0),
     );
     interaction_stage.receive_packet(InputPacket::ButtonPressed(Button::Primary));
@@ -196,19 +197,19 @@ fn main() {
 
     print_frame(
         "actual",
-        stage(authored.clone(), tau(10))
+        stage(authored.clone(), time(10), tau(10))
             .present()
             .expect("actual stage frame should be valid"),
     );
     print_frame(
         "counterfactual",
-        stage(counterfactual, tau(10))
+        stage(counterfactual, time(10), tau(10))
             .present()
             .expect("counterfactual stage frame should be valid"),
     );
     print_frame(
         "corrected",
-        stage(corrected, tau(10))
+        stage(corrected, time(10), tau(10))
             .present()
             .expect("corrected stage frame should be valid"),
     );
@@ -254,15 +255,11 @@ fn print_frame(label: &str, frame: Frame<RenderValue>) {
 
 fn stage(
     worldline: ReferenceWorldline,
+    logical_time: LogicalTime,
     tau: Tau,
 ) -> CaravanStage<CaravanInteraction, TraceRenderer> {
-    let orchestrator = CaravanOrchestrator::new(
-        worldline,
-        LinearPlayback::one_to_one(),
-        tau,
-        CaravanInteraction,
-    )
-    .expect("demo orchestrator should initialize");
+    let orchestrator = CaravanOrchestrator::new(worldline, logical_time, tau, CaravanInteraction)
+        .expect("demo orchestrator should initialize");
     CaravanStage::new(orchestrator, TraceRenderer)
 }
 

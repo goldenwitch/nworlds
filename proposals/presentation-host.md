@@ -70,7 +70,7 @@ input packet, transformation, game state, or frame.
 The host does not decide:
 
 - which `Worldline` or branch the Stage is viewing;
-- how `Tau` maps to `LogicalTime`;
+- which independent `LogicalTime` and `Tau` samples the Stage selects;
 - whether presentation time advances, pauses, reverses, or scrubs;
 - which input packets are retained or consumed by Stage orchestration;
 - what an `InputPacketSet` means for the game;
@@ -104,7 +104,7 @@ or a host-defined `Tau`. No clock port is part of this first host composition.
 Explicit samples remain valid independently of host execution:
 
 ```text
-stage.present_at(tau)
+stage.present_at(logical_time, tau)
 ```
 
 This keeps replay, scrubbing, tests, and deterministic presentation independent
@@ -138,6 +138,7 @@ platform event
     -> InputIngress
     -> Orchestrator packet-set orchestration
     -> InputPacketSet
+    -> selected GameState at LogicalTime with Tau
     -> InteractionDefinition
     -> Transformation
 ```
@@ -230,6 +231,8 @@ No `HostTime` or `InputTime` type is required by this proposal.
 This proposal does not:
 
 - define a concrete operating-system or windowing API;
+- settle the `wgpu` choice or platform support matrix; those require a separate
+    external design gate;
 - define a host clock type or fixed update frequency;
 - define raw input packet variants;
 - define camera, HUD, widgets, or interactable objects;

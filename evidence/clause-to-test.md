@@ -29,13 +29,22 @@ test additionally checks the complete stdout trace against
 | Seeded journal construction and reproducibility | `seeded` | `checks.rs` | Runtime pass; RNG ownership is behavioral evidence |
 | Prefix agreement and parent/child branch isolation | `branches` | `checks.rs` | Runtime pass |
 | Fixed-journal future query and lookahead | `lookahead` | `checks.rs` | Runtime pass |
-| Playback, reverse scrub, rendering, animation, branch presentation | `presentation` | `checks.rs` | Runtime pass |
+| Explicit logical/presentation sampling, reverse scrub, state-first rendering, branch presentation | `presentation` | `checks.rs` | Runtime pass |
 | Runnable anchor observables | `demo-trace` | `anchor-trace.txt` and demo snapshot test | Runtime pass |
 | Bounded projection parity | `legacy_fold_matches_projection_on_shared_fixture`, `frozen_expected_corpus_matches_the_projection` | `crates/caravan-reference/src/legacy_evaluator.rs`; `crates/caravan-reference/tests/parity.rs` | Supplemental reference tests pass; legacy equivalence is fixture-scoped |
+
+## Orchestrator Evidence
+
+The root workspace carries focused application-level evidence outside the
+separate conformance catalog:
+
+| Clause | Test | Evidence | Coverage |
+| --- | --- | --- | --- |
+| State-aware interaction and explicit projection failure | `identical_input_and_tau_use_the_selected_logical_state`, `malformed_selected_state_fails_before_interaction` | `crates/caravan-demo/tests/input.rs` | Root workspace runtime pass |
 
 ## Explicit Gaps
 
 - The authoritative engine boundary has compiler-checked purity evidence in
-  `crates/purity-tests`. Rust cannot prove arbitrary `QueryAdapter`, `Renderer`,
-  or `Animation` implementation bodies have no side effects; those remain a
-  trusted presentation extension boundary.
+  `crates/purity-tests`. Rust cannot prove arbitrary `Renderer` implementation
+  bodies have no side effects; those remain a trusted presentation extension
+  boundary.

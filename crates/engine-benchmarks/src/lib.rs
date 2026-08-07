@@ -3,11 +3,11 @@
 use std::{hint::black_box, time::Instant};
 
 use caravan_domain::{ActorId, ActorKind, GameJournalEntry, TileId};
-use caravan_reference::{actual, state, ReferenceWorldline, Snapshot};
+use caravan_reference::{actual, state, try_state, ReferenceWorldline, Snapshot};
 use caravan_seeded::{generate_spawn_journal, hand_authored_behavior_fixture};
 use engine_branches::BranchKind;
 use engine_journal::{Journal, JournalWriter};
-use engine_presentation::{present, LinearPlayback, Renderer};
+use engine_presentation::{present, Renderer};
 use engine_sdk::GameState;
 use engine_time::{LogicalTime, Tau};
 
@@ -214,30 +214,16 @@ pub fn run(config: BenchmarkConfig) -> BenchmarkReport {
         }),
     );
 
-    let playback = LinearPlayback::one_to_one();
     let renderer = TraceRenderer;
     let frame_production = vec![
-        named_frames(
-            "actual",
-            &traces.branches.actual,
-            &playback,
-            &renderer,
-            config,
-        ),
+        named_frames("actual", &traces.branches.actual, &renderer, config),
         named_frames(
             "counterfactual",
             &traces.branches.counterfactual,
-            &playback,
             &renderer,
             config,
         ),
-        named_frames(
-            "corrected",
-            &traces.branches.corrected,
-            &playback,
-            &renderer,
-            config,
-        ),
+        named_frames("corrected", &traces.branches.corrected, &renderer, config),
     ];
 
     BenchmarkReport {
@@ -348,7 +334,6 @@ fn named_query(
 fn named_frames(
     name: &'static str,
     worldline: &ReferenceWorldline,
-    playback: &LinearPlayback,
     renderer: &TraceRenderer,
     config: BenchmarkConfig,
 ) -> NamedTiming {
@@ -357,23 +342,12 @@ fn named_frames(
         FRAME_TAU_TICKS.len(),
         measure(config, || {
             for ticks in FRAME_TAU_TICKS {
-                std::hint::black_box(present(
-                    worldline,
-                    &reference_query,
-                    playback,
-                    renderer,
-                    tau(ticks),
-                ));
+                let state = try_state(worldline, time(ticks))
+                    .expect("fixed benchmark sample should project");
+                std::hint::black_box(present(&state, renderer, tau(ticks)));
             }
         }),
     )
-}
-
-fn reference_query(
-    worldline: &ReferenceWorldline,
-    logical_time: LogicalTime,
-) -> GameState<Snapshot> {
-    state(worldline, logical_time)
 }
 
 fn measure<T, F>(config: BenchmarkConfig, mut operation: F) -> Timing
@@ -543,15 +517,10 @@ mod tests {
     #[test]
     fn renderer_output_remains_an_owned_frame_payload() {
         let traces = FixedTraces::new();
-        let playback = super::LinearPlayback::one_to_one();
         let renderer = super::TraceRenderer;
-        let frame = super::present(
-            &traces.branches.actual,
-            &super::reference_query,
-            &playback,
-            &renderer,
-            super::tau(10),
-        );
+        let state = super::try_state(&traces.branches.actual, super::time(10))
+            .expect("benchmark renderer sample should project");
+        let frame = super::present(&state, &renderer, super::tau(10));
         let expected = TraceRenderValue {
             sampled_time: 10,
             tau: 10,

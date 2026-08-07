@@ -1,0 +1,57 @@
+vine 1.2.0
+prefix: parity
+title: Caravan mechanical parity reconciliation
+---
+[root] Reconcile mechanical design and implementation parity (complete)
+Files: parity.vine; crates/caravan-demo/**; proposals/**; spec/initial.md; orchestrator.vine; tests/**
+Do: Reconcile the current repository to the explicit desired state recorded by this graph. Treat every task as an idempotent desired-state operation: inspect first, apply only missing changes, preserve unrelated work, and make a second execution a no-op. Keep rendering backends, DrawCommand design, RenderSink implementation, wgpu, and the platform support matrix outside this mechanical checkpoint.
+Accept: The selected Caravan logical state is available to interaction reasoning at the selected LogicalTime; Tau remains an independent presentation sample; no input path receives Frame, Renderer, or backend state; the completed Orchestrator graph and proposals describe the actual implementation; focused evidence proves state-aware input and journal-only mutation; the full workspace and conformance suites pass; and rerunning each task creates no additional diff or duplicate API.
+-> state-render-boundary
+-> parity-evidence
+-> plan-reconciliation
+-> state-contract
+-> state-input
+@guidance text/markdown proposals/caravan-orchestrator-anchor.md
+@guidance text/markdown proposals/input-and-interaction.md
+@guidance text/markdown spec/initial.md
+@guidance text/plain orchestrator.vine
+---
+[state-contract] State-aware interaction contract (complete)
+Files: proposals/input-and-interaction.md
+Do: Reconcile the input contract to one concrete rule: interaction logic receives a read-only selected Caravan GameState together with InputPacketSet, Tau, and LogicalTime. The state is the result of querying the selected immutable worldline at the selected LogicalTime. Keep Frame, Renderer, DrawCommand, backend state, host time, and journal mutation outside the seam. Record error and ownership expectations without introducing a second authoritative state model or an alternative candidate contract.
+Accept: The proposal names the exact state-aware interaction boundary, says that Tau does not select logical state, says that input queries never inspect rendered output, and agrees with the current immutable worldline and journal-only publication rules. If the target wording is already present, the task is complete without churn.
+> Decision: The interaction seam is state-aware; it does not receive rendered output.
+---
+[state-input] Implement the state-aware input seam (complete)
+Files: crates/caravan-demo/src/input.rs; crates/caravan-demo/src/orchestrator.rs
+Do: Implement the contract from state-contract. Query the selected worldline at the Orchestrator's current LogicalTime before invoking InteractionDefinition, pass the resulting read-only GameState plus packets, Tau, and LogicalTime to the interaction logic, and propagate projection failures explicitly. Preserve closed Transformation values, JournalWriter timestamp ownership, immutable publication, and the independent LogicalTime/Tau selections. Make the smallest API migration required by the contract; if the desired state is already present, do not rewrite it.
+Accept: A state-dependent InteractionDefinition can inspect the exact selected GameState; no interaction API accepts Frame, Renderer, DrawCommand, host time, or mutable authoritative state; malformed state queries return an explicit Orchestrator error; existing no-op and publication behavior remains deterministic; and the owned source files are unchanged on a second execution.
+-> state-contract
+@guidance text/markdown proposals/input-and-interaction.md
+@guidance text/markdown proposals/caravan-orchestrator-anchor.md
+@guidance text/markdown spec/initial.md
+---
+[plan-reconciliation] Reconcile design records with the implemented boundary (complete)
+Files: proposals/caravan-orchestrator-anchor.md; proposals/stage-layer.md; proposals/presentation-host.md; spec/initial.md; orchestrator.vine
+Do: Make the design records idempotently describe the actual explicit-time and state-aware interaction boundary. Correct stale present_at examples, Tau wording, malformed ownership-list indentation, and any acceptance text that claims an InputIngress, RenderSink, ApplicationHost, or storage port already exists. Keep the rendering graph notstarted and record the wgpu/support-matrix decision as an external future design gate rather than inventing a platform choice here.
+Accept: No edited proposal contradicts the source signatures; orchestrator.vine no longer marks unimplemented host-port behavior as complete acceptance; the generic specification says LogicalTime selects GameState and Tau selects presentation sampling; the host proposal remains explicit about what is deferred; and a second execution produces no documentation churn.
+-> state-input
+@guidance text/markdown proposals/presentation-host.md
+@guidance text/markdown proposals/stage-layer.md
+@guidance text/markdown rendering.vine
+---
+[parity-evidence] Prove state-aware input and idempotent parity (complete)
+Files: crates/caravan-demo/tests/orchestrator.rs; crates/caravan-demo/tests/input.rs; tests/conformance/src/checks.rs; evidence/clause-to-test.md; evidence/conformance-report.json
+Do: Add the smallest focused evidence for the reconciled contract. Prove that identical packets and Tau can produce different interaction results when the selected logical GameState differs; prove the interaction path does not consume or mutate the worldline or rendered output; prove projection errors are explicit; and preserve the existing branch, presentation, persistence, purity, demo, and conformance evidence. Update evidence metadata only when the executable checks change.
+Accept: Focused tests fail before the state-aware seam and pass after it; repeated and non-monotonic samples remain deterministic; no test constructs a rendered Frame as an input to interaction; all referenced test/artifact paths exist; the root workspace and separate conformance package pass; and rerunning the evidence task is a no-op when the checks already exist.
+-> plan-reconciliation
+-> state-input
+@guidance text/markdown proposals/input-and-interaction.md
+@guidance text/markdown proposals/caravan-orchestrator-anchor.md
+@guidance text/markdown spec/initial.md
+---
+[state-render-boundary] Move evaluation before presentation (complete)
+Files: crates/engine-presentation/src/presentation.rs; crates/engine-presentation/src/lib.rs; crates/engine-presentation/tests/presentation.rs; crates/caravan-demo/src/stage.rs; crates/engine-benchmarks/src/lib.rs; tests/conformance/src/fixtures.rs; tests/conformance/src/checks.rs
+Do: Preserve the engine's state query as the authoritative evaluation operation, but make presentation consume an already-selected GameState and Tau. Remove the query callback and worldline/logical-time inputs from engine-presentation, have Stage/Orchestrator evaluate state before presentation, and migrate all callers explicitly. Treat Tau-varying visual output as ordinary rendering; do not introduce a second visual-output channel, trait, value channel, or frame wrapper. Keep query failures observable at the Stage/Orchestrator boundary.
+Accept: There is one state-first presentation composition path; engine-presentation receives no worldline or evaluator callback; Stage evaluates state before handing it to presentation; rendering may vary with Tau without a second visual-output API; query failures remain observable before rendering; focused presentation, Stage, benchmark, workspace, and conformance tests pass; and rerunning the task creates no duplicate API or diff.
+-> state-input

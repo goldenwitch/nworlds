@@ -7,12 +7,12 @@ use engine_branches::BranchKind;
 use engine_index::game_tick_index;
 use engine_journal::{Journal, JournalWriter};
 use engine_lookahead::{branch_view, future, ViewKind};
-use engine_presentation::{present, present_with_animation, LinearPlayback};
+use engine_presentation::present;
 use engine_time::{LogicalTime, Tau, GAME_TICK_PERIOD, TICKS_PER_LOGICAL_SECOND};
 
 use crate::fixtures::{
-    actor_id, actor_ids, journal, reference_query, seeded_worldline, snapshot_at, spawn, state,
-    tau, terrain, tile, time, worldline, ParityAnimation, TraceRenderer,
+    actor_id, actor_ids, journal, seeded_worldline, snapshot_at, spawn, state,
+    tau, terrain, tile, time, worldline, TraceRenderer,
 };
 
 pub fn empty_journal_uses_ordinary_zero_fact_evaluation() {
@@ -364,20 +364,21 @@ pub fn lookahead_keeps_the_journal_fixed() {
     assert_eq!(branch_view(&alternate).kind(), ViewKind::Counterfactual);
 }
 
-pub fn presentation_supports_scrubbing_branches_and_repeatable_animation() {
+pub fn presentation_supports_scrubbing_branches_and_repeatable_rendering() {
     let parent = worldline([
         (0, GameJournalEntry::create_saucer()),
         (3, spawn(1, ActorKind::Forester, TileId::origin())),
     ]);
     let original_parent = parent.clone();
     let renderer = TraceRenderer;
-    let forward = LinearPlayback::one_to_one();
-    let reverse = LinearPlayback::reverse_from(time(5));
+    let forward_state = state(&parent, 5);
+    let reverse_state = state(&parent, 3);
+    let scrubbed_state = state(&parent, 2);
 
-    let forward_frame = present(&parent, &reference_query, &forward, &renderer, tau(5));
-    let reverse_frame = present(&parent, &reference_query, &reverse, &renderer, tau(2));
-    let scrubbed_frame = present(&parent, &reference_query, &forward, &renderer, tau(2));
-    let repeated_frame = present(&parent, &reference_query, &forward, &renderer, tau(5));
+    let forward_frame = present(&forward_state, &renderer, tau(5));
+    let reverse_frame = present(&reverse_state, &renderer, tau(2));
+    let scrubbed_frame = present(&scrubbed_state, &renderer, tau(2));
+    let repeated_frame = present(&forward_state, &renderer, tau(5));
 
     assert_eq!(forward_frame.tau(), tau(5));
     assert_eq!(forward_frame.payload().sampled_time, time(5).ticks());
@@ -387,34 +388,14 @@ pub fn presentation_supports_scrubbing_branches_and_repeatable_animation() {
     assert_eq!(forward_frame, repeated_frame);
     assert_eq!(parent, original_parent);
 
-    let animation = ParityAnimation;
-    let even = present_with_animation(
-        &parent,
-        &reference_query,
-        &forward,
-        &renderer,
-        Some(&animation),
-        Tau::from_ticks(2),
-    );
-    let even_again = present_with_animation(
-        &parent,
-        &reference_query,
-        &forward,
-        &renderer,
-        Some(&animation),
-        Tau::from_ticks(2),
-    );
-    let odd = present_with_animation(
-        &parent,
-        &reference_query,
-        &forward,
-        &renderer,
-        Some(&animation),
-        Tau::from_ticks(3),
-    );
-    assert_eq!(even, even_again);
-    assert_eq!(even.animation(), Some(&22));
-    assert_eq!(odd.animation(), None);
+    let fixed_state = caravan_reference::state(&parent, LogicalTime::from_ticks(2));
+    let tau_two = Tau::from_ticks(2);
+    let tau_three = Tau::from_ticks(3);
+    let repeated_frame = present(&fixed_state, &renderer, tau_two);
+    let repeated_frame_again = present(&fixed_state, &renderer, tau_two);
+    let different_tau_frame = present(&fixed_state, &renderer, tau_three);
+    assert_eq!(repeated_frame, repeated_frame_again);
+    assert_ne!(repeated_frame, different_tau_frame);
 
     let counterfactual = parent
         .counterfactual(
@@ -428,15 +409,12 @@ pub fn presentation_supports_scrubbing_branches_and_repeatable_animation() {
             &journal([(4, spawn(3, ActorKind::Farmer, TileId::origin()))]),
         )
         .expect("presentation correction suffix is after the fork boundary");
-    let actual_frame = present(&parent, &reference_query, &forward, &renderer, tau(4));
-    let counterfactual_frame = present(
-        &counterfactual,
-        &reference_query,
-        &forward,
-        &renderer,
-        tau(4),
-    );
-    let corrected_frame = present(&corrected, &reference_query, &forward, &renderer, tau(4));
+    let actual_state = state(&parent, 4);
+    let counterfactual_state = state(&counterfactual, 4);
+    let corrected_state = state(&corrected, 4);
+    let actual_frame = present(&actual_state, &renderer, tau(4));
+    let counterfactual_frame = present(&counterfactual_state, &renderer, tau(4));
+    let corrected_frame = present(&corrected_state, &renderer, tau(4));
     assert_eq!(actual_frame.payload().actor_ids, vec![1]);
     assert_eq!(counterfactual_frame.payload().actor_ids, vec![2]);
     assert_eq!(corrected_frame.payload().actor_ids, vec![3]);

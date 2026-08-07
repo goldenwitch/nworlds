@@ -7,9 +7,9 @@ temporal game engine. Its reference query is:
 state(worldline, t_) -> game_state
 ```
 
-Queries read an immutable worldline at any logical time. Presentation maps a
-playback time to a logical time and renders the resulting state; it does not
-advance or mutate a hidden current state.
+Queries read an immutable worldline at any logical time. Presentation receives
+the selected logical and presentation times and renders the resulting state;
+it does not advance or mutate a hidden current state.
 
 ## Start Here
 
@@ -46,12 +46,12 @@ These crates provide the generic temporal engine and its public boundaries.
 | Crate | Description |
 | --- | --- |
 | [`engine-time`](crates/engine-time) | Distinct `LogicalTime` and `Tau` fixed-point time types, checked arithmetic, and tick conversions. |
-| [`engine-sdk`](crates/engine-sdk) | Generic immutable envelopes for contexts, journals, worldlines, game states, playback, and frames. |
+| [`engine-sdk`](crates/engine-sdk) | Generic immutable envelopes for contexts, journals, worldlines, game states, and frames. |
 | [`engine-journal`](crates/engine-journal) | Immutable journal storage and the journal-owned monotonic `JournalWriter`. |
 | [`engine-branches`](crates/engine-branches) | Immutable actual, counterfactual, and corrected branch construction from journal prefixes and suffixes. |
 | [`engine-index`](crates/engine-index) | Direct indexed-query kernel plus engine-neutral discontinuity breakpoints and half-open pieces. |
 | [`engine-lookahead`](crates/engine-lookahead) | Future queries and read-only branch views using the same direct query path. |
-| [`engine-presentation`](crates/engine-presentation) | Playback, query/render composition, frames, and optional animation values. |
+| [`engine-presentation`](crates/engine-presentation) | State-plus-`Tau` render composition and frame values. |
 | [`engine-persistence`](crates/engine-persistence) | Versioned save/load, encoding, branch lineage, and deterministic replay. |
 | [`engine-api`](crates/engine-api) | Game-facing facade that exposes the supported query, journal, branch, time, and domain APIs. |
 

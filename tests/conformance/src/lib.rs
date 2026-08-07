@@ -23,7 +23,7 @@ pub const GAPS: &[Gap] = &[
     Gap {
         id: "presentation-extension-trust",
         status: "explicit",
-        description: "The authoritative engine boundary has compiler-checked purity evidence. Rust cannot prove arbitrary QueryAdapter, Renderer, or Animation extension bodies have no side effects; those implementations are trusted extensions receiving immutable values and returning owned values.",
+        description: "The authoritative engine boundary has compiler-checked purity evidence. Rust cannot prove arbitrary Renderer extension bodies have no side effects; those implementations are trusted extensions receiving immutable values and returning owned values.",
     },
 ];
 
@@ -171,10 +171,10 @@ pub fn cases() -> &'static [Case] {
         },
         Case {
             id: "presentation",
-            clause: "Presentation composes playback, state, rendering, and optional animation without mutation",
-            test: "presentation_supports_scrubbing_branches_and_repeatable_animation",
+            clause: "Presentation composes explicit logical/presentation samples and state-first rendering without mutation",
+            test: "presentation_supports_scrubbing_branches_and_repeatable_rendering",
             artifact: "tests/conformance/src/checks.rs",
-            run: checks::presentation_supports_scrubbing_branches_and_repeatable_animation,
+            run: checks::presentation_supports_scrubbing_branches_and_repeatable_rendering,
         },
         Case {
             id: "demo-trace",

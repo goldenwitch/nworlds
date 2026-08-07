@@ -1,8 +1,8 @@
 use caravan_domain::{ActorId, ActorKind, GameJournalEntry, TileId};
-use caravan_reference::{actual, state, ReferenceWorldline, Snapshot};
+use caravan_reference::{actual, try_state, ReferenceWorldline, Snapshot};
 use engine_journal::{Journal, JournalWriter};
-use engine_presentation::{present, present_with_animation, Animation, LinearPlayback, Renderer};
-use engine_sdk::{GameState, Playback};
+use engine_presentation::{present, Renderer};
+use engine_sdk::GameState;
 use engine_time::{LogicalTime, Tau};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -28,16 +28,6 @@ impl Renderer<Snapshot> for SnapshotRenderer {
                 .map(|actor| actor.id().get())
                 .collect(),
         }
-    }
-}
-
-struct DeterministicAnimation;
-
-impl Animation<Snapshot> for DeterministicAnimation {
-    type Output = i64;
-
-    fn sample(&self, state: &GameState<Snapshot>, tau: Tau) -> Option<Self::Output> {
-        (tau.ticks().rem_euclid(2) == 0).then(|| state.logical_time().ticks() * 10 + tau.ticks())
     }
 }
 
@@ -72,53 +62,23 @@ fn reference_state(
     worldline: &ReferenceWorldline,
     logical_time: LogicalTime,
 ) -> GameState<Snapshot> {
-    state(worldline, logical_time)
+    try_state(worldline, logical_time).expect("presentation fixture should project")
 }
 
 #[test]
-fn linear_playback_maps_forward_and_reverse_with_checked_time_arithmetic() {
-    let forward = LinearPlayback::new(time(10), 2);
-    let reverse = LinearPlayback::reverse_from(time(10));
-
-    assert_eq!(forward.logical_time_at(Tau::from_ticks(3)), time(16));
-    assert_eq!(reverse.logical_time_at(Tau::from_ticks(3)), time(7));
-    assert_eq!(
-        LinearPlayback::new(time(i64::MAX), 1).try_logical_time_at(Tau::from_ticks(1)),
-        None
-    );
-}
-
-#[test]
-fn present_supports_forward_reverse_and_arbitrary_scrub() {
+fn present_accepts_explicit_logical_and_presentation_times() {
     let worldline = actual(journal([
         (0, create_saucer()),
         (3, spawn(1, ActorKind::Forester, TileId::origin())),
     ]));
     let renderer = SnapshotRenderer;
-    let forward = LinearPlayback::one_to_one();
-    let reverse = LinearPlayback::reverse_from(time(5));
+    let forward_state = reference_state(&worldline, time(5));
+    let reverse_state = reference_state(&worldline, time(3));
+    let scrubbed_state = reference_state(&worldline, time(2));
 
-    let forward_frame = present(
-        &worldline,
-        &reference_state,
-        &forward,
-        &renderer,
-        Tau::from_ticks(5),
-    );
-    let reverse_frame = present(
-        &worldline,
-        &reference_state,
-        &reverse,
-        &renderer,
-        Tau::from_ticks(2),
-    );
-    let scrubbed_frame = present(
-        &worldline,
-        &reference_state,
-        &forward,
-        &renderer,
-        Tau::from_ticks(2),
-    );
+    let forward_frame = present(&forward_state, &renderer, Tau::from_ticks(5));
+    let reverse_frame = present(&reverse_state, &renderer, Tau::from_ticks(2));
+    let scrubbed_frame = present(&scrubbed_state, &renderer, Tau::from_ticks(2));
 
     assert_eq!(forward_frame.tau(), Tau::from_ticks(5));
     assert_eq!(forward_frame.payload().logical_time, time(5));
@@ -134,29 +94,12 @@ fn repeated_samples_are_equal_and_do_not_depend_on_query_order() {
         (3, spawn(1, ActorKind::Forester, TileId::origin())),
     ]));
     let renderer = SnapshotRenderer;
-    let playback = LinearPlayback::one_to_one();
+    let later_state = reference_state(&worldline, time(5));
+    let earlier_state = reference_state(&worldline, time(2));
 
-    let later_first = present(
-        &worldline,
-        &reference_state,
-        &playback,
-        &renderer,
-        Tau::from_ticks(5),
-    );
-    let _earlier = present(
-        &worldline,
-        &reference_state,
-        &playback,
-        &renderer,
-        Tau::from_ticks(2),
-    );
-    let later_again = present(
-        &worldline,
-        &reference_state,
-        &playback,
-        &renderer,
-        Tau::from_ticks(5),
-    );
+    let later_first = present(&later_state, &renderer, Tau::from_ticks(5));
+    let _earlier = present(&earlier_state, &renderer, Tau::from_ticks(2));
+    let later_again = present(&later_state, &renderer, Tau::from_ticks(5));
 
     assert_eq!(later_first, later_again);
 }
@@ -180,29 +123,13 @@ fn actual_counterfactual_and_corrected_branches_use_one_presentation_path() {
         )
         .expect("corrected suffix is after its boundary");
     let renderer = SnapshotRenderer;
-    let playback = LinearPlayback::one_to_one();
+    let actual_state = reference_state(&parent, time(10));
+    let counterfactual_state = reference_state(&counterfactual, time(10));
+    let corrected_state = reference_state(&corrected, time(10));
 
-    let actual_frame = present(
-        &parent,
-        &reference_state,
-        &playback,
-        &renderer,
-        Tau::from_ticks(10),
-    );
-    let counterfactual_frame = present(
-        &counterfactual,
-        &reference_state,
-        &playback,
-        &renderer,
-        Tau::from_ticks(10),
-    );
-    let corrected_frame = present(
-        &corrected,
-        &reference_state,
-        &playback,
-        &renderer,
-        Tau::from_ticks(10),
-    );
+    let actual_frame = present(&actual_state, &renderer, Tau::from_ticks(10));
+    let counterfactual_frame = present(&counterfactual_state, &renderer, Tau::from_ticks(10));
+    let corrected_frame = present(&corrected_state, &renderer, Tau::from_ticks(10));
 
     assert_eq!(actual_frame.payload().actor_ids, vec![1]);
     assert_eq!(counterfactual_frame.payload().actor_ids, vec![2]);
@@ -211,44 +138,7 @@ fn actual_counterfactual_and_corrected_branches_use_one_presentation_path() {
 }
 
 #[test]
-fn optional_animation_is_a_deterministic_value_boundary() {
-    let worldline = actual(journal([(0, create_saucer())]));
-    let renderer = SnapshotRenderer;
-    let animation = DeterministicAnimation;
-    let playback = LinearPlayback::one_to_one();
-
-    let even = present_with_animation(
-        &worldline,
-        &reference_state,
-        &playback,
-        &renderer,
-        Some(&animation),
-        Tau::from_ticks(2),
-    );
-    let even_again = present_with_animation(
-        &worldline,
-        &reference_state,
-        &playback,
-        &renderer,
-        Some(&animation),
-        Tau::from_ticks(2),
-    );
-    let odd = present_with_animation(
-        &worldline,
-        &reference_state,
-        &playback,
-        &renderer,
-        Some(&animation),
-        Tau::from_ticks(3),
-    );
-
-    assert_eq!(even, even_again);
-    assert_eq!(even.animation(), Some(&22));
-    assert_eq!(odd.animation(), None);
-}
-
-#[test]
-fn query_and_renderer_remain_generic_over_opaque_payloads() {
+fn state_and_renderer_remain_generic_over_opaque_payloads() {
     #[derive(Clone, Debug, Eq, Hash, PartialEq)]
     struct OpaqueWorldline {
         marker: u32,
@@ -265,16 +155,8 @@ fn query_and_renderer_remain_generic_over_opaque_payloads() {
     }
 
     let worldline = OpaqueWorldline { marker: 17 };
-    let query = |worldline: &OpaqueWorldline, logical_time: LogicalTime| {
-        GameState::new(logical_time, worldline.marker)
-    };
-    let frame = present(
-        &worldline,
-        &query,
-        &LinearPlayback::one_to_one(),
-        &OpaqueRenderer,
-        Tau::from_ticks(4),
-    );
+    let state = GameState::new(LogicalTime::from_ticks(4), worldline.marker);
+    let frame = present(&state, &OpaqueRenderer, Tau::from_ticks(4));
 
     assert_eq!(frame.payload(), &(17, Tau::from_ticks(4)));
     assert_eq!(frame.tau(), Tau::from_ticks(4));

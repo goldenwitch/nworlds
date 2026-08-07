@@ -8,7 +8,8 @@ All vocabulary terms are bold as is tradition.
 
 > **t_**: Continuous logical time. The value of **t_** is part of authoritative state.
 >
-> **tau**: Presentation time. It selects when a state is sampled for display and is independent of **t_**.
+> **tau**: Presentation sampling time. It selects presentation values for a
+> selected game state and is independent of **t_**.
 >
 > **context**: The immutable rules, configuration, assets, and definitions of the game.
 >
@@ -21,11 +22,8 @@ All vocabulary terms are bold as is tradition.
 >
 > **game state**: The authoritative result of evaluating a **worldline** at a value of **t_**. It contains **t_** itself.
 >
-> **playback**: A pure function from **tau** to **t_** that selects which logical time is displayed.
->
 > **frame**: The result of rendering one **game state** at one value of **tau**.
 >
-> **animation**: A pure function over **tau**. An optional result means that the visual element is absent at that value.
 
 ## Invariants
 
@@ -35,29 +33,30 @@ All vocabulary terms are bold as is tradition.
     state or a mutable state carried forward from an earlier query.
 - Distinct values of **t_** select distinct game states, because logical time is authoritative state.
 - The logical-time domain is continuous. State fields may nevertheless change discontinuously at journal events.
-- A **playback** may select any logical time, including a time beyond the current journal horizon or a time in the past.
+- A presentation request may select any logical time independently of **tau**,
+    including a time beyond the current journal horizon or a time in the past.
 - Rendering is pure for fixed inputs:
 
 ```text
 render : GameState -> Tau -> Frame
 ```
 
-- Rendering and animation do not modify the **context**, **journal**, **worldline**, or **game state**.
+- Rendering does not modify the **context**, **journal**, **worldline**, or
+    **game state**.
 - All procedural presentation is reconstructible from the selected **game state**, immutable definitions, and **tau**. No frame history is required.
 
 ## Core functions
 
 ```text
 state : Worldline -> LogicalTime -> GameState
-playback : Tau -> LogicalTime
-present : Worldline -> Playback -> Tau -> Frame
+present : Worldline -> LogicalTime -> Tau -> Frame
 ```
 
 Their composition is:
 
 ```text
-present(worldline, playback, tau) =
-    render(state(worldline, playback(tau)), tau)
+present(worldline, logical_time, tau) =
+    render(state(worldline, logical_time), tau)
 ```
 
 `LogicalTime` and `Tau` are distinct static types even if they share a numeric representation.
@@ -110,8 +109,11 @@ counterfactual =
 
 The counterfactual agrees with its parent before `fork_t` and may diverge afterward. The actual journal remains unchanged. Counterfactual initial conditions require a different **context**, not an alteration of the journal.
 
-The same **playback** mechanism can scrub or play either worldline.
+The same direct presentation path can sample either worldline at any selected
+pair of logical and presentation times.
 
 ## Rendering
 
-The renderer receives the selected **game state** and **tau**. The GPU may evaluate animations entirely from those inputs. A persistent GPU simulation that depends on unrecorded previous frames is outside this model.
+The renderer receives the selected **game state** and **tau**. Visual values may
+vary as a pure function of those inputs. A persistent GPU simulation that
+depends on unrecorded previous frames is outside this model.

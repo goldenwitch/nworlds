@@ -12,8 +12,8 @@ Accept: The branch has one settled rendering contract, one deterministic backend
 -> render-demo
 -> render-evidence
 -> render-projection
-> Stage owns the canonical selected Worldline and Playback; PresentationHost is platform/execution plumbing.
-> Orchestrator is developer-authored ordinary imperative control code inside Stage. It chooses Tau samples, input orchestration, lookahead, branches, persistence, and presentation, but it may not own imperative game state.
+> Stage owns the canonical selected Worldline, LogicalTime, and Tau; PresentationHost is platform/execution plumbing.
+> Orchestrator is developer-authored ordinary imperative control code inside Stage. It chooses LogicalTime and Tau samples, input orchestration, lookahead, branches, persistence, and presentation, but it may not own imperative game state.
 > Only publication of a new immutable journal/worldline value may change authoritative game state. InteractionDefinition returns closed Transformation data and cannot construct timestamped journal entries directly.
 ---
 ref [anchor] Completed indexed anchor implementation (build.vine)
@@ -21,7 +21,7 @@ The completed anchor supplies the immutable Snapshot, direct query, branches, pe
 ---
 [render-contract] Rendering slice contract (notstarted)
 Files: proposals/rendering-contract.md
-Do: Record the first rendering boundary: immutable `GameState<Snapshot>` plus `Tau` in, owned backend-neutral render value out; exact sampled `LogicalTime` and `Tau` remain observable; tile order and independent terrain, actor, and effect layers remain stable; no frame history or authoritative mutation is admitted. Name the trust boundary of `Renderer` and `Animation` implementations and list the deferred graphics decisions without designing them here.
+Do: Record the first rendering boundary: immutable `GameState<Snapshot>` plus `Tau` in, owned backend-neutral render value out; exact sampled `LogicalTime` and `Tau` remain observable; tile order and independent terrain, actor, and effect layers remain stable; no frame history or authoritative mutation is admitted. Name the trust boundary of `Renderer` implementations and list the deferred graphics decisions without designing them here.
 Accept: One short contract names inputs, outputs, ownership, determinism, stable ordering, and the explicit non-goals. It agrees with the initial specification, semantic contract, productization review, and existing engine-presentation traits.
 -> anchor
 > The rendering seam remains GameState plus Tau to Frame/render output; rendering does not receive Orchestrator control state or frame history.
@@ -34,7 +34,6 @@ Accept: One short contract names inputs, outputs, ownership, determinism, stable
 @guidance text/markdown proposals/input-and-interaction.md
 @guidance text/markdown crates/engine-presentation/src/presentation.rs
 @guidance text/markdown crates/engine-presentation/src/renderer.rs
-@guidance text/markdown crates/engine-presentation/src/animation.rs
 ---
 [render-projection] Snapshot render projection (notstarted)
 Files: crates/caravan-demo/src/render.rs

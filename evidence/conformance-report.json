@@ -19,7 +19,7 @@
     {"id":"seeded","status":"pass","clause":"Seeded journal is concrete before evaluation and reproducible","test":"same_seed_reproduces_journal_and_states","artifact":"tests/conformance/src/checks.rs"},
     {"id":"branches","status":"pass","clause":"Actual, counterfactual, and corrected branches are isolated immutable values","test":"branches_agree_at_prefix_and_diverge_without_parent_mutation","artifact":"tests/conformance/src/checks.rs"},
     {"id":"lookahead","status":"pass","clause":"Lookahead uses the same query with a fixed journal and no generated future entries","test":"lookahead_keeps_the_journal_fixed","artifact":"tests/conformance/src/checks.rs"},
-    {"id":"presentation","status":"pass","clause":"Presentation composes playback, state, rendering, and optional animation without mutation","test":"presentation_supports_scrubbing_branches_and_repeatable_animation","artifact":"tests/conformance/src/checks.rs"},
+    {"id":"presentation","status":"pass","clause":"Presentation composes explicit logical/presentation samples and state-first rendering without mutation","test":"presentation_supports_scrubbing_branches_and_repeatable_rendering","artifact":"tests/conformance/src/checks.rs"},
     {"id":"demo-trace","status":"pass","clause":"Runnable demo trace exposes the anchor observables","test":"demo_trace_contains_the_anchor_observables","artifact":"crates/caravan-demo/snapshots/anchor-trace.txt"}
   ],
   "supplemental_cases": [
@@ -30,6 +30,6 @@
     {"id":"timestamp-facade","status":"pass","test":"no_low_level_timestamp_import","artifact":"crates/purity-tests/tests/ui/no_low_level_timestamp_import.rs"}
   ],
   "gaps": [
-    {"id":"presentation-extension-trust","status":"explicit","description":"The authoritative engine boundary has compiler-checked purity evidence. Rust cannot prove arbitrary QueryAdapter, Renderer, or Animation extension bodies have no side effects; those implementations are trusted extensions receiving immutable values and returning owned values."}
+    {"id":"presentation-extension-trust","status":"explicit","description":"The authoritative engine boundary has compiler-checked purity evidence. Rust cannot prove arbitrary Renderer extension bodies have no side effects; those implementations are trusted extensions receiving immutable values and returning owned values."}
   ]
 }

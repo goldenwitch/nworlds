@@ -16,8 +16,8 @@ Conceptual terms in this proposal are **bold** when defined or emphasized.
 Exact Rust/API spellings remain in backticks. The Stage and host proposals own
 the meanings of **Stage**, **Orchestrator**, and **presentation host**; this
 document owns their Caravan composition. The initial specification owns the
-formal meanings of **worldline**, **game state**, **Tau**, **LogicalTime**,
-**playback**, and **frame**.
+formal meanings of **worldline**, **game state**, **Tau**, **LogicalTime**, and
+**frame**.
 
 ## Existing Anchor
 
@@ -35,8 +35,8 @@ Renderer<Snapshot>::render(GameState<Snapshot>, Tau)
     -> Frame
 ```
 
-The reference query, journal writer, branch constructors, playback mapping,
-presentation adapter, persistence, and evidence remain the engine boundary.
+The reference query, journal writer, branch constructors, presentation
+adapter, persistence, and evidence remain the engine boundary.
 This proposal composes them; it does not replace them with mutable game-owned
 state. The low-level SDK already has generic journal envelopes; the current
 `engine-journal` and `engine-branches` facades remain Caravan-bound and are the
@@ -54,7 +54,7 @@ CaravanStage
 CaravanOrchestrator
     selected ReferenceWorldline
     JournalWriter / immutable publication path
-    Playback and selected Tau
+    selected LogicalTime and Tau
     InputPacketSet orchestration
     Caravan InteractionDefinition
     query, branch, save, and presentation decisions
@@ -150,6 +150,7 @@ HUD, coordinates, assets, GPU, or device behavior.
 ```text
 interaction_query(
     interaction_definition,
+    game_state,
     input_packet_set,
     tau,
     logical_time,
@@ -158,10 +159,11 @@ interaction_query(
 
 The application prototype's `InteractionDefinition` is the current pure seam
 where the developer writes interaction reasoning. It receives abstract packets
-and the selected sample; it does not receive host events, host time, a journal
-writer, or a mutable board. It returns closed `Transformation` data rather than
-a timestamped journal entry or an arbitrary mutation callback. These are
-application-level types, not generic engine APIs.
+and the selected read-only `GameState` together with `Tau` and `LogicalTime`; it
+does not receive host events, host time, a journal writer, or a mutable board.
+It returns closed `Transformation` data rather than a timestamped journal entry
+or an arbitrary mutation callback. These are application-level types, not
+generic engine APIs.
 
 The query is identical for samples in the past, present, or future. Whether the
 packet set was delivered directly or retained by Orchestrator input
@@ -174,7 +176,7 @@ we are learning the shape of a game loop. Its mutable state may include:
 
 - the selected immutable `ReferenceWorldline` value;
 - a private `JournalWriter` or equivalent unpublished authoring mechanism;
-- `Playback` and the currently selected presentation `Tau`;
+- the currently selected `LogicalTime` and `Tau`;
 - retained input packets and packet-set construction state;
 - branch, lookahead, save, and presentation choices; and
 - ordinary developer control variables needed to coordinate the loop.
@@ -200,7 +202,7 @@ An interaction result changes authoritative game state only through journal or
 branch publication:
 
 ```text
-InputPacketSet + Tau + LogicalTime
+GameState + InputPacketSet + Tau + LogicalTime
     -> InteractionDefinition
     -> Transformation
     -> Orchestrator accepts or rejects
@@ -239,10 +241,9 @@ A first implementation may follow this developer-authored control flow:
 
 ```text
 Orchestrator control-flow iteration
-  -> drain InputIngress for abstract input packets
+  -> receive abstract input packets through the Stage boundary
   -> construct the InputPacketSet
-    -> choose Tau and the viewed ReferenceWorldline
-    -> Playback maps Tau -> LogicalTime
+    -> choose LogicalTime, Tau, and the viewed ReferenceWorldline
     -> query ReferenceWorldline -> GameState<Snapshot>
     -> run InteractionDefinition
     -> accept/reject/apply Transformation
@@ -263,12 +264,12 @@ The remapping is successful when a concrete Caravan Orchestrator demonstrates:
 - it owns a selected `ReferenceWorldline` without mutating a published parent;
 - its journal facts and transformations use closed, statically typed game
   variants rather than runtime object collections;
-- it selects `Tau` and obtains `LogicalTime` through the selected `Playback`;
+- it selects `LogicalTime` and `Tau` explicitly;
 - it queries arbitrary past, present, and future times through the existing
   direct reference oracle;
 - the application `InteractionDefinition` seam returns closed
-  `Transformation` data from an
-  `InputPacketSet` and selected sample;
+  `Transformation` data from the selected read-only `GameState`,
+  `InputPacketSet`, `Tau`, and `LogicalTime`;
 - accepted authoritative transformations publish new immutable journal or
   branch values;
 - rejected transformations do not alter the selected worldline;

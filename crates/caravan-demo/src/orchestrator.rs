@@ -2,8 +2,6 @@ use caravan_domain::{Terrain, TileId};
 use caravan_reference::{try_state, ProjectionError, ReferenceWorldline, State, Worldline};
 use engine_branches::BranchError;
 use engine_journal::{Journal, JournalWriter, JournalWriterError};
-use engine_presentation::LinearPlayback;
-use engine_sdk::Playback;
 use engine_time::{LogicalTime, Tau};
 
 use crate::input::{interaction_query, Button, InputPacket, InputPacketSet, InteractionDefinition};
@@ -54,6 +52,7 @@ impl InteractionDefinition for CaravanInteraction {
 
     fn query(
         &self,
+        _state: &State,
         packets: &InputPacketSet,
         _tau: Tau,
         _logical_time: LogicalTime,
@@ -73,7 +72,7 @@ impl InteractionDefinition for CaravanInteraction {
 pub struct CaravanOrchestrator<I = CaravanInteraction> {
     worldline: ReferenceWorldline,
     writer: JournalWriter,
-    playback: LinearPlayback,
+    logical_time: LogicalTime,
     tau: Tau,
     packets: InputPacketSet,
     interaction: I,
@@ -86,7 +85,7 @@ where
     /// Creates an Orchestrator from one immutable published worldline.
     pub fn new(
         worldline: ReferenceWorldline,
-        playback: LinearPlayback,
+        logical_time: LogicalTime,
         tau: Tau,
         interaction: I,
     ) -> Result<Self, OrchestratorError> {
@@ -94,7 +93,7 @@ where
         Ok(Self {
             worldline,
             writer,
-            playback,
+            logical_time,
             tau,
             packets: InputPacketSet::new(),
             interaction,
@@ -111,14 +110,14 @@ where
         self.tau
     }
 
-    /// Returns the logical time selected by the current playback policy.
+    /// Returns the currently selected logical game time.
     pub fn logical_time(&self) -> LogicalTime {
-        self.playback.logical_time_at(self.tau)
+        self.logical_time
     }
 
-    /// Returns the statically composed playback mapping.
-    pub const fn playback(&self) -> LinearPlayback {
-        self.playback
+    /// Replaces the selected logical game time explicitly.
+    pub fn set_logical_time(&mut self, logical_time: LogicalTime) {
+        self.logical_time = logical_time;
     }
 
     /// Replaces the selected presentation sample explicitly.
@@ -161,18 +160,20 @@ where
     }
 
     /// Runs the pure interaction seam at the current selected sample.
-    pub fn interaction(&self) -> Transformation {
-        interaction_query(
+    pub fn interaction(&self) -> Result<Transformation, OrchestratorError> {
+        let state = self.sample()?;
+        Ok(interaction_query(
             &self.interaction,
+            &state,
             &self.packets,
             self.tau,
             self.logical_time(),
-        )
+        ))
     }
 
     /// Applies the current interaction and clears its packet accumulation.
     pub fn interact_and_apply(&mut self) -> Result<bool, OrchestratorError> {
-        let transformation = self.interaction();
+        let transformation = self.interaction()?;
         self.clear_packets();
         self.apply_transformation(transformation)
     }
@@ -277,7 +278,6 @@ mod tests {
     use caravan_domain::GameJournalEntry;
     use caravan_reference::{actual, state, ProjectionError};
     use engine_journal::JournalWriter;
-    use engine_presentation::LinearPlayback;
     use engine_time::{LogicalTime, Tau};
 
     fn time(ticks: i64) -> LogicalTime {
@@ -289,7 +289,7 @@ mod tests {
         writer.record(GameJournalEntry::create_saucer());
         CaravanOrchestrator::new(
             actual(writer.finish()),
-            LinearPlayback::one_to_one(),
+            LogicalTime::zero(),
             Tau::zero(),
             CaravanInteraction,
         )
@@ -297,9 +297,10 @@ mod tests {
     }
 
     #[test]
-    fn orchestrator_chooses_tau_and_queries_through_playback() {
+    fn orchestrator_selects_logical_and_presentation_times_independently() {
         let mut orchestrator = orchestrator();
-        orchestrator.set_tau(Tau::from_ticks(time(4).ticks()));
+        orchestrator.set_logical_time(time(4));
+        orchestrator.set_tau(Tau::from_ticks(9));
         let original_worldline = orchestrator.worldline().clone();
         let original_tau = orchestrator.tau();
 
@@ -390,7 +391,7 @@ mod tests {
         });
         let mut orchestrator = CaravanOrchestrator::new(
             caravan_reference::actual(writer.finish()),
-            LinearPlayback::one_to_one(),
+            LogicalTime::zero(),
             Tau::from_ticks(time(2).ticks()),
             CaravanInteraction,
         )
@@ -464,9 +465,9 @@ mod tests {
     fn malformed_radius_is_an_explicit_projection_error() {
         let mut writer = JournalWriter::new();
         writer.record(GameJournalEntry::CreateSaucer { radius: 4 });
-        let orchestrator = CaravanOrchestrator::new(
+        let mut orchestrator = CaravanOrchestrator::new(
             caravan_reference::actual(writer.finish()),
-            LinearPlayback::one_to_one(),
+            LogicalTime::zero(),
             Tau::zero(),
             CaravanInteraction,
         )
@@ -478,5 +479,14 @@ mod tests {
                 ProjectionError::UnsupportedSaucerRadius { found: 4, .. }
             ))
         ));
+
+        orchestrator.receive_packet(InputPacket::ButtonPressed(Button::Primary));
+        assert!(matches!(
+            orchestrator.interact_and_apply(),
+            Err(OrchestratorError::Projection(
+                ProjectionError::UnsupportedSaucerRadius { found: 4, .. }
+            ))
+        ));
+        assert_eq!(orchestrator.packets().len(), 1);
     }
 }

@@ -25,8 +25,8 @@ not a new distribution or runtime layer.
   reference query. The checked-in snapshot is a usable developer-facing
   observable, not a platform commitment.
 - The conformance report records all listed cases as passing. The authoritative
-  boundary has compiler-checked purity tests; renderer, animation, and query
-  adapter bodies remain an explicit trusted extension boundary.
+  boundary has compiler-checked purity tests; renderer bodies remain an
+  explicit trusted extension boundary.
 - The benchmark report measures the unreplaced reference path on fixed small
   workloads in a release build, with no cache or optimization. It records
   direct queries, non-monotonic scrubbing, and frame production, but supplies

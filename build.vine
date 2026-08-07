@@ -69,7 +69,7 @@ Accept: Boundary and overflow tests pass; no game-domain types or evaluator logi
 ---
 [sdk-envelopes] SDK envelopes and query contracts (complete)
 Files: crates/engine-sdk/**
-Do: Define generic SDK objects and traits for Context, JournalEntry, Journal, Worldline, GameState, Playback, Frame, and typed query results without admitting interval callbacks or game-domain primitives. Keep game payloads opaque to the SDK.
+Do: Define generic SDK objects and traits for Context, JournalEntry, Journal, Worldline, GameState, Frame, and typed query results without admitting interval callbacks or game-domain primitives. Keep game payloads opaque to the SDK.
 Accept: SDK/game ownership is visible in types; immutable inputs and owned query outputs are expressible; no actor, terrain, saucer, or resource type is introduced.
 -> contract-gate
 -> workspace-time
@@ -172,9 +172,9 @@ Accept: Earlier lookahead values remain unchanged when new values are authored o
 -> reference-oracle
 @artifact text/plain crates/engine-lookahead/src/lib.rs
 ---
-[presentation] Playback and presentation adapter (complete)
-Files: crates/engine-presentation/**; consume engine-time, engine-sdk, caravan-reference APIs
-Do: Implement reusable Playback, direct present composition, and renderer/animation value boundaries over SDK GameState and Tau. Keep the presentation adapter generic over game payloads and independent of game rules.
+[presentation] State-first presentation adapter (complete)
+Files: crates/engine-presentation/**; consume engine-time and engine-sdk APIs
+Do: Implement state-plus-Tau presentation composition and renderer value boundaries over opaque SDK GameState payloads. State evaluation remains outside this crate; keep the presentation adapter generic over game payloads and independent of game rules.
 Accept: Forward, reverse, arbitrary scrub, repeated samples, and branch presentation are deterministic and do not mutate authoritative inputs.
 -> reference-oracle
 -> sdk-envelopes
@@ -324,13 +324,13 @@ Accept: The composition corpus passes for authored and derived terrain, fire ove
 ---
 [presentation-purity-contract] Close presentation purity boundary (complete)
 Files: spec/initial.md; proposals/productization-review.md; crates/engine-presentation/src/**; crates/purity-tests/**
-Do: Decide the intended purity boundary for QueryAdapter closures, Renderer implementations, and Animation implementations. Distinguish authoritative-state purity from renderer/plugin trust, and choose either data-only inputs, a constrained API, or an explicit documented escape boundary.
+Do: Decide the intended purity boundary for authoritative state evaluation and Renderer implementations. Distinguish authoritative-state purity from renderer/plugin trust, and choose either data-only inputs, a constrained API, or an explicit documented escape boundary.
 Accept: The contract and productization review state what is guaranteed and what remains trusted extension code; the compile-fail and runtime evidence targets are named before implementation.
 -> presentation
 -> productization
 -> purity-hardening
 -> sdk-envelopes
-> Authoritative query inputs/results are the compiler-tested purity boundary. QueryAdapter, Renderer, and Animation bodies are trusted extensions that receive immutable values and return owned values; arbitrary body purity is not claimed.
+> Authoritative state-evaluation inputs/results are the compiler-tested purity boundary. Renderer bodies are trusted extensions that receive immutable values and return owned values; arbitrary body purity is not claimed.
 ---
 [presentation-purity-implementation] Implement presentation purity boundary (complete)
 Files: crates/engine-presentation/**; crates/purity-tests/**; evidence/clause-to-test.md

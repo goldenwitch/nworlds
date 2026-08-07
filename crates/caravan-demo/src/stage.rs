@@ -1,6 +1,6 @@
-use caravan_reference::{try_state, Snapshot};
-use engine_presentation::Renderer;
-use engine_sdk::{Frame, GameState, Playback};
+use caravan_reference::Snapshot;
+use engine_presentation::{present, Renderer};
+use engine_sdk::{Frame, GameState};
 use engine_time::{LogicalTime, Tau};
 
 use crate::input::{InputPacket, InteractionDefinition};
@@ -41,6 +41,11 @@ where
         self.orchestrator.set_tau(tau);
     }
 
+    /// Sets the Stage-owned logical game time.
+    pub fn set_logical_time(&mut self, logical_time: LogicalTime) {
+        self.orchestrator.set_logical_time(logical_time);
+    }
+
     /// Advances the Stage-owned presentation sample by signed ticks.
     pub fn advance_tau(&mut self, ticks: i64) -> Result<Tau, OrchestratorError> {
         self.orchestrator.advance_tau(ticks)
@@ -75,14 +80,17 @@ where
 
     /// Presents the Orchestrator's currently selected Tau.
     pub fn present(&self) -> Result<Frame<R::Output>, OrchestratorError> {
-        self.present_at(self.orchestrator.tau())
+        self.present_at(self.orchestrator.logical_time(), self.orchestrator.tau())
     }
 
-    /// Presents one explicit Tau without changing the Orchestrator cursor.
-    pub fn present_at(&self, tau: Tau) -> Result<Frame<R::Output>, OrchestratorError> {
-        let logical_time = self.orchestrator.playback().logical_time_at(tau);
-        let state = try_state(self.orchestrator.worldline(), logical_time)?;
-        Ok(Frame::new(tau, self.renderer.render(&state, tau)))
+    /// Presents one explicit logical and presentation sample without changing the Orchestrator cursor.
+    pub fn present_at(
+        &self,
+        logical_time: LogicalTime,
+        tau: Tau,
+    ) -> Result<Frame<R::Output>, OrchestratorError> {
+        let state = self.orchestrator.lookahead_at(logical_time)?;
+        Ok(present(&state, &self.renderer, tau))
     }
 }
 
@@ -101,11 +109,10 @@ impl Renderer<Snapshot> for NoopRenderer {
 #[cfg(test)]
 mod tests {
     use super::{CaravanStage, NoopRenderer};
-    use crate::orchestrator::{CaravanInteraction, CaravanOrchestrator};
+    use crate::orchestrator::{CaravanInteraction, CaravanOrchestrator, OrchestratorError};
     use caravan_domain::GameJournalEntry;
     use caravan_reference::actual;
     use engine_journal::JournalWriter;
-    use engine_presentation::LinearPlayback;
     use engine_time::{LogicalTime, Tau};
 
     fn worldline() -> caravan_reference::ReferenceWorldline {
@@ -117,7 +124,7 @@ mod tests {
     fn stage() -> CaravanStage {
         let orchestrator = CaravanOrchestrator::new(
             worldline(),
-            LinearPlayback::one_to_one(),
+            LogicalTime::zero(),
             Tau::zero(),
             CaravanInteraction,
         )
@@ -128,32 +135,44 @@ mod tests {
     #[test]
     fn stage_presents_the_orchestrator_selected_sample() {
         let mut stage = stage();
-        let tau = Tau::from_ticks(
-            LogicalTime::from_game_ticks(4)
-                .expect("test game time is representable")
-                .ticks(),
-        );
+        let logical_time =
+            LogicalTime::from_game_ticks(4).expect("test game time is representable");
+        let tau = Tau::from_ticks(9);
+        stage.set_logical_time(logical_time);
         stage.set_tau(tau);
 
         let frame = stage.present().expect("stage sample should be valid");
 
         assert_eq!(frame.tau(), tau);
-        assert_eq!(
-            frame.payload(),
-            &(LogicalTime::from_ticks(tau.ticks()), tau)
-        );
+        assert_eq!(frame.payload(), &(logical_time, tau));
     }
 
     #[test]
     fn explicit_presentation_sample_does_not_mutate_orchestrator_cursor() {
         let stage = stage();
+        let logical_time =
+            LogicalTime::from_game_ticks(3).expect("test game time is representable");
         let explicit_tau = Tau::from_ticks(9);
 
         let frame = stage
-            .present_at(explicit_tau)
+            .present_at(logical_time, explicit_tau)
             .expect("explicit stage sample should be valid");
 
         assert_eq!(frame.tau(), explicit_tau);
         assert_eq!(stage.orchestrator().tau(), Tau::zero());
+        assert_eq!(stage.orchestrator().logical_time(), LogicalTime::zero());
+        assert_eq!(frame.payload(), &(logical_time, explicit_tau));
+    }
+
+    #[test]
+    fn stage_advances_tau_in_both_directions_and_reports_overflow() {
+        let mut stage = stage();
+
+        assert_eq!(stage.advance_tau(5), Ok(Tau::from_ticks(5)));
+        assert_eq!(stage.advance_tau(-2), Ok(Tau::from_ticks(3)));
+
+        stage.set_tau(Tau::from_ticks(i64::MAX));
+        assert_eq!(stage.advance_tau(1), Err(OrchestratorError::TauOverflow));
+        assert_eq!(stage.orchestrator().tau(), Tau::from_ticks(i64::MAX));
     }
 }

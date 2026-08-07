@@ -49,7 +49,7 @@ Engine SDK objects provide the generic machinery:
 
 ```text
 LogicalTime, Tau, Context, Journal, JournalEntry, Worldline,
-GameState, Playback, Frame
+GameState, Frame
 ```
 
 Game objects provide this fixture's domain data:
@@ -360,6 +360,6 @@ The anchor is successful when:
 
 This specification does not choose a rendering host, persistence format,
 network protocol, or merge policy. The authoritative engine boundary has
-compiler-checked purity evidence; renderer, animation, and query-adapter
-implementations remain trusted presentation extensions. The specification
-establishes the behavior fixture that the direct indexed engine explains.
+compiler-checked purity evidence; renderer implementations remain trusted
+presentation extensions. The specification establishes the behavior fixture
+that the direct indexed engine explains.

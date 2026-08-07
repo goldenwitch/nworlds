@@ -13,12 +13,12 @@ state(worldline, t_) -> game_state
 ```
 
 A temporal definition is indexed at `t_`; the engine does not evolve a prior
-state or depend on frame history. Presentation composes the query with a
-reusable playback function:
+state or depend on frame history. Presentation composes the query with the
+selected logical and presentation times:
 
 ```text
-present(worldline, playback, tau) =
-    render(state(worldline, playback(tau)), tau)
+present(worldline, logical_time, tau) =
+  render(state(worldline, logical_time), tau)
 ```
 
 ## Settled Constraints
@@ -35,7 +35,7 @@ present(worldline, playback, tau) =
 - Engine SDK objects remain separate from game-domain objects; `GameState` and
   journal entries carry game-specific values without defining them as engine
   primitives.
-- Reverse playback and arbitrary scrubbing are legal.
+- Sampling backward and arbitrary logical times are legal.
 - Networking, reconciliation, merging, looping, bounds, and final graphics
   architecture are deferred until a concrete requirement activates them.
 
@@ -60,7 +60,7 @@ The completed packet provides:
 - immutable SDK envelopes, journals, branches, and direct indexed queries;
 - the radius-5 Caravan domain and vegetation, hazard, and seeded fixtures;
 - discontinuity indexing and piecewise reference projection;
-- lookahead, playback, rendering, persistence, and deterministic replay; and
+- lookahead, presentation, rendering, persistence, and deterministic replay; and
 - executable conformance, benchmark, demo, parity, and purity evidence.
 
 The packet-level delegation plan and its path ownership remain in

@@ -197,7 +197,7 @@ receive or consult:
 - a prior `GameState` or any other prior query result;
 - a mutable current board, actor, or resource counter;
 - a journal-writer or evaluator cursor;
-- frame, playback, or query-order history.
+- frame, presentation, or query-order history.
 
 A local calculation may inspect immutable context, the immutable branch
 journal, the selected piece, exact `t_`, and the piece's definition inputs. It

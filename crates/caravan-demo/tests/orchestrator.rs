@@ -3,7 +3,7 @@ use caravan_demo::{CaravanInteraction, CaravanOrchestrator, CaravanStage, Orches
 use caravan_domain::{GameJournalEntry, Terrain, TileId};
 use caravan_reference::{actual, state, Snapshot};
 use engine_journal::JournalWriter;
-use engine_presentation::{LinearPlayback, Renderer};
+use engine_presentation::Renderer;
 use engine_sdk::GameState;
 use engine_time::{LogicalTime, Tau};
 
@@ -43,7 +43,7 @@ fn malformed_stage() -> CaravanStage<CaravanInteraction, ProbeRenderer> {
     writer.record(GameJournalEntry::CreateSaucer { radius: 4 });
     let orchestrator = CaravanOrchestrator::new(
         actual(writer.finish()),
-        LinearPlayback::one_to_one(),
+        LogicalTime::zero(),
         Tau::zero(),
         CaravanInteraction,
     )
@@ -54,7 +54,7 @@ fn malformed_stage() -> CaravanStage<CaravanInteraction, ProbeRenderer> {
 fn stage() -> CaravanStage<CaravanInteraction, ProbeRenderer> {
     let orchestrator = CaravanOrchestrator::new(
         worldline(),
-        LinearPlayback::one_to_one(),
+        LogicalTime::zero(),
         Tau::zero(),
         CaravanInteraction,
     )
@@ -96,10 +96,10 @@ fn explicit_past_and_future_samples_are_repeatable_without_cursor_mutation() {
     let tau = Tau::from_ticks(time(4).ticks());
 
     let first = stage
-        .present_at(tau)
+        .present_at(time(4), tau)
         .expect("first explicit sample should be valid");
     let second = stage
-        .present_at(tau)
+        .present_at(time(4), tau)
         .expect("second explicit sample should be valid");
 
     assert_eq!(first, second);
@@ -115,13 +115,13 @@ fn non_monotonic_samples_are_equal_without_query_history() {
     let earlier_tau = Tau::from_ticks(time(2).ticks());
 
     let later_first = stage
-        .present_at(later_tau)
+        .present_at(time(5), later_tau)
         .expect("later sample should be valid");
     let _earlier = stage
-        .present_at(earlier_tau)
+        .present_at(time(2), earlier_tau)
         .expect("earlier sample should be valid");
     let later_again = stage
-        .present_at(later_tau)
+        .present_at(time(5), later_tau)
         .expect("repeated later sample should be valid");
 
     assert_eq!(later_first, later_again);
@@ -138,10 +138,10 @@ fn render_output_carries_both_selected_state_time_and_tau() {
     let second_tau = Tau::from_ticks(time(3).ticks());
 
     let first = stage
-        .present_at(first_tau)
+        .present_at(time(0), first_tau)
         .expect("first render sample should be valid");
     let second = stage
-        .present_at(second_tau)
+        .present_at(time(3), second_tau)
         .expect("second render sample should be valid");
 
     assert_eq!(first.payload().origin_terrain, Some(Terrain::Wheat));

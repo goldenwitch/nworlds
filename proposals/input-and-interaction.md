@@ -16,7 +16,8 @@ Rust/API spellings:
 > Its prototype/API spelling is `InputPacketSet`.
 >
 > **interaction definition**: Developer-authored pure logic that interprets an
-> input packet set at a selected **Tau** and **LogicalTime**. Its
+> selected read-only **GameState** and input packet set at a selected **Tau**
+> and **LogicalTime**. Its
 > prototype/API spelling is `InteractionDefinition`.
 >
 > **transformation**: Closed data returned by an interaction definition. It
@@ -50,6 +51,7 @@ InputIngress
     -> InputPacketSet
 
 Stage
+  selected GameState at LogicalTime
   InteractionDefinition
   InputPacketSet
     -> pure interaction query
@@ -72,6 +74,7 @@ The interaction operation is a pure set operation over a selected sample:
 
 ```text
 InteractionDefinition
+  x read-only GameState
   x InputPacketSet
   x Tau
   x LogicalTime
@@ -81,19 +84,23 @@ InteractionDefinition
 The canonical query boundary is:
 
 ```text
-interaction_query(definition, packets, tau, logical_time)
+interaction_query(definition, state, packets, tau, logical_time)
   -> Transformation
 ```
 
-The definition and packet set are both present for every call. `Tau` identifies
-the presentation sample and `LogicalTime` identifies the authoritative game
-sample. The Stage supplies the logical time through its owned `Playback`
-policy; the definition remains part of the Stage's static composition.
+The definition, selected read-only `GameState`, and packet set are present for
+every call. The Orchestrator queries the selected immutable `Worldline` at
+`LogicalTime` and passes that result to the interaction definition. `LogicalTime`
+selects authoritative game state; `Tau` selects only presentation sampling and
+never selects logical state. The definition remains part of the
+Stage's static composition.
 
 The query does not inspect a host clock, mutate a worldline, append a journal
-entry, or depend on a previous query. A sample in the past, at the present, or
-in the future follows exactly the same path. A pointer pick or raycast is an
-ordinary query against the selected sample, not a special past/future API.
+entry, or depend on a previous query. It never inspects `Frame`, rendered
+output, `Renderer`, `DrawCommand`, or backend state. A sample in the past, at
+the present, or in the future follows exactly the same path. A pointer pick or
+raycast is an ordinary query against the selected `GameState`, not a special
+past/future API.
 
 The word `set` is intentional: set semantics do not provide packet ordering or
 duplicate identical values. If a later interaction requires either property,
@@ -117,11 +124,12 @@ Stage behaviors internally:
   temporal orchestration.
 
 Neither label is visible to `InteractionDefinition` or
-`interaction_query`. The query receives only the resulting packet set, `Tau`,
-and `LogicalTime`. If two construction strategies produce equal packet sets for
-the same selected sample, they must produce equal interaction results. If a
-retained packet remains in the set, its presence may affect gameplay; that is a
-property of the packet-set contents, not a mode flag.
+`interaction_query`. The query receives the selected read-only `GameState`, the
+resulting packet set, `Tau`, and `LogicalTime`. If two construction strategies
+produce equal packet sets for the same selected state and times, they must
+produce equal interaction results. If a retained packet remains in the set, its
+presence may affect gameplay; that is a property of the packet-set contents,
+not a mode flag.
 
 The host may queue platform events as plumbing behind the input ingress, but it
 does not decide which abstract packets remain semantically active for a Stage
@@ -175,7 +183,7 @@ The relevant selected values are the existing presentation and game values:
 
 ```text
 Tau          presentation sample
-LogicalTime  authoritative game sample
+LogicalTime  authoritative game-state sample
 GameState    authoritative result at LogicalTime
 Frame        presentation result at Tau
 ```
@@ -186,20 +194,24 @@ an SDK `Frame`; host time is not authoritative game time.
 ## Composition
 
 The Stage owns the logical composition of the input query with its selected
-worldline and playback policy:
+worldline and explicit time selections:
 
 ```text
 Stage
     Worldline
-    Playback
-  Orchestrator
+    LogicalTime
+    Tau
+    Orchestrator
     Renderer
 ```
 
-`QueryAdapter` remains the state-query dependency. It answers the selected
-`Worldline` and `LogicalTime` query; it does not interpret input packets or
-author input facts. `InteractionDefinition` is a current seam inside the
-Orchestrator, not a second source of authoritative state.
+The Orchestrator invokes the engine/reference `state(worldline, LogicalTime)`
+operation; it does not interpret input packets through the state evaluator or
+author input facts there. It passes the read-only result to
+`InteractionDefinition`. A failed state projection is an explicit Orchestrator
+error and does not invoke interaction logic.
+`InteractionDefinition` is a current seam inside the Orchestrator, not a second
+source of authoritative state.
 
 `PresentationHost` remains plumbing behind the input ingress and other narrow
 host ports. The Orchestrator drains the ingress, converts input to abstract

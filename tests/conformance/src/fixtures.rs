@@ -1,7 +1,7 @@
 use caravan_domain::{ActorId, ActorKind, GameJournalEntry, Terrain, TileId};
 use caravan_reference::{actual, state as reference_state, ReferenceWorldline, Snapshot, State};
 use engine_journal::{Journal, JournalWriter};
-use engine_presentation::{Animation, Renderer};
+use engine_presentation::Renderer;
 use engine_sdk::GameState;
 use engine_time::{LogicalTime, Tau};
 
@@ -71,13 +71,6 @@ pub fn terrain_count(snapshot: &Snapshot, terrain: Terrain) -> usize {
         .count()
 }
 
-pub fn reference_query(
-    worldline: &ReferenceWorldline,
-    logical_time: LogicalTime,
-) -> GameState<Snapshot> {
-    reference_state(worldline, logical_time)
-}
-
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct RenderValue {
     pub sampled_time: i64,
@@ -100,16 +93,6 @@ impl Renderer<Snapshot> for TraceRenderer {
             wheat: state.payload().resources().wheat(),
             wood: state.payload().resources().wood(),
         }
-    }
-}
-
-pub struct ParityAnimation;
-
-impl Animation<Snapshot> for ParityAnimation {
-    type Output = i64;
-
-    fn sample(&self, state: &GameState<Snapshot>, tau: Tau) -> Option<Self::Output> {
-        (tau.ticks().rem_euclid(2) == 0).then(|| state.logical_time().ticks() * 10 + tau.ticks())
     }
 }
 

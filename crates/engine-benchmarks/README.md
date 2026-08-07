@@ -37,7 +37,7 @@ relative report path has the documented location.
 
 Direct query timings sample one fixed logical time on each trace. Scrub timing
 uses `[30, 0, 20, 10, 25, 5, 30, 15]` on the seeded worldline. Frame timing
-uses `engine_presentation::present` with one-to-one playback and tau values
+uses `engine_presentation::present` with explicit logical-time and tau values
 `[0, 5, 10, 5, 2, 10]` on each branch.
 
 No cache, index, evaluator optimization, semantic change, or production-file

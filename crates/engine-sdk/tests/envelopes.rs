@@ -1,6 +1,5 @@
 use engine_sdk::{
-    Context, Frame, GameState, Journal, JournalEntry, LogicalTime, Playback, QueryResult, Tau,
-    Worldline,
+    Context, Frame, GameState, Journal, JournalEntry, LogicalTime, QueryResult, Tau, Worldline,
 };
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -28,18 +27,10 @@ enum Boundary {
     BeforeCreation,
 }
 
-struct OffsetPlayback;
-
-impl Playback for OffsetPlayback {
-    fn logical_time_at(&self, tau: Tau) -> LogicalTime {
-        LogicalTime::from_ticks(tau.ticks() + 7)
-    }
-}
-
 #[test]
 fn distinct_time_types_cross_each_boundary() {
     let tau = Tau::from_ticks(11);
-    let logical_time = OffsetPlayback.logical_time_at(tau);
+    let logical_time = LogicalTime::from_ticks(18);
     let state = GameState::new(logical_time, Snapshot { marker: 1 });
     let frame = Frame::new(tau, Image { marker: 2 });
 

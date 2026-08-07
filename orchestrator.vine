@@ -19,14 +19,14 @@ Accept: A concrete Caravan Orchestrator can interpret one input packet set, prod
 > The engine's authoritative state changes only through publication of a new immutable journal/worldline value.
 > The Orchestrator is ordinary developer-written imperative control code; no universal engine Orchestrator trait or loop API is introduced in this slice.
 > Worldline, Journal, and GameState remain immutable published values; the Orchestrator may replace selected values but may not own an imperative board, actor layer, resource counter, effect layer, or current GameState.
-> InteractionDefinition is the current pure seam: InputPacketSet + Tau + LogicalTime -> Transformation.
+> InteractionDefinition is the current pure seam: GameState + InputPacketSet + Tau + LogicalTime -> Transformation.
 > Journal heterogeneity uses one closed game-owned enum/DU payload type; no runtime object collection, Any, or untyped journal bag.
 > JournalWriter is the game-facing timestamp authority. No InputTime or packet timestamp is added.
 > Camera, HUD, backend, device, host clock, and reusable DSL extraction are outside this slice.
 > InputIngress is the conceptual interrupt boundary; InputChannel is one possible implementation. The first composition has no clock port and no broad capabilities object.
 ---
 ref [anchor] Completed indexed anchor (build.vine)
-The completed anchor supplies ReferenceWorldline, JournalWriter, immutable branches, direct state queries, Playback, presentation, persistence, and the existing evidence required by this slice.
+The completed anchor supplies ReferenceWorldline, JournalWriter, immutable branches, direct state queries, presentation, persistence, and the existing evidence required by this slice.
 ---
 [orchestrator-contract] Orchestrator remapping contract (complete)
 Files: proposals/caravan-orchestrator-anchor.md
@@ -43,8 +43,8 @@ Accept: The proposal is the single design brief for this graph; the initial Stag
 ---
 [input-model] Abstract input packet seam (complete)
 Files: crates/caravan-demo/src/lib.rs; crates/caravan-demo/src/input.rs
-Do: Define the smallest Caravan-facing InputPacket and InputPacketSet values plus the application InteractionDefinition seam. Keep host/device events out of the model, keep buffered and unbuffered construction invisible to the query, and make the query receive Tau and LogicalTime explicitly. Use closed static types; do not add host timestamps or a dynamic packet bag.
-Accept: Unit-level behavior proves equal packet sets with equal Tau and LogicalTime produce equal transformation results; the seam cannot access JournalWriter, Worldline mutation, prior GameState, host time, or an input-mode flag.
+Do: Define the smallest Caravan-facing InputPacket and InputPacketSet values plus the application InteractionDefinition seam. Keep host/device events out of the model, keep buffered and unbuffered construction invisible to the query, and make the query receive the selected read-only GameState, Tau, and LogicalTime explicitly. Use closed static types; do not add host timestamps or a dynamic packet bag.
+Accept: Unit-level behavior proves equal selected GameState values, packet sets, Tau, and LogicalTime produce equal transformation results; the seam cannot access JournalWriter, Worldline mutation, Frame, rendered output, host time, or an input-mode flag.
 -> orchestrator-contract
 @artifact text/plain crates/caravan-demo/src/input.rs
 @guidance text/markdown proposals/caravan-orchestrator-anchor.md
@@ -74,8 +74,8 @@ Accept: Tests prove immediate control-step application creates a new query-visib
 ---
 [orchestrator-core] Developer-authored Orchestrator control (complete)
 Files: crates/caravan-demo/src/orchestrator.rs
-Do: Implement the ordinary mutable CaravanOrchestrator control object that owns the selected ReferenceWorldline, JournalWriter/publication path, Playback, Tau selection, packet accumulation, InteractionDefinition, branch/lookahead choices, and save/presentation decisions. Permit a literal loop or explicit step method as an application choice. Keep all authoritative game data in immutable published values.
-Accept: The Orchestrator can choose a Tau, derive LogicalTime through Playback, query arbitrary past/present/future samples, run the interaction seam, accept or reject transformations, replace its selected immutable worldline, and expose no mutable board/actor/resource/effect/GameState store.
+Do: Implement the ordinary mutable CaravanOrchestrator control object that owns the selected ReferenceWorldline, JournalWriter/publication path, LogicalTime and Tau selections, packet accumulation, InteractionDefinition, branch/lookahead choices, and save/presentation decisions. Permit a literal loop or explicit step method as an application choice. Keep all authoritative game data in immutable published values.
+Accept: The Orchestrator can choose LogicalTime and Tau explicitly, query arbitrary past/present/future samples, run the interaction seam, accept or reject transformations, replace its selected immutable worldline, and expose no mutable board/actor/resource/effect/GameState store.
 -> input-model
 -> journal-publication
 -> transformation-model
@@ -86,8 +86,8 @@ Accept: The Orchestrator can choose a Tau, derive LogicalTime through Playback, 
 ---
 [stage-composition] Caravan Stage composition (complete)
 Files: crates/caravan-demo/src/stage.rs
-Do: Compose the Orchestrator with the existing generic presentation renderer and query path behind a concrete CaravanStage boundary. Keep the host-facing surface small; the Orchestrator calls narrow host ports such as InputIngress, render sink, and storage, while Stage owns the selected worldline, temporal orchestration, interaction, and rendering composition.
-Accept: Stage owns its Orchestrator transitively, the host does not select logical time or branch semantics, explicit Tau sampling remains available for replay/tests, and rendering receives only the selected GameState and Tau.
+Do: Compose the Orchestrator with the concrete CaravanStage presentation path. Keep this slice's host-facing surface limited to application methods; InputIngress, render sink, ApplicationHost, and storage ports remain presentation-host design work, while Stage owns the selected worldline, temporal orchestration, interaction, and rendering composition.
+Accept: Stage owns its Orchestrator transitively, the host does not select logical time or branch semantics, explicit LogicalTime/Tau sampling remains available for replay/tests, and rendering receives only the selected GameState and Tau.
 -> anchor
 -> orchestrator-core
 @artifact text/plain crates/caravan-demo/src/stage.rs
