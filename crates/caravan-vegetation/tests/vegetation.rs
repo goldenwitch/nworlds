@@ -53,7 +53,6 @@ fn farmer_uses_fixed_order_disappears_and_places_wheat_around_destination() {
     assert_eq!(action.destination(), tile(1, 0));
     assert!(action.moved());
     assert_eq!(action.wheat_tiles(), &[tile(0, 0), tile(0, 1), tile(1, 1)]);
-    assert_eq!(action.actor_after_action(), None);
     assert_eq!(snapshot.actors(), &[farmer, blocker]);
     assert_eq!(
         snapshot

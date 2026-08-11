@@ -1,4 +1,4 @@
-use caravan_domain::{Actor, ActorKind, TileId};
+use caravan_domain::{ActorKind, TileId};
 
 use crate::helpers::{actor_of_kind, is_open_void};
 use crate::VegetationQueryInput;
@@ -59,10 +59,6 @@ impl FarmerResult {
             Self::Completed(action) => Some(action),
         }
     }
-
-    pub const fn actor_after_action(&self) -> Option<Actor> {
-        None
-    }
 }
 
 impl FarmerAction {
@@ -80,9 +76,5 @@ impl FarmerAction {
 
     pub fn wheat_tiles(&self) -> &[TileId] {
         &self.wheat_tiles
-    }
-
-    pub const fn actor_after_action(&self) -> Option<Actor> {
-        None
     }
 }

@@ -126,15 +126,6 @@ impl<C> Branch<C> {
         self.fork_with_suffix(fork_boundary, suffix, BranchKind::Counterfactual)
     }
 
-    /// Alias for [`Branch::counterfactual`].
-    pub fn fork_counterfactual(
-        &self,
-        fork_boundary: LogicalTime,
-        suffix: &Journal,
-    ) -> Result<Self, BranchError> {
-        self.counterfactual(fork_boundary, suffix)
-    }
-
     /// Builds a corrected child by replacing the parent suffix after the inclusive prefix.
     pub fn corrected_suffix(
         &self,
@@ -142,15 +133,6 @@ impl<C> Branch<C> {
         replacement_suffix: &Journal,
     ) -> Result<Self, BranchError> {
         self.fork_with_suffix(fork_boundary, replacement_suffix, BranchKind::Corrected)
-    }
-
-    /// Alias for [`Branch::corrected_suffix`].
-    pub fn corrected(
-        &self,
-        fork_boundary: LogicalTime,
-        replacement_suffix: &Journal,
-    ) -> Result<Self, BranchError> {
-        self.corrected_suffix(fork_boundary, replacement_suffix)
     }
 
     fn fork_with_suffix(
