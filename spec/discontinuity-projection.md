@@ -85,9 +85,12 @@ insufficient when intermediate actor, effect, or resource values can differ.
 The generic engine still stores only opaque breakpoints and pieces; Caravan
 defines the trajectory values and the finite boundary range needed by a query.
 The public `state` query builds a query-scoped index through the requested
-sample time. A reusable journal-only index is bounded by its materialized
-trajectory horizon and must return an explicit horizon error rather than
-silently dropping actors when asked for a later sample.
+sample time. Because the requested sample is already known, that query-scoped
+index may materialize only the selected piece and its immutable visible inputs;
+it need not materialize unrelated earlier pieces or tick boundaries. A
+reusable journal-only index is bounded by its materialized trajectory horizon
+and must return an explicit horizon error rather than silently dropping actors
+when asked for a later sample.
 
 ## Journal Visibility and Ordering
 

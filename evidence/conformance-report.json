@@ -22,13 +22,6 @@
     {"id":"presentation","status":"pass","clause":"Presentation composes explicit logical/presentation samples and state-first rendering without mutation","test":"presentation_supports_scrubbing_branches_and_repeatable_rendering","artifact":"tests/conformance/src/checks.rs"},
     {"id":"demo-trace","status":"pass","clause":"Runnable demo trace exposes the anchor observables","test":"demo_trace_contains_the_anchor_observables","artifact":"crates/caravan-demo/snapshots/anchor-trace.txt"}
   ],
-  "supplemental_cases": [
-    {"id":"indexed-tick-boundaries","status":"pass","test":"sampled_index_includes_each_game_tick_boundary_through_sample","artifact":"crates/caravan-reference/src/discontinuities.rs"},
-    {"id":"trajectory-horizon","status":"pass","test":"reusable_index_rejects_samples_beyond_its_trajectory_horizon","artifact":"crates/caravan-reference/tests/projection.rs"},
-    {"id":"cross-rule-composition","status":"pass","test":"projection_fire_sees_farmer_derived_wheat_on_the_same_tick","artifact":"crates/caravan-reference/tests/projection.rs"},
-    {"id":"bounded-projection-parity","status":"pass","test":"legacy_fold_matches_projection_on_shared_fixture; frozen_expected_corpus_matches_the_projection","artifact":"crates/caravan-reference/src/legacy_evaluator.rs; crates/caravan-reference/tests/parity.rs"},
-    {"id":"timestamp-facade","status":"pass","test":"no_low_level_timestamp_import","artifact":"crates/purity-tests/tests/ui/no_low_level_timestamp_import.rs"}
-  ],
   "gaps": [
     {"id":"presentation-extension-trust","status":"explicit","description":"The authoritative engine boundary has compiler-checked purity evidence. Rust cannot prove arbitrary Renderer extension bodies have no side effects; those implementations are trusted extensions receiving immutable values and returning owned values."}
   ]

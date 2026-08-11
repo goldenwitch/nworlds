@@ -29,13 +29,17 @@ it does not advance or mutate a hidden current state.
   canonical logical game experience and platform presentation plumbing.
 - [Presentation host proposal](proposals/presentation-host.md) - the platform
   and execution responsibilities surrounding Stage.
+- [Platform support matrix](proposals/platform-support-matrix.md) - adapter
+  axes, target cells, and activation gates for host composition.
+- [Host adapter wiring graph](host.vine) - the dependency-ordered plan for
+  the in-memory host proof and later platform adapters.
 - [Input and interaction boundary](proposals/input-and-interaction.md) - the
   abstract packet set, interaction-definition, and buffering boundary.
 - [Caravan Orchestrator anchor](proposals/caravan-orchestrator-anchor.md) -
-  the next remapping checkpoint for exercising Stage and Orchestrator around
-  the existing immutable engine seams.
-- [Orchestrator build graph](orchestrator.vine) - the staged implementation
-  plan for the first developer-authored Caravan Orchestrator.
+  the completed application checkpoint for exercising Stage and Orchestrator
+  around the existing immutable engine seams.
+- [Orchestrator build graph](orchestrator.vine) - the completed vertical slice
+  and its acceptance evidence; future extraction remains conditional.
 
 ## Workspace Components
 
@@ -52,7 +56,7 @@ These crates provide the generic temporal engine and its public boundaries.
 | [`engine-index`](crates/engine-index) | Direct indexed-query kernel plus engine-neutral discontinuity breakpoints and half-open pieces. |
 | [`engine-lookahead`](crates/engine-lookahead) | Future queries and read-only branch views using the same direct query path. |
 | [`engine-presentation`](crates/engine-presentation) | State-plus-`Tau` render composition and frame values. |
-| [`engine-persistence`](crates/engine-persistence) | Versioned save/load, encoding, branch lineage, and deterministic replay. |
+| [`engine-persistence`](crates/engine-persistence) | Game-facing versioned worldline encoding, branch lineage, save/load, and deterministic replay; host byte transport remains separate. |
 | [`engine-api`](crates/engine-api) | Game-facing facade that exposes the supported query, journal, branch, time, and domain APIs. |
 
 ### Caravan Domain
@@ -79,9 +83,10 @@ These crates define the concrete game fixture and its indexed rules.
 ## Evidence and Reports
 
 - [Conformance matrix](evidence/clause-to-test.md) - maps specification clauses
-  to executable cases and records explicit gaps.
+  to standalone conformance cases, root-workspace evidence, and explicit gaps.
 - [Conformance report](evidence/conformance-report.json) - machine-readable
-  results for the catalogued and supplemental cases.
+  results for the standalone catalog; root-workspace evidence is mapped in the
+  conformance matrix.
 - [Benchmark report](evidence/benchmarks/anchor-report.json) - conditions and
   measurements for the fixed anchor workloads.
 - [Demo trace](crates/caravan-demo/snapshots/anchor-trace.txt) - checked-in

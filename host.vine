@@ -1,0 +1,76 @@
+vine 1.2.0
+prefix: host
+title: Target entrypoint and presentation-host adapter wiring
+---
+[root] Wire the target entrypoint and presentation-host ports (notstarted)
+Files: host.vine; proposals/presentation-host.md; proposals/platform-support-matrix.md; crates/caravan-demo/**; tests/**
+Do: Build the first target composition around independent translation, transport, storage, render-execution, and lifecycle/resource ports. The Orchestrator pulls those ports; the target entrypoint supplies their concrete adapters. Execute the in-memory proof first; native platform adapters, windowing, device resources, wgpu, and target-specific support rows remain later composition choices.
+Accept: The host proposal names distinct adapter roles; the support matrix records independent axes and unselected target cells; an in-memory target composition can deliver abstract packets, submit owned render output, save/load encoded values, and compose with Stage/Orchestrator ownership; integration tests cover input permutations and failure boundaries; and all existing anchor/conformance evidence remains green.
+-> host-contract
+-> support-matrix
+-> input-adapter
+-> storage-adapter
+-> render-adapter
+-> host-composition
+-> host-evidence
+-> orchestrator
+-> rendering
+@guidance text/markdown proposals/presentation-host.md
+@guidance text/markdown proposals/platform-support-matrix.md
+@guidance text/markdown proposals/input-and-interaction.md
+@guidance text/markdown proposals/stage-layer.md
+@guidance text/plain orchestrator.vine
+---
+ref [orchestrator] Completed Caravan Orchestrator anchor (orchestrator.vine)
+The host composes with the completed Stage/Orchestrator ownership and
+publication boundaries.
+---
+ref [rendering] Backend-neutral rendering slice (rendering.vine)
+The render adapter remains downstream of the rendering contract and its owned
+backend-neutral output shape.
+---
+[host-contract] Settle independent adapter ports and ownership (notstarted)
+Files: proposals/presentation-host.md
+Do: Define the conceptual and first concrete port responsibilities for PlatformInputAdapter, InputIngress, storage transport, RenderSinkAdapter, and LifecycleResourceAdapter. Keep method shapes minimal and leave render output typing to the rendering contract. State which values each adapter may translate, transport, store, or execute, and which authoritative decisions remain Stage/Orchestrator-owned.
+Accept: The proposal names distinct translation, transport, byte-storage, render-execution, and lifecycle/resource roles; the rendering path is state-first; and the proposal can be executed idempotently.
+---
+[support-matrix] Record target composition axes (notstarted)
+Files: proposals/platform-support-matrix.md
+Do: Maintain the support-matrix axes, the in-memory proof row, and explicit unselected target rows. Record wgpu as a backend choice inside render execution rather than a game or engine dependency. Leave target platforms, backend availability, and CI cells unselected until a target regime is chosen.
+Accept: Every target row names lifecycle, input translation, ingress, render/wgpu, persistence codec, storage transport, and evidence cells; the in-memory row is selected but notstarted; remaining rows are unselected.
+-> host-contract
+---
+[input-adapter] Implement the in-memory input adapter path (notstarted)
+Files: crates/caravan-demo/src/host/input.rs
+Do: Add the smallest in-memory InputIngress and packet-delivery adapter behind the host contract. It must carry abstract InputPacket values without exposing native event types, preserve transport buffering as distinct from Stage packet retention, and return explicit transport errors if the chosen contract needs them.
+Accept: Integration tests can deliver button press/release permutations through the ingress; transport delivery remains separate from Stage packet-set behavior; and the adapter is replaceable without changing InteractionDefinition.
+-> host-contract
+---
+[storage-adapter] Implement the in-memory storage transport path (notstarted)
+Files: crates/caravan-demo/src/host/storage.rs
+Do: Add the smallest bytes-only in-memory storage transport needed to exercise Orchestrator save/load choices. Keep semantic persistence, encoding/decoding, and worldline construction outside the adapter; storage only retains or returns byte values.
+Accept: Round-trip tests prove selected immutable worldlines survive save/load; the adapter stores and returns encoded values; and the in-memory implementation has a clear replacement boundary for a platform file adapter.
+-> host-contract
+---
+[render-adapter] Implement the collecting render sink path (notstarted)
+Files: crates/caravan-demo/src/host/render.rs
+Do: Add the smallest collecting RenderSinkAdapter after the rendering contract supplies the render-output shape. Consume owned Frame/render output as the render execution step. Keep wgpu and surface/device execution out of this task.
+Accept: Tests prove selected GameState and Tau reach the sink as owned output, repeated submissions are observable, and the task follows the rendering contract's selected output shape.
+-> host-contract
+-> support-matrix
+-> rendering
+---
+[host-composition] Compose the in-memory target bundle (notstarted)
+Files: crates/caravan-demo/src/host.rs
+Do: Compose CaravanStage with the in-memory input, storage, and render ports. Keep Orchestrator control flow and explicit time selection in the application composition; the target bundle supplies capabilities around that control flow. Leave the existing terminal entrypoint owned by the rendering/demo path.
+Accept: One integration path demonstrates packet delivery, interaction/publication, state-first rendering, and save/load without changing the existing terminal anchor observables or adding a broad capabilities object.
+-> input-adapter
+-> storage-adapter
+-> render-adapter
+---
+[host-evidence] Validate adapter permutations and boundaries (notstarted)
+Files: crates/caravan-demo/tests/host.rs; evidence/clause-to-test.md
+Do: Add integration evidence for empty, duplicate, press/release, retained, malformed-state, repeated, and non-monotonic input permutations, plus storage round-trip and collecting-render-sink behavior. Record parent-worldline equality and the separate input/render observations.
+Accept: The in-memory host evidence passes with deterministic results; transport delivery and semantic packet-set behavior are observable separately; and root workspace/conformance/purity evidence remains green.
+-> host-composition
+---

@@ -17,21 +17,36 @@ test additionally checks the complete stdout trace against
 | Void, empty journal, exact `t_` | `empty-journal` | `checks.rs` | Runtime pass |
 | Journal-owned creation and 91 tiles | `create-saucer` | `checks.rs` | Runtime pass |
 | Target inclusion, postdating, equal-time order | `journal-time` | `checks.rs` | Runtime pass |
-| Game-facing timestamp authority | `no_caller_assigned_timestamps`, `no_low_level_timestamp_import` | `crates/purity-tests/tests/ui/` | Compile-fail pass; low-level assigned-time SDK imports remain explicitly documented interoperability APIs |
+| Game-facing timestamp authority | `no_caller_assigned_timestamps` | `crates/purity-tests/tests/ui/` | Compile-fail pass |
 | Arbitrary and non-monotonic query order | `query-order` | `checks.rs` | Runtime pass |
 | Fixed-journal stability without a crossed boundary | `within-tick` | `checks.rs` | Runtime pass: distinct 4,000/4,500 fixed-point samples share tick 4 and automaton data while retaining distinct logical times |
-| Complete sampled game-tick boundary coverage | `sampled_index_includes_each_game_tick_boundary_through_sample` | `crates/caravan-reference/src/discontinuities.rs` | Supplemental reference test pass |
-| Reusable index horizon boundary | `reusable_index_rejects_samples_beyond_its_trajectory_horizon` | `crates/caravan-reference/tests/projection.rs` | Supplemental reference test pass; public state builds query-scoped indices |
 | Exact journal-time discontinuity | `journal-discontinuity` | `checks.rs` | Runtime pass |
 | Independent terrain, actor, and effect layers | `layer-separation` | `checks.rs` | Runtime pass |
 | Farmer, wheat, forester, fire, fighter, arborist differences | `farmer`, `wheat`, `forester`, `arsonist-fire`, `fighter`, `arborist` | `checks.rs` | Runtime pass |
-| Cross-rule derived terrain and Fire ordering | `projection_fire_sees_farmer_derived_wheat_on_the_same_tick` | `crates/caravan-reference/tests/projection.rs` | Supplemental reference test pass |
 | Seeded journal construction and reproducibility | `seeded` | `checks.rs` | Runtime pass; RNG ownership is behavioral evidence |
 | Prefix agreement and parent/child branch isolation | `branches` | `checks.rs` | Runtime pass |
 | Fixed-journal future query and lookahead | `lookahead` | `checks.rs` | Runtime pass |
 | Explicit logical/presentation sampling, reverse scrub, state-first rendering, branch presentation | `presentation` | `checks.rs` | Runtime pass |
 | Runnable anchor observables | `demo-trace` | `anchor-trace.txt` and demo snapshot test | Runtime pass |
-| Bounded projection parity | `legacy_fold_matches_projection_on_shared_fixture`, `frozen_expected_corpus_matches_the_projection` | `crates/caravan-reference/src/legacy_evaluator.rs`; `crates/caravan-reference/tests/parity.rs` | Supplemental reference tests pass; legacy equivalence is fixture-scoped |
+
+## Root Workspace Evidence
+
+These cases run through `cargo test --workspace` and are intentionally not
+duplicated in the separate conformance runner or stamped into its report.
+
+| Clause | Test | Evidence | Coverage |
+| --- | --- | --- | --- |
+| Query-specific indexed projection at a long horizon | `projection_samples_a_long_stationary_trajectory_without_tick_replay`, `projection_samples_a_long_moving_trajectory_without_tick_replay`, `projection_crosses_external_boundaries_without_replaying_from_tick_zero` | `crates/caravan-reference/tests/projection.rs` | Runtime pass at one million and one billion game ticks; moving actors and external boundaries use compressed segments |
+| Late facts do not alter earlier derived behavior | `late_actor_does_not_change_an_earlier_farmer_destination`, `late_authored_terrain_does_not_change_an_earlier_farmer_destination`, `late_actor_does_not_give_an_arsonist_an_earlier_target` | `crates/caravan-reference/tests/projection.rs` | Runtime pass |
+| Reusable index horizon boundary | `reusable_index_rejects_samples_beyond_its_trajectory_horizon` | `crates/caravan-reference/tests/projection.rs` | Runtime pass; public state uses a selected query-specific index |
+| Cross-rule derived terrain and Fire ordering | `projection_fire_sees_farmer_derived_wheat_on_the_same_tick` | `crates/caravan-reference/tests/projection.rs` | Runtime pass |
+| Inside-tick visibility versus boundary activation | `inside_tick_terrain_visibility_does_not_rewrite_the_prior_tick_actor_sample`, `inside_tick_terrain_visibility_does_not_trigger_earlier_fire` | `crates/caravan-reference/tests/projection.rs` | Runtime pass |
+| Negative timestamp branch reconstruction | `branches_rebuild_negative_timestamp_prefixes` | `crates/engine-branches/tests/branches.rs` | Runtime pass |
+| Negative timestamp persistence and replay | `negative_timestamp_journals_round_trip_and_replay` | `crates/engine-persistence/tests/persistence.rs` | Runtime pass |
+| Bounded projection parity | `legacy_fold_matches_projection_on_shared_fixture`, `frozen_expected_corpus_matches_the_projection` | `crates/caravan-reference/src/legacy_evaluator.rs`; `crates/caravan-reference/tests/parity.rs` | Runtime pass; legacy equivalence is fixture-scoped |
+| Low-level timestamp facade boundary | `no_low_level_timestamp_import` | `crates/purity-tests/tests/ui/` | Compile-fail pass; intentional interoperability API remains documented |
+
+| Long-horizon query measurement | `moving-forester@game_tick_1000000` | `evidence/benchmarks/anchor-report.json` | Release benchmark report records the million-game-tick moving trajectory workload |
 
 ## Orchestrator Evidence
 

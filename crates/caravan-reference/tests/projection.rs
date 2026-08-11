@@ -126,6 +126,77 @@ fn projection_handles_seeded_piece_boundaries_without_a_baseline_query() {
 }
 
 #[test]
+fn projection_samples_a_long_stationary_trajectory_without_tick_replay() {
+    let worldline = actual(journal(&[
+        (0, GameJournalEntry::create_saucer()),
+        (0, terrain(TileId::origin(), Terrain::Forest)),
+        (0, spawn(1, ActorKind::Forester, TileId::origin())),
+    ]));
+
+    let at_one_billion = project(&worldline, game_time(1_000_000_000));
+
+    assert_eq!(at_one_billion.payload().actors().len(), 1);
+    assert_eq!(
+        at_one_billion.payload().actors()[0].tile(),
+        TileId::origin()
+    );
+    assert_eq!(at_one_billion.payload().resources().wood(), 1_000_000_001);
+}
+
+#[test]
+fn projection_samples_a_long_moving_trajectory_without_tick_replay() {
+    let worldline = actual(journal(&[
+        (0, GameJournalEntry::create_saucer()),
+        (0, spawn(1, ActorKind::Forester, TileId::origin())),
+    ]));
+
+    let late = project(&worldline, game_time(1_000_000));
+    let earlier = project(&worldline, game_time(100_000));
+    let late_again = project(&worldline, game_time(1_000_000));
+
+    assert_eq!(late, late_again);
+    assert_eq!(late.payload().actors().len(), 1);
+    assert_eq!(earlier.payload().actors().len(), 1);
+    assert_eq!(late.payload().actors()[0].id(), actor_id(1));
+    assert_eq!(earlier.payload().actors()[0].id(), actor_id(1));
+    assert_eq!(late.payload().resources().wood(), 0);
+    assert_eq!(earlier.payload().resources().wood(), 0);
+}
+
+#[test]
+fn projection_crosses_external_boundaries_without_replaying_from_tick_zero() {
+    let worldline = actual(journal(&[
+        (0, GameJournalEntry::create_saucer()),
+        (0, spawn(1, ActorKind::Forester, TileId::origin())),
+        (500, terrain(tile(1, 0), Terrain::Forest)),
+        (1_500, spawn(2, ActorKind::Arborist, tile(2, 0))),
+        (2_500, terrain(tile(2, 0), Terrain::Forest)),
+    ]));
+
+    let at_first_boundary = project(&worldline, game_time(1));
+    let at_third_boundary = project(&worldline, game_time(3));
+    let at_long_horizon = project(&worldline, game_time(1_000_000));
+    let at_long_horizon_again = project(&worldline, game_time(1_000_000));
+
+    assert_eq!(at_first_boundary.payload().actors()[0].tile(), tile(1, 0));
+    assert_eq!(
+        at_third_boundary
+            .payload()
+            .actors()
+            .iter()
+            .map(|actor| actor.id())
+            .collect::<Vec<_>>(),
+        vec![actor_id(1), actor_id(2)]
+    );
+    assert_eq!(
+        at_third_boundary.payload().terrain_at(tile(2, 0)),
+        Some(Terrain::Forest)
+    );
+    assert_eq!(at_long_horizon, at_long_horizon_again);
+    assert_eq!(at_long_horizon.payload().actors().len(), 2);
+}
+
+#[test]
 fn projection_preserves_exact_inside_tick_journal_visibility_and_order() {
     let worldline = actual(journal(&[
         (0, GameJournalEntry::create_saucer()),
@@ -157,6 +228,44 @@ fn projection_preserves_exact_inside_tick_journal_visibility_and_order() {
 }
 
 #[test]
+fn inside_tick_terrain_visibility_does_not_rewrite_the_prior_tick_actor_sample() {
+    let worldline = actual(journal(&[
+        (0, GameJournalEntry::create_saucer()),
+        (0, spawn(1, ActorKind::Forester, TileId::origin())),
+        (1_500, terrain(TileId::origin(), Terrain::Forest)),
+    ]));
+
+    let at_inside_tick = project(&worldline, time(1_500));
+
+    assert_eq!(
+        at_inside_tick.payload().terrain_at(TileId::origin()),
+        Some(Terrain::Forest)
+    );
+    assert_eq!(at_inside_tick.payload().actors()[0].tile(), tile(1, 0));
+}
+
+#[test]
+fn inside_tick_terrain_visibility_does_not_trigger_earlier_fire() {
+    let worldline = actual(journal(&[
+        (0, GameJournalEntry::create_saucer()),
+        (0, spawn(1, ActorKind::Arsonist, TileId::origin())),
+        (0, spawn(2, ActorKind::Arborist, tile(2, 0))),
+        (1_500, terrain(tile(1, 0), Terrain::Wheat)),
+    ]));
+
+    let at_inside_tick = project(&worldline, time(1_500));
+
+    assert_eq!(
+        at_inside_tick.payload().terrain_at(tile(1, 0)),
+        Some(Terrain::Wheat)
+    );
+    assert_eq!(
+        at_inside_tick.payload().effect_at(tile(1, 0)),
+        Some(caravan_domain::Effect::None)
+    );
+}
+
+#[test]
 fn projection_applies_authored_terrain_before_derived_terrain_at_one_tick() {
     let worldline = actual(journal(&[
         (0, GameJournalEntry::create_saucer()),
@@ -168,6 +277,68 @@ fn projection_applies_authored_terrain_before_derived_terrain_at_one_tick() {
         project(&worldline, game_time(1))
             .payload()
             .terrain_at(tile(2, 0)),
+        Some(Terrain::Wheat)
+    );
+}
+
+#[test]
+fn late_actor_does_not_change_an_earlier_farmer_destination() {
+    let worldline = actual(journal(&[
+        (0, GameJournalEntry::create_saucer()),
+        (0, spawn(1, ActorKind::Farmer, TileId::origin())),
+        (1_500, spawn(2, ActorKind::Arborist, tile(1, 0))),
+    ]));
+
+    let at_two = project(&worldline, game_time(2));
+
+    assert_eq!(
+        at_two.payload().terrain_at(tile(2, 0)),
+        Some(Terrain::Wheat)
+    );
+    assert_eq!(
+        at_two
+            .payload()
+            .actors()
+            .iter()
+            .map(|actor| actor.id())
+            .collect::<Vec<_>>(),
+        vec![actor_id(2)]
+    );
+}
+
+#[test]
+fn late_authored_terrain_does_not_change_an_earlier_farmer_destination() {
+    let worldline = actual(journal(&[
+        (0, GameJournalEntry::create_saucer()),
+        (0, spawn(1, ActorKind::Farmer, TileId::origin())),
+        (1_500, terrain(tile(1, 0), Terrain::Forest)),
+    ]));
+
+    assert_eq!(
+        project(&worldline, game_time(2))
+            .payload()
+            .terrain_at(tile(2, 0)),
+        Some(Terrain::Wheat)
+    );
+}
+
+#[test]
+fn late_actor_does_not_give_an_arsonist_an_earlier_target() {
+    let worldline = actual(journal(&[
+        (0, GameJournalEntry::create_saucer()),
+        (0, terrain(tile(1, 0), Terrain::Wheat)),
+        (0, spawn(1, ActorKind::Arsonist, TileId::origin())),
+        (1_500, spawn(2, ActorKind::Arborist, tile(2, 0))),
+    ]));
+
+    let at_two = project(&worldline, game_time(2));
+
+    assert_eq!(
+        at_two.payload().effect_at(tile(1, 0)),
+        Some(caravan_domain::Effect::None)
+    );
+    assert_eq!(
+        at_two.payload().terrain_at(tile(1, 0)),
         Some(Terrain::Wheat)
     );
 }

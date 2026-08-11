@@ -77,7 +77,7 @@ pub fn try_project_query(
     journal: &Journal,
     logical_time: LogicalTime,
 ) -> Result<State, ProjectionError> {
-    let index = DiscontinuityIndex::for_sample(journal, logical_time);
+    let index = DiscontinuityIndex::for_query(journal, logical_time);
     try_project_with_index(context, &index, logical_time)
 }
 
@@ -121,9 +121,24 @@ struct ActorFact {
     spawn_time: LogicalTime,
 }
 
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+struct ActorLayerState {
+    positions: BTreeMap<ActorId, TileId>,
+    live: BTreeSet<ActorId>,
+    removed: BTreeSet<ActorId>,
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct ActorSegment {
+    start_tick: i64,
+    end_tick: i64,
+    states: Arc<[ActorLayerState]>,
+    cycle_period: Option<usize>,
+}
+
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub(crate) struct ActorTrajectory {
-    samples: Arc<[Vec<Actor>]>,
+    segments: Arc<[ActorSegment]>,
     indexed_through: i64,
     has_actors: bool,
 }
@@ -131,7 +146,7 @@ pub(crate) struct ActorTrajectory {
 impl ActorTrajectory {
     fn empty() -> Self {
         Self {
-            samples: Arc::from(Vec::<Vec<Actor>>::new()),
+            segments: Arc::from(Vec::<ActorSegment>::new()),
             indexed_through: -1,
             has_actors: false,
         }
@@ -145,12 +160,20 @@ impl ActorTrajectory {
         !self.has_actors || tick_index <= self.indexed_through
     }
 
-    fn sample(&self, tick_index: i64) -> &[Actor] {
-        usize::try_from(tick_index)
-            .ok()
-            .and_then(|index| self.samples.get(index))
-            .map(Vec::as_slice)
-            .unwrap_or(&[])
+    fn sample(&self, tick_index: i64) -> Option<&ActorLayerState> {
+        let segment_index = self
+            .segments
+            .partition_point(|segment| segment.end_tick < tick_index);
+        let segment = self.segments.get(segment_index)?;
+        if tick_index < segment.start_tick || tick_index > segment.end_tick {
+            return None;
+        }
+
+        let offset = usize::try_from(tick_index - segment.start_tick).ok()?;
+        let state_index = segment
+            .cycle_period
+            .map_or(offset, |period| offset % period);
+        segment.states.get(state_index)
     }
 }
 
@@ -190,6 +213,7 @@ pub(crate) fn build_actor_trajectory(
         &farmer_actions,
         &conversions,
         &BTreeMap::new(),
+        None,
     );
     let fire_ignitions = fire_ignitions(&actors, target_tick, &vegetation_events);
     let terrain_events = terrain_events(
@@ -198,39 +222,192 @@ pub(crate) fn build_actor_trajectory(
         &farmer_actions,
         &conversions,
         &fire_ignitions,
+        None,
     );
     let facts_by_id = actor_facts_by_id(&actors);
-    let mut positions = initial_positions(&facts_by_id);
-    let mut live = initial_live_actors(&facts_by_id);
-    let mut removed = BTreeSet::new();
-    let mut samples = Vec::new();
-    samples.push(actors_from_layer(&facts_by_id, &positions, &live));
+    let mut layer = ActorLayerState {
+        positions: initial_positions(&facts_by_id),
+        live: initial_live_actors(&facts_by_id),
+        removed: BTreeSet::new(),
+    };
+    let mut segments = Vec::new();
+    let mut start_tick = 0;
 
-    for transition_tick in 1..=target_tick {
-        let boundary = LogicalTime::from_game_ticks(transition_tick)
-            .expect("selected actor transition time is representable");
-        for (actor_id, fact) in &facts_by_id {
-            if fact.spawn_time <= boundary && !removed.contains(actor_id) {
-                live.insert(*actor_id);
-            }
-        }
-        transition_actor_layer(
+    for event_tick in actor_event_ticks(&actors, &farmer_actions, &terrain_events, target_tick) {
+        layer = append_actor_interval(
+            &mut segments,
+            start_tick,
+            event_tick - 1,
+            layer,
             &facts_by_id,
-            &mut positions,
-            &mut live,
-            &mut removed,
             &terrain_events,
             &farmer_actions,
-            transition_tick,
         );
-        samples.push(actors_from_layer(&facts_by_id, &positions, &live));
+        transition_actor_layer_at_tick(
+            &facts_by_id,
+            &mut layer.positions,
+            &mut layer.live,
+            &mut layer.removed,
+            &terrain_events,
+            &farmer_actions,
+            event_tick,
+        );
+        start_tick = event_tick;
     }
 
+    append_actor_interval(
+        &mut segments,
+        start_tick,
+        target_tick,
+        layer,
+        &facts_by_id,
+        &terrain_events,
+        &farmer_actions,
+    );
+
     ActorTrajectory {
-        samples: Arc::from(samples),
+        segments: Arc::from(segments),
         indexed_through: target_tick,
         has_actors: !facts.actors.is_empty(),
     }
+}
+
+fn actor_event_ticks(
+    actors: &[ActorFact],
+    farmer_actions: &[FarmerAction],
+    terrain_events: &BTreeMap<TileId, Vec<TerrainEvent>>,
+    target_tick: i64,
+) -> Vec<i64> {
+    let mut event_ticks = BTreeSet::new();
+
+    for fact in actors {
+        if let Some(visible_tick) = entry_activation_tick(fact.spawn_time) {
+            if visible_tick > 0 && visible_tick <= target_tick {
+                event_ticks.insert(visible_tick);
+            }
+        }
+        let active_tick = first_active_tick(fact.spawn_time);
+        if active_tick > 0 && active_tick <= target_tick {
+            event_ticks.insert(active_tick);
+        }
+    }
+
+    for action in farmer_actions {
+        if action.activation_tick > 0 && action.activation_tick <= target_tick {
+            event_ticks.insert(action.activation_tick);
+        }
+    }
+
+    for events in terrain_events.values() {
+        for event in events {
+            if event.tick > 0 && event.tick <= target_tick {
+                event_ticks.insert(event.tick);
+            }
+        }
+    }
+
+    event_ticks.into_iter().collect()
+}
+
+fn append_actor_interval(
+    segments: &mut Vec<ActorSegment>,
+    start_tick: i64,
+    end_tick: i64,
+    mut layer: ActorLayerState,
+    facts_by_id: &BTreeMap<ActorId, ActorFact>,
+    terrain_events: &BTreeMap<TileId, Vec<TerrainEvent>>,
+    farmer_actions: &[FarmerAction],
+) -> ActorLayerState {
+    if start_tick > end_tick {
+        return layer;
+    }
+
+    let mut states = Vec::new();
+    let mut seen = BTreeMap::new();
+    let mut tick = start_tick;
+
+    loop {
+        if let Some(&cycle_start_index) = seen.get(&layer) {
+            let cycle_start_tick = start_tick
+                + i64::try_from(cycle_start_index).expect("trajectory index is representable");
+
+            if cycle_start_index > 0 {
+                segments.push(ActorSegment {
+                    start_tick,
+                    end_tick: cycle_start_tick - 1,
+                    states: Arc::from(states[..cycle_start_index].to_vec()),
+                    cycle_period: None,
+                });
+            }
+
+            let cycle_states = states[cycle_start_index..].to_vec();
+            let cycle_period = cycle_states.len();
+            let final_offset = usize::try_from(end_tick - cycle_start_tick)
+                .expect("trajectory cycle offset is representable")
+                % cycle_period;
+            segments.push(ActorSegment {
+                start_tick: cycle_start_tick,
+                end_tick,
+                states: Arc::from(cycle_states.clone()),
+                cycle_period: Some(cycle_period),
+            });
+            return cycle_states[final_offset].clone();
+        }
+
+        seen.insert(layer.clone(), states.len());
+        states.push(layer.clone());
+
+        if tick == end_tick {
+            break;
+        }
+
+        let transition_tick = tick + 1;
+        transition_actor_layer_at_tick(
+            facts_by_id,
+            &mut layer.positions,
+            &mut layer.live,
+            &mut layer.removed,
+            terrain_events,
+            farmer_actions,
+            transition_tick,
+        );
+        tick = transition_tick;
+    }
+
+    segments.push(ActorSegment {
+        start_tick,
+        end_tick,
+        states: Arc::from(states),
+        cycle_period: None,
+    });
+    layer
+}
+
+fn transition_actor_layer_at_tick(
+    facts_by_id: &BTreeMap<ActorId, ActorFact>,
+    positions: &mut BTreeMap<ActorId, TileId>,
+    live: &mut BTreeSet<ActorId>,
+    removed: &mut BTreeSet<ActorId>,
+    terrain_events: &BTreeMap<TileId, Vec<TerrainEvent>>,
+    farmer_actions: &[FarmerAction],
+    transition_tick: i64,
+) {
+    let boundary = LogicalTime::from_game_ticks(transition_tick)
+        .expect("selected actor transition time is representable");
+    for (actor_id, fact) in facts_by_id {
+        if fact.spawn_time <= boundary && !removed.contains(actor_id) {
+            live.insert(*actor_id);
+        }
+    }
+    transition_actor_layer(
+        facts_by_id,
+        positions,
+        live,
+        removed,
+        terrain_events,
+        farmer_actions,
+        transition_tick,
+    );
 }
 
 impl JournalFacts {
@@ -340,6 +517,7 @@ fn project_tick(
         &farmer_actions,
         &conversions,
         &BTreeMap::new(),
+        None,
     );
     let fire_ignitions = fire_ignitions(&actor_facts, target_tick, &vegetation_events);
     let terrain_events = terrain_events(
@@ -348,6 +526,7 @@ fn project_tick(
         &farmer_actions,
         &conversions,
         &fire_ignitions,
+        Some(target_tick),
     );
     let terrain = terrain_at_target(facts, &terrain_events, target_tick);
     let effects = fire_effects(&fire_ignitions, target_tick);
@@ -384,12 +563,33 @@ fn journal_terrain(facts: &JournalFacts) -> BTreeMap<TileId, Terrain> {
         .collect()
 }
 
+fn authored_terrain_at_tick(facts: &JournalFacts, target_tick: i64) -> BTreeMap<TileId, Terrain> {
+    let mut terrain = facts
+        .saucer
+        .map(|saucer| {
+            saucer
+                .tiles()
+                .iter()
+                .copied()
+                .map(|tile| (tile, Terrain::Void))
+                .collect::<BTreeMap<_, _>>()
+        })
+        .unwrap_or_default();
+
+    for fact in &facts.terrain_facts {
+        if entry_activation_tick(fact.logical_time).is_some_and(|tick| tick <= target_tick) {
+            terrain.insert(fact.tile, fact.terrain);
+        }
+    }
+
+    terrain
+}
+
 fn farmer_actions(
     facts: &JournalFacts,
     actors: &[ActorFact],
     target_tick: i64,
 ) -> Vec<FarmerAction> {
-    let terrain = journal_terrain(facts);
     actors
         .iter()
         .filter(|fact| fact.actor.kind() == ActorKind::Farmer)
@@ -399,6 +599,14 @@ fn farmer_actions(
                 return None;
             }
 
+            let activation_time = LogicalTime::from_game_ticks(activation_tick)?;
+            let terrain = authored_terrain_at_tick(facts, activation_tick);
+            let active_actors = actors
+                .iter()
+                .copied()
+                .filter(|other| other.spawn_time <= activation_time)
+                .collect::<Vec<_>>();
+
             let actor_id = fact.actor.id();
             let destination = fact
                 .actor
@@ -406,7 +614,7 @@ fn farmer_actions(
                 .neighbors()
                 .into_iter()
                 .flatten()
-                .find(|tile| open_void(*tile, actor_id, &terrain, actors))
+                .find(|tile| open_void(*tile, actor_id, &terrain, &active_actors))
                 .unwrap_or(fact.actor.tile());
 
             Some(FarmerAction {
@@ -443,9 +651,12 @@ fn fire_ignitions(
         .filter(|fact| fact.actor.kind() == ActorKind::Arsonist)
     {
         let activation_tick = first_active_tick(fact.spawn_time);
-        let has_target = actors
-            .iter()
-            .any(|other| other.actor.id() != fact.actor.id());
+        let Some(activation_time) = LogicalTime::from_game_ticks(activation_tick) else {
+            continue;
+        };
+        let has_target = actors.iter().any(|other| {
+            other.actor.id() != fact.actor.id() && other.spawn_time <= activation_time
+        });
         if activation_tick > target_tick || !has_target {
             continue;
         }
@@ -512,6 +723,7 @@ fn terrain_events(
     farmer_actions: &[FarmerAction],
     conversions: &BTreeMap<TileId, i64>,
     fire_ignitions: &BTreeMap<TileId, i64>,
+    journal_query_tick: Option<i64>,
 ) -> BTreeMap<TileId, Vec<TerrainEvent>> {
     let mut events = facts
         .saucer
@@ -526,7 +738,7 @@ fn terrain_events(
         .unwrap_or_default();
 
     for (authored_order, fact) in facts.terrain_facts.iter().enumerate() {
-        let Some(tick) = journal_activation_tick(fact.logical_time, target_tick) else {
+        let Some(tick) = journal_activation_tick(fact.logical_time, journal_query_tick) else {
             continue;
         };
         if let Some(tile_events) = events.get_mut(&fact.tile) {
@@ -663,7 +875,10 @@ fn actors_at_sample(
     logical_time: LogicalTime,
 ) -> Vec<Actor> {
     let boundary = LogicalTime::from_game_ticks(target_tick).unwrap_or(logical_time);
-    let mut sampled = trajectory.sample(target_tick).to_vec();
+    let mut sampled = trajectory
+        .sample(target_tick)
+        .map(|layer| actors_from_layer(&actor_facts_by_id(actors), &layer.positions, &layer.live))
+        .unwrap_or_default();
     let sampled_ids = sampled
         .iter()
         .map(|actor| actor.id())
@@ -865,32 +1080,119 @@ fn wood_at_ticks(
         return 0;
     }
 
-    (0..=target_tick).fold(0_u64, |total, tick| {
-        let sample_time = if tick == target_tick {
-            logical_time
-        } else {
-            LogicalTime::from_game_ticks(tick).expect("indexed resource time is representable")
+    let facts_by_id = actor_facts_by_id(actors);
+    let prior_ticks = target_tick.saturating_sub(1);
+    let prior_total = trajectory_wood_total(
+        actor_trajectory,
+        &facts_by_id,
+        terrain_events,
+        0,
+        prior_ticks,
+    );
+    let target_actors = actors_at_sample(actors, actor_trajectory, target_tick, logical_time);
+    let target_total = target_actors
+        .iter()
+        .filter(|actor| actor.kind() == ActorKind::Forester)
+        .filter(|actor| {
+            terrain_events
+                .get(&actor.tile())
+                .map(Vec::as_slice)
+                .map(|events| terrain_at_tick(events, target_tick) == Terrain::Forest)
+                .unwrap_or(false)
+        })
+        .count() as u64;
+
+    prior_total
+        .checked_add(target_total)
+        .expect("indexed wood total overflowed u64")
+}
+
+fn trajectory_wood_total(
+    trajectory: &ActorTrajectory,
+    facts_by_id: &BTreeMap<ActorId, ActorFact>,
+    terrain_events: &BTreeMap<TileId, Vec<TerrainEvent>>,
+    start_tick: i64,
+    end_tick: i64,
+) -> u64 {
+    if start_tick > end_tick {
+        return 0;
+    }
+
+    let mut total = 0_u64;
+    for segment in trajectory.segments.iter() {
+        let overlap_start = start_tick.max(segment.start_tick);
+        let overlap_end = end_tick.min(segment.end_tick);
+        if overlap_start > overlap_end {
+            continue;
+        }
+
+        let events_at_start = |tile: TileId| {
+            terrain_events
+                .get(&tile)
+                .map(Vec::as_slice)
+                .map(|events| terrain_at_tick(events, segment.start_tick))
+                .unwrap_or_default()
         };
-        let actors_at_sample = if tick == target_tick {
-            actors_at_sample(actors, actor_trajectory, tick, sample_time)
+        if let Some(period) = segment.cycle_period {
+            let counts = segment
+                .states
+                .iter()
+                .map(|layer| {
+                    layer
+                        .live
+                        .iter()
+                        .filter(|actor_id| {
+                            facts_by_id[actor_id].actor.kind() == ActorKind::Forester
+                        })
+                        .filter(|actor_id| {
+                            events_at_start(layer.positions[actor_id]) == Terrain::Forest
+                        })
+                        .count() as u64
+                })
+                .collect::<Vec<_>>();
+            let cycle_total = counts.iter().sum::<u64>();
+            let length = u64::try_from(overlap_end - overlap_start + 1)
+                .expect("trajectory interval length is representable");
+            let full_cycles = length / u64::try_from(period).expect("cycle period is positive");
+            total = total
+                .checked_add(
+                    cycle_total
+                        .checked_mul(full_cycles)
+                        .expect("indexed wood total overflowed u64"),
+                )
+                .expect("indexed wood total overflowed u64");
+
+            let remainder = usize::try_from(length % u64::try_from(period).unwrap())
+                .expect("trajectory remainder is representable");
+            let offset = usize::try_from(overlap_start - segment.start_tick)
+                .expect("trajectory offset is representable")
+                % period;
+            for step in 0..remainder {
+                total = total
+                    .checked_add(counts[(offset + step) % period])
+                    .expect("indexed wood total overflowed u64");
+            }
         } else {
-            actor_trajectory.sample(tick).to_vec()
-        };
-        let produced = actors_at_sample
-            .iter()
-            .filter(|actor| actor.kind() == ActorKind::Forester)
-            .filter(|actor| {
-                terrain_events
-                    .get(&actor.tile())
-                    .map(Vec::as_slice)
-                    .map(|events| terrain_at_tick(events, tick) == Terrain::Forest)
-                    .unwrap_or(false)
-            })
-            .count() as u64;
-        total
-            .checked_add(produced)
-            .expect("indexed wood total overflowed u64")
-    })
+            for tick in overlap_start..=overlap_end {
+                let state_index = usize::try_from(tick - segment.start_tick)
+                    .expect("trajectory offset is representable");
+                let layer = &segment.states[state_index];
+                let produced = layer
+                    .live
+                    .iter()
+                    .filter(|actor_id| facts_by_id[actor_id].actor.kind() == ActorKind::Forester)
+                    .filter(|actor_id| {
+                        events_at_start(layer.positions[actor_id]) == Terrain::Forest
+                    })
+                    .count() as u64;
+                total = total
+                    .checked_add(produced)
+                    .expect("indexed wood total overflowed u64");
+            }
+        }
+    }
+
+    total
 }
 
 fn count_terrain_ticks(
@@ -1000,14 +1302,16 @@ fn open_void(
             .all(|fact| fact.actor.id() == ignored_actor || fact.actor.tile() != tile)
 }
 
-fn journal_activation_tick(logical_time: LogicalTime, target_tick: i64) -> Option<i64> {
-    if logical_time.ticks() < 0 {
-        return Some(0);
-    }
+fn journal_activation_tick(logical_time: LogicalTime, query_tick: Option<i64>) -> Option<i64> {
     let entry_tick = game_tick_index(logical_time);
-    if entry_tick == target_tick {
-        return Some(target_tick);
+    if query_tick == Some(entry_tick) {
+        return Some(entry_tick);
     }
+    entry_activation_tick(logical_time)
+}
+
+fn entry_activation_tick(logical_time: LogicalTime) -> Option<i64> {
+    let entry_tick = game_tick_index(logical_time);
     let remainder = logical_time.ticks().rem_euclid(TICKS_PER_LOGICAL_SECOND);
     entry_tick.checked_add(i64::from(remainder != 0))
 }

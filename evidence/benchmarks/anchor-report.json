@@ -8,8 +8,9 @@
     "warmup_iterations": 1000,
     "seed": "0xCAFE",
     "seeded_horizon_game_ticks": 20,
+    "long_horizon_game_ticks": 1000000,
     "cache_policy": "No cache or optimization is added by this crate",
-    "scrub_ticks": [30,0,20,10,25,5,30,15],
+    "scrub_game_ticks": [30,0,20,10,25,5,30,15],
     "frame_tau_ticks": [0,5,10,5,2,10]
   },
   "fixtures": [
@@ -17,20 +18,22 @@
     {"name":"authored","journal_length":2,"branch_count":1,"branch_journal_lengths":[2]},
     {"name":"seeded-cafe-horizon-20","journal_length":7,"branch_count":1,"branch_journal_lengths":[7]},
     {"name":"hand-authored-behavior","journal_length":10,"branch_count":1,"branch_journal_lengths":[10]},
+    {"name":"moving-forester-long-horizon","journal_length":2,"branch_count":1,"branch_journal_lengths":[2]},
     {"name":"authored-branch-family","journal_length":2,"branch_count":3,"branch_journal_lengths":[2,2,2]}
   ],
   "results": {
     "direct_reference_query": [
-{"name":"empty@7","samples":10000,"operations_per_sample":1,"total_nanos":17481200,"min_ns_per_operation":1500.00,"mean_ns_per_operation":1748.12,"max_ns_per_operation":51100.00},
-{"name":"authored@10","samples":10000,"operations_per_sample":1,"total_nanos":347397500,"min_ns_per_operation":27700.00,"mean_ns_per_operation":34739.75,"max_ns_per_operation":278500.00},
-{"name":"seeded@30","samples":10000,"operations_per_sample":1,"total_nanos":1941608400,"min_ns_per_operation":150600.00,"mean_ns_per_operation":194160.84,"max_ns_per_operation":40153900.00},
-{"name":"behavior@4","samples":10000,"operations_per_sample":1,"total_nanos":811496000,"min_ns_per_operation":46500.00,"mean_ns_per_operation":81149.60,"max_ns_per_operation":2745600.00}
+{"name":"empty@7ms","samples":10000,"operations_per_sample":1,"total_nanos":10486000,"min_ns_per_operation":900.00,"mean_ns_per_operation":1048.60,"max_ns_per_operation":71100.00},
+{"name":"authored@10ms","samples":10000,"operations_per_sample":1,"total_nanos":173564200,"min_ns_per_operation":14400.00,"mean_ns_per_operation":17356.42,"max_ns_per_operation":248200.00},
+{"name":"seeded@game_tick_30","samples":10000,"operations_per_sample":1,"total_nanos":602925500,"min_ns_per_operation":48600.00,"mean_ns_per_operation":60292.55,"max_ns_per_operation":330500.00},
+{"name":"behavior@game_tick_4","samples":10000,"operations_per_sample":1,"total_nanos":442660100,"min_ns_per_operation":32000.00,"mean_ns_per_operation":44266.01,"max_ns_per_operation":1944100.00},
+{"name":"moving-forester@game_tick_1000000","samples":10000,"operations_per_sample":1,"total_nanos":376750900,"min_ns_per_operation":29400.00,"mean_ns_per_operation":37675.09,"max_ns_per_operation":390300.00}
     ],
-    "scrub_query_latency": {"name":"seeded-non-monotonic-scrub","samples":10000,"operations_per_sample":8,"total_nanos":15050325100,"min_ns_per_operation":151875.00,"mean_ns_per_operation":188129.06,"max_ns_per_operation":5242012.50},
+    "scrub_query_latency": {"name":"seeded-non-monotonic-scrub","samples":10000,"operations_per_sample":8,"total_nanos":3507299200,"min_ns_per_operation":36025.00,"mean_ns_per_operation":43841.24,"max_ns_per_operation":5129087.50},
     "frame_production": [
-{"name":"actual","samples":10000,"operations_per_sample":6,"total_nanos":2145358500,"min_ns_per_operation":28983.33,"mean_ns_per_operation":35755.97,"max_ns_per_operation":198283.33},
-{"name":"counterfactual","samples":10000,"operations_per_sample":6,"total_nanos":2171853600,"min_ns_per_operation":28883.33,"mean_ns_per_operation":36197.56,"max_ns_per_operation":194200.00},
-{"name":"corrected","samples":10000,"operations_per_sample":6,"total_nanos":3187592400,"min_ns_per_operation":41650.00,"mean_ns_per_operation":53126.54,"max_ns_per_operation":6744450.00}
+{"name":"actual","samples":10000,"operations_per_sample":6,"total_nanos":981582800,"min_ns_per_operation":13683.33,"mean_ns_per_operation":16359.71,"max_ns_per_operation":79450.00},
+{"name":"counterfactual","samples":10000,"operations_per_sample":6,"total_nanos":986156600,"min_ns_per_operation":13783.33,"mean_ns_per_operation":16435.94,"max_ns_per_operation":67433.33},
+{"name":"corrected","samples":10000,"operations_per_sample":6,"total_nanos":985032300,"min_ns_per_operation":13800.00,"mean_ns_per_operation":16417.20,"max_ns_per_operation":107033.33}
     ]
   }
 }

@@ -47,40 +47,48 @@ impl std::error::Error for JournalWriterError {}
 /// A monotonic authoring cursor for immutable game journal values.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct JournalWriter {
-    current_time: LogicalTime,
+    current_time: Option<LogicalTime>,
     entries: Vec<JournalEntry>,
 }
 
 impl JournalWriter {
-    /// Creates a writer at logical time zero with no entries.
+    /// Creates an empty writer whose implicit record time is logical zero.
     pub fn new() -> Self {
         Self {
-            current_time: LogicalTime::zero(),
+            current_time: None,
             entries: Vec::new(),
         }
     }
 
     /// Returns the writer's current timestamp cursor.
     pub const fn current_time(&self) -> LogicalTime {
-        self.current_time
+        match self.current_time {
+            Some(current_time) => current_time,
+            None => LogicalTime::zero(),
+        }
     }
 
     /// Moves the timestamp cursor forward or leaves it at the same time.
     pub fn advance_to(&mut self, target_time: LogicalTime) -> Result<(), JournalWriterError> {
-        if target_time < self.current_time {
+        if self
+            .current_time
+            .is_some_and(|current_time| target_time < current_time)
+        {
             return Err(JournalWriterError::BackwardTime {
-                current: self.current_time,
+                current: self.current_time(),
                 requested: target_time,
             });
         }
 
-        self.current_time = target_time;
+        self.current_time = Some(target_time);
         Ok(())
     }
 
     /// Records a game payload at the current writer time.
     pub fn record(&mut self, payload: GameJournalEntry) -> JournalEntry {
-        let entry = JournalEntry::from_assigned_time(self.current_time, payload);
+        let current_time = self.current_time();
+        self.current_time = Some(current_time);
+        let entry = JournalEntry::from_assigned_time(current_time, payload);
         self.entries.push(entry.clone());
         entry
     }
@@ -227,5 +235,19 @@ mod tests {
 
         assert_eq!(writer.advance_to(time(2)), Ok(()));
         assert_eq!(writer.current_time(), time(2));
+    }
+
+    #[test]
+    fn first_explicit_timestamp_may_be_negative() {
+        let mut writer = JournalWriter::new();
+        writer
+            .advance_to(time(-1))
+            .expect("the first timestamp may precede logical zero");
+
+        let entry = writer.record(GameJournalEntry::create_saucer());
+
+        assert_eq!(entry.logical_time(), time(-1));
+        assert_eq!(writer.current_time(), time(-1));
+        assert!(writer.advance_to(time(-2)).is_err());
     }
 }

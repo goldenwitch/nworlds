@@ -53,6 +53,34 @@ fn anchor_worldline() -> caravan_reference::ReferenceWorldline {
 }
 
 #[test]
+fn negative_timestamp_journals_round_trip_and_replay() {
+    let worldline = actual(journal([
+        (-2_000, GameJournalEntry::create_saucer()),
+        (
+            -1_001,
+            GameJournalEntry::SetTerrain {
+                tile: TileId::origin(),
+                terrain: Terrain::Forest,
+            },
+        ),
+    ]));
+    let encoded = encode(&worldline).expect("negative journal encodes");
+    let decoded = decode(&encoded).expect("negative journal decodes");
+
+    assert_eq!(decoded, worldline);
+    assert_eq!(
+        replay(&decoded, [time(-2_001), time(-1_001), time(0)]),
+        replay(&worldline, [time(-2_001), time(-1_001), time(0)])
+    );
+    assert_eq!(
+        state(&decoded, time(0))
+            .payload()
+            .terrain_at(TileId::origin()),
+        Some(Terrain::Forest)
+    );
+}
+
+#[test]
 fn anchor_journal_round_trips_and_encoding_is_deterministic() {
     let original = anchor_worldline();
     let encoded = encode(&original).expect("anchor record encodes");

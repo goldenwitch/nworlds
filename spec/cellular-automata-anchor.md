@@ -257,13 +257,14 @@ produces one unit of wood per game tick.
 ### Arsonist
 
 The arsonist selects the occupied actor tile with the lowest axial coordinate,
-then the lowest actor identifier as a tie-breaker, excluding itself. It
-explodes at that target: the arsonist is absent from the next indexed state and
-each adjacent tile with `Wheat` or `Forest` terrain receives a fire effect with
-age zero. If no other actor exists, the arsonist remains and creates no fire.
-The selected target actor remains; only the arsonist is removed by this rule.
-Target selection and adjacency resolution are part of the pure query, not an
-imperative collision operation.
+then the lowest actor identifier as a tie-breaker, excluding itself. The
+presence of that target activates the arsonist's ignition rule: the arsonist is
+absent from the next indexed state and each adjacent tile around the
+arsonist's own tile with `Wheat` or `Forest` terrain receives a fire effect
+with age zero. If no other actor exists, the arsonist remains and creates no
+fire. The selected target actor remains; only the arsonist is removed by this
+rule. Target selection and ignition adjacency are part of the pure query, not
+an imperative collision operation.
 
 ### Fire
 

@@ -25,8 +25,8 @@ Rust/API spellings:
 > journal entry. Its prototype/API spelling is `Transformation`.
 >
 > **input ingress**: The conceptual boundary where platform interrupts become
-> abstract input packets available to the Orchestrator. `InputChannel` is one
-> possible implementation.
+> abstract input packets available to the Orchestrator. Concrete transport
+> implementations remain target-local presentation-host plumbing.
 
 ## Two Concepts
 
@@ -174,9 +174,9 @@ publication and timestamp legality.
 
 ## Time Boundary
 
-This boundary introduces no new input clock. It does not define `HostTime` or
-`InputTime`. Host event timing may matter to the outer plumbing, but it is not
-part of the Stage interaction-query contract.
+This boundary introduces no input clock. Host event timing is outside the
+contract and is not modeled by Stage or the interaction query. It does not
+define `HostTime` or `InputTime`.
 
 The relevant selected values are the existing presentation and game values:
 
@@ -213,9 +213,9 @@ error and does not invoke interaction logic.
 `InteractionDefinition` is a current seam inside the Orchestrator, not a second
 source of authoritative state.
 
-`PresentationHost` remains plumbing behind the input ingress and other narrow
-host ports. The Orchestrator drains the ingress, converts input to abstract
-`InputPacket` values, and owns the resulting logical outputs.
+The presentation host remains plumbing behind the input ingress and other
+narrow host ports. The Orchestrator drains the ingress, converts input to
+abstract `InputPacket` values, and owns the resulting logical outputs.
 
 ## Non-Goals
 

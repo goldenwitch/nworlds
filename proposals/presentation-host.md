@@ -1,35 +1,40 @@
 # Presentation Host
 
-This proposal defines the platform-facing host boundary around a canonical
-Stage. It is intentionally agnostic about operating systems, windowing
-libraries, devices, render backends, and host clock types.
+This proposal defines the reusable presentation-host plumbing around a
+canonical Stage. It is intentionally agnostic about operating systems,
+windowing libraries, devices, render backends, and host clock types.
 
-The **application host** is the executable composition root. It constructs a
-Stage, its Orchestrator, and narrow host ports. The **presentation host** is the
-platform plumbing behind those ports. Neither defines the game, owns game
-time, interprets input, or becomes a second source of authoritative state.
+A **target-specific entrypoint** is the OS- or runtime-specific executable
+composition root. It constructs a Stage and a selected set of independent
+presentation-host ports. A target may group those ports in a local
+`ApplicationHost` convenience value, but that bundle is not a generic engine
+layer. Neither the entrypoint nor the presentation host defines the game, owns
+game time, interprets input, or becomes a second source of authoritative state.
 
 ## Vocabulary
 
 This proposal uses **bold** for conceptual vocabulary and backticks for exact
-Rust/API spellings. **Application host** means the executable composition root.
-**Presentation host** means the passive platform plumbing behind narrow ports;
-`PresentationHost` is only a possible prototype/API spelling. **Input
-ingress** means the conceptual interrupt boundary that receives abstract input
-packets; `InputChannel` is one possible implementation. **Stage**,
+Rust/API spellings. **Target-specific entrypoint** means the executable
+composition root that varies by OS or runtime. **Presentation host** means the
+reusable passive plumbing boundary made of independent ports. **Input ingress**
+means the transport boundary that receives abstract input packets. **Port**
+means a Stage-facing capability; **adapter** means a concrete implementation of
+one port. **Stage**,
 **Orchestrator**, **worldline**, **Tau**, **LogicalTime**, **game state**, and
 **frame** retain the meanings owned by the Stage and initial specifications.
 
 ## Boundary
 
 ```text
-Application host
-    constructs concrete Stage/Orchestrator and narrow host ports
+Target-specific entrypoint
+    constructs concrete Stage/Orchestrator and independent host ports
+    may group them in a local ApplicationHost convenience value
 
-Presentation host ports
+Presentation host
+    independent ports
     input ingress
     render sink
-    storage
+    storage transport
     platform lifecycle/resource plumbing
 
     are composed with and called by
@@ -44,14 +49,115 @@ Stage
     rendering composition
 ```
 
-The host owns the environment. **Stage** owns the meaning of the experience.
-The game **context** remains a separate game-model value carried by the
-worldline; host ports are not context.
+The entrypoint and presentation host own the environment. **Stage** owns the
+meaning of the experience. The game **context** remains a separate game-model
+value carried by the worldline; host ports are not context.
+
+## Adapter Set
+
+The host boundary has several distinct adapters. A **port** is the narrow
+Stage-facing capability; an **adapter** is the platform-specific implementation
+behind that port. Translation, transport, execution, and storage must remain
+separate responsibilities even when one concrete application type composes
+them together.
+
+### Platform input adapter
+
+The platform input adapter translates native operating-system or device events
+into the application's closed `InputPacket` vocabulary:
+
+```text
+native event
+    -> PlatformInputAdapter
+    -> InputPacket
+```
+
+It may discard unsupported device detail or normalize platform identity. It
+produces the application's abstract packet values from native observations.
+
+### Input ingress adapter
+
+The input ingress transports already translated packets to the Orchestrator:
+
+```text
+InputPacket
+    -> InputIngress
+    -> Orchestrator
+```
+
+Its queueing is transport buffering; packet retention, flush, consume, and
+expiry remain Stage/Orchestrator behavior. The first concrete ingress may be
+in-memory and carries abstract packets rather than platform event types.
+
+### Storage transport adapter
+
+The game-facing persistence composition decides which immutable worldline or
+save value to retain and uses a simple codec to produce an encoded record. The
+presentation-host storage port transports that record without interpreting its
+game meaning:
+
+```text
+Worldline/save value
+    -> game-facing persistence codec
+    -> encoded bytes
+    -> storage transport port
+    -> host file, database, or other storage
+```
+
+The Orchestrator owns save/load decisions. The codec owns the semantic
+worldline-to-record boundary; the host adapter owns only byte transport.
+Loading returns bytes to the game-facing persistence composition, which decodes
+a new immutable worldline value.
+
+### Render execution adapter
+
+The render execution adapter consumes Stage-produced render output and performs
+backend or surface work:
+
+```text
+Frame<RenderOutput>
+    -> RenderSinkAdapter
+    -> backend/device/surface
+```
+
+The exact `RenderOutput` shape remains owned by the planned rendering
+contract. The current generic boundary is `Renderer<S>::render(GameState<S>,
+Tau) -> Output` carried by `Frame<Output>`; this adapter owns only the
+backend/device/surface execution step.
+
+### Platform lifecycle and resource adapters
+
+Lifecycle and resource adapters cover window/surface availability, device
+lifecycle, display integration, and host-owned resource loading. They report
+platform conditions and perform platform work.
+
+The concrete backend adapter for a `wgpu` composition belongs behind the render
+execution boundary. It is not known by `Stage`, `GameState`, `InputPacket`, or
+backend-neutral render output.
+
+The adapter roles are summarized here:
+
+```text
+PlatformInputAdapter       native events -> InputPacket
+InputIngress               InputPacket transport -> Orchestrator
+Storage transport          encoded bytes <-> host storage
+RenderSinkAdapter           Frame<RenderOutput> -> backend execution
+LifecycleResourceAdapter   platform lifecycle/resources -> host conditions
+```
+
+The support-matrix axes and target cells are recorded separately in the
+[platform support matrix](platform-support-matrix.md). This proposal defines
+where adaptation lives; unselected platform rows remain pending in that matrix.
+
+The dependency-ordered implementation plan is recorded in
+[host.vine](../host.vine). Its first planned row is the in-memory host proof;
+platform-specific rows activate only after a target profile and support-matrix
+cell are selected.
 
 ## Host Responsibilities
 
-The **application host** and its **presentation host** plumbing are responsible
-for:
+The target-specific entrypoint and its **presentation host** plumbing are
+responsible for:
 
 - operating-system lifecycle and shutdown;
 - platform input acquisition and translation into the **input ingress**;
@@ -65,30 +171,21 @@ These responsibilities are plumbing. They should be replaceable without
 changing what the Caravan Stage means by a worldline, branch, logical time,
 input packet, transformation, game state, or frame.
 
-## Host Non-Responsibilities
+## Ownership
 
-The host does not decide:
-
-- which `Worldline` or branch the Stage is viewing;
-- which independent `LogicalTime` and `Tau` samples the Stage selects;
-- whether presentation time advances, pauses, reverses, or scrubs;
-- which input packets are retained or consumed by Stage orchestration;
-- what an `InputPacketSet` means for the game;
-- whether an interaction produces a `Transformation`;
-- whether a transformation is admitted to the journal or a branch;
-- what timestamp the `JournalWriter` assigns;
-- what a Caravan `GameState` means; or
-- which values the Orchestrator chooses to save or present.
-
-The host ports provide mechanisms for those decisions. They do not own the
-decisions.
+Stage and Orchestrator ownership is defined in
+[stage-layer.md](stage-layer.md) and
+[input-and-interaction.md](input-and-interaction.md). Host ports supply the
+platform mechanisms used by those decisions and do not select worldlines,
+interpret packets, assign journal time, or define game values.
 
 ## Control Flow
 
-The Orchestrator owns control flow. There is no host-owned outer pump in this
-boundary. An Orchestrator may run a literal loop, a pull loop over narrow host
-ports, a replay driver, or another application-specific control shape. The
-Orchestrator calls a port when it needs input, storage, or backend work.
+The Orchestrator owns semantic control flow and pulls from independent host
+ports. A target-specific entrypoint owns process and native runtime bootstrap;
+it does not drive game decisions or become an outer game loop. An Orchestrator
+may run a literal loop, a replay driver, or another application-specific shape,
+and calls a port when it needs input, storage, or backend work.
 
 Host activity is not game time:
 
@@ -98,8 +195,8 @@ Orchestrator control flow
     -> receives a platform value or performs platform work
 ```
 
-The first host boundary does not require a fixed loop frequency, a static clock,
-or a host-defined `Tau`. No clock port is part of this first host composition.
+The first host boundary is scheduler-independent. The Orchestrator selects
+`Tau`, and no clock port is part of this first host composition.
 
 Explicit samples remain valid independently of host execution:
 
@@ -112,111 +209,106 @@ of a host scheduler.
 
 ## Input Ingress
 
-**Input ingress** is the conceptual boundary where platform interrupts become
-abstract `InputPacket` values available to the Orchestrator. A channel is one
-implementation:
+**Input ingress** is the boundary where translated platform observations become
+abstract `InputPacket` values available to the Orchestrator:
 
 ```text
-platform interrupt/event
-    -> platform adapter
-    -> InputIngress / InputChannel
+platform event
+    -> platform input adapter
+    -> InputIngress
     -> Orchestrator drains packets
     -> InputPacketSet
 ```
 
-The ingress is transport plumbing. It does not interpret packets, choose
-`Tau`, select `LogicalTime`, or create journal entries. Its buffering is not
-the Stage's semantic buffered/unbuffered behavior; the Orchestrator constructs
-the packet set it gives to `InteractionDefinition`.
+The ingress transports packets. `Tau`, `LogicalTime`, packet-set meaning, and
+journal authoring remain in the Stage/Orchestrator path; ingress queueing is
+transport buffering while the Orchestrator constructs the packet set it gives
+to `InteractionDefinition`.
 
 ## Input Crossing
 
-The input path has one host conversion and one Stage interpretation boundary:
-
-```text
-platform event
-    -> InputIngress
-    -> Orchestrator packet-set orchestration
-    -> InputPacketSet
-    -> selected GameState at LogicalTime with Tau
-    -> InteractionDefinition
-    -> Transformation
-```
-
-The platform adapter may normalize device-specific details such as button
-identity or pointer representation into the application's closed `InputPacket`
-type. It must not decide the packet's game meaning or directly construct a
-journal entry.
-
-Buffered and unbuffered packet construction is Stage behavior. The host may
-queue platform events internally, but the semantic packet set passed to
-`InteractionDefinition` is constructed by the Stage/Orchestrator.
+The host-side input crossing ends when translated packets reach `InputIngress`.
+The packet-set, interaction, and journal-publication semantics are owned by
+[input-and-interaction.md](input-and-interaction.md) and the Stage/Orchestrator
+composition. The host may normalize native detail, but it does not assign
+packet meaning or retain semantic input state.
 
 ## Rendering Crossing
 
-Stage owns the logical renderer composition:
+The Stage-side `GameState + Tau -> Frame<RenderOutput>` composition is owned by
+the planned rendering contract on top of the current generic renderer/frame
+boundary. The host owns device execution:
 
 ```text
-GameState + Tau
-    -> Renderer
-    -> Frame or backend-neutral render output
+Frame<RenderOutput>
+    -> RenderSink port
+    -> target backend/surface
 ```
 
-The host owns device execution:
+The planned rendering contract will define the exact `RenderOutput`
+representation as an owned composition of rendering objects, opaque to game
+reasoning. The host consumes that selected output through an independent render
+sink; backend commands, device state, and surface work remain below this
+boundary.
 
-```text
-Frame/render output
-    -> PresentationHost backend/surface
-```
-
-The first host proposal does not choose whether the Stage renderer returns a
-fully backend-neutral scene, a compact render value, or another owned output.
-That decision belongs to the rendering proposal. The host only consumes the
-selected output through an application-composed backend.
-
-The host must not add frame history or a persistent device simulation that
-changes authoritative game state. GPU or backend state may exist as plumbing,
-but it is not a replacement for the indexed query or Stage journal path.
+Frame history and persistent device simulation are outside this boundary. GPU
+or backend state is plumbing around the indexed query and Stage journal path.
 
 ## Persistence Crossing
 
-The Orchestrator decides which immutable values to save and when. The host
-provides the environment needed to perform I/O:
+The Orchestrator decides which immutable values to save and when. The
+game-facing persistence composition applies a simple codec; the host provides
+only the byte transport environment needed to perform I/O:
 
 ```text
 Orchestrator selects worldline
-    -> persistence encoding
-    -> host-provided path/storage capability
+    -> game-facing persistence codec
+    -> encoded bytes
+    -> storage transport port
+    -> target storage
 ```
 
-A host path or storage handle must not become an alternate authority for the
-journal. Loading produces a new immutable worldline value; it does not mutate a
-currently published worldline in place.
+The storage adapter does not decode, interpret, or construct worldlines.
+Loading returns bytes to the game-facing persistence composition, which decodes
+a new immutable worldline value.
 
 ## Static Composition
 
 The preferred implementation is ordinary Rust static composition:
 
 ```rust
-struct ApplicationHost<S, InputIngress, RenderSink, Storage> {
+struct ApplicationHost<S, InputIngress, RenderSink, StorageTransport> {
     stage: S,
     input_ingress: InputIngress,
     render_sink: RenderSink,
-    storage: Storage,
+    storage: StorageTransport,
 }
 ```
 
-This is a boundary sketch, not an immediate engine type. Concrete application
-host and Stage implementations should be composed as early as practical.
+This is a target-local convenience sketch, not an engine type or a required
+layer. Concrete entrypoints compose Stage with the independent ports as early
+as practical.
 Traits and generics belong at real substitution boundaries such as input
-transport, render sink, or storage variation; the host does not need a runtime
-dependency injection container or a broad capabilities object.
+transport, render sink, or storage variation. The composition remains ordinary
+static Rust without a broad capabilities object.
+
+The first executable host composition should use in-memory adapters to prove
+the crossings before platform backends are selected:
+
+```text
+MemoryInputIngress
+MemoryStorage
+CollectingRenderSink
+    -> ApplicationHost<CaravanStage, ...>
+```
+
+This composition is test infrastructure and a wiring proof, not a product
+platform. Native input, windowing, device resources, and `wgpu` remain later
+adapter selections governed by the support matrix.
 
 ## Time Boundary
 
-No clock port is part of the first host composition. If a later Orchestrator
-needs a platform timing observation, that is a separate narrow port decision.
-Host time is not authoritative game time. The current time values remain:
+Host time is outside this model. The current time values remain:
 
 ```text
 Tau          Stage presentation sample
@@ -224,27 +316,24 @@ LogicalTime  indexed game-state sample
 Journal time JournalWriter-assigned authoring timestamp
 ```
 
-No `HostTime` or `InputTime` type is required by this proposal.
+No `HostTime`, `InputTime`, or clock port is part of the presentation-host
+contract.
 
-## Non-Goals
+## Current Scope
 
-This proposal does not:
+The current host packet leaves these selections for later packets or their
+owning proposals:
 
-- define a concrete operating-system or windowing API;
-- settle the `wgpu` choice or platform support matrix; those require a separate
-    external design gate;
-- define a host clock type or fixed update frequency;
-- define raw input packet variants;
-- define camera, HUD, widgets, or interactable objects;
-- define a render scene or coordinate projection;
-- add a generic engine-level `PresentationHost` type;
-- move `Worldline`, `Journal`, `GameState`, or `Transformation` ownership into
-  the host; or
-- introduce a runtime plugin/object-typing model.
+- operating-system and windowing API;
+- `wgpu` choice and platform support matrix cells;
+- raw input packet variants;
+- camera, HUD, widgets, and interactable objects;
+- render scene and coordinate projection;
+- runtime plugin/object-typing model.
 
 ## Open Questions
 
-1. What is the narrowest input-ingress interface for the first demo?
-2. What is the narrowest backend/surface sink for the first render observable?
-3. Which storage port is needed by the first Orchestrator demo?
+1. What is the narrowest input-ingress interface for the first target?
+2. What is the narrowest byte-storage transport interface for the first target?
+3. Which lifecycle/resource conditions must the first target entrypoint report?
 4. Which host/Stage patterns repeat enough to extract into reusable engine APIs?

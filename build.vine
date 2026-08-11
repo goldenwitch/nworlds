@@ -297,7 +297,7 @@ Accept: Targeted behavior and shape tests pass, the production query has no hidd
 -> discontinuity-parity
 -> indexed-projection-contract
 -> reference-projection
-> The relevant finite game-tick range is materialized in the Caravan discontinuity index.
+> Reusable Caravan discontinuity indices materialize their relevant finite game-tick range; public query-specific indices materialize only the selected visible prefix and its trajectory segments.
 > Each piece carries an immutable actor trajectory built from its visible journal prefix; state samples the trajectory and does not replay preceding transitions.
 > Resources sample the same piece-owned actor trajectory.
 > Public state builds a query-scoped index through the requested sample time; reusable journal-only indices return InsufficientTrajectoryHorizon rather than silently dropping actors beyond their materialized horizon.
@@ -349,7 +349,7 @@ Accept: One policy is recorded, the public facade and low-level SDK documentatio
 ---
 [sdk-timestamp-implementation] Implement timestamp boundary policy (complete)
 Files: crates/engine-sdk/src/journal.rs; crates/engine-journal/src/**; crates/engine-api/src/lib.rs; crates/purity-tests/tests/ui/no_caller_assigned_timestamps.rs; crates/purity-tests/tests/ui/no_low_level_timestamp_import.rs; evidence/clause-to-test.md
-Do: Preserve explicitly named low-level assigned-time imports as interoperability APIs while enforcing JournalWriter-only authoring through engine-api. Keep persistence, branch construction, and writer behavior unchanged.
+Do: Preserve explicitly named low-level assigned-time imports as interoperability APIs while enforcing JournalWriter-only authoring through engine-api. Keep JournalWriter monotonic and game-facing, and preserve signed timestamp values through branch construction and persistence.
 Accept: Compile-fail evidence rejects caller-assigned timestamp access through engine-api, intentional low-level imports are documented, and all journal/branch/purity tests pass.
 -> sdk-timestamp-policy
 ---
@@ -362,6 +362,6 @@ Accept: Every objective is either backed by a reproducible artifact or named as 
 -> presentation-purity-implementation
 -> rule-composition-implementation
 -> sdk-timestamp-implementation
-> Conformance generation preserves supplemental cases for indexed boundaries, trajectory horizons, cross-rule composition, bounded parity, and timestamp facade evidence.
+> The standalone conformance report contains only cases executed by its runner; root-workspace projection, parity, and compiler-boundary evidence is mapped separately.
 > The trusted presentation-extension boundary and static LogicalTime/Tau compile-fail limitation are explicit in the report; benchmark evidence was regenerated against the current implementation.
 > All phase validation commands pass: formatting, workspace tests, fresh conformance, clippy, and purity tests.

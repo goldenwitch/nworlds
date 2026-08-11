@@ -60,7 +60,8 @@ The completed packet provides:
 - immutable SDK envelopes, journals, branches, and direct indexed queries;
 - the radius-5 Caravan domain and vegetation, hazard, and seeded fixtures;
 - discontinuity indexing and piecewise reference projection;
-- lookahead, presentation, rendering, persistence, and deterministic replay; and
+- lookahead, the generic state-first presentation boundary, game-facing
+  persistence, and deterministic replay; and
 - executable conformance, benchmark, demo, parity, and purity evidence.
 
 The packet-level delegation plan and its path ownership remain in
@@ -70,6 +71,9 @@ The Orchestrator experiment provides a mutable control layer over immutable
 worldline, journal, and game-state values. Its input, transformation,
 publication, Stage, persistence, and presentation evidence is in
 [orchestrator.vine](orchestrator.vine).
+
+The concrete Caravan rendering-object projection and target presentation-host
+composition remain planned layers on top of that completed boundary.
 
 ## Remaining Work
 

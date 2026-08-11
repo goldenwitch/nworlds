@@ -23,7 +23,7 @@ Accept: A concrete Caravan Orchestrator can interpret one input packet set, prod
 > Journal heterogeneity uses one closed game-owned enum/DU payload type; no runtime object collection, Any, or untyped journal bag.
 > JournalWriter is the game-facing timestamp authority. No InputTime or packet timestamp is added.
 > Camera, HUD, backend, device, host clock, and reusable DSL extraction are outside this slice.
-> InputIngress is the conceptual interrupt boundary; InputChannel is one possible implementation. The first composition has no clock port and no broad capabilities object.
+> Input ingress is the conceptual transport boundary. Target-specific presentation-host ports and entrypoint composition are future host design work; this slice has no clock port or broad capabilities object.
 ---
 ref [anchor] Completed indexed anchor (build.vine)
 The completed anchor supplies ReferenceWorldline, JournalWriter, immutable branches, direct state queries, presentation, persistence, and the existing evidence required by this slice.

@@ -3,7 +3,7 @@ prefix: rendering
 title: Caravan rendering layer
 ---
 [root] Backend-neutral rendering slice (notstarted)
-Build the first concrete rendering layer on top of the completed indexed anchor. Keep this packet small: it should make a deterministic, inspectable render value from one immutable `GameState<Snapshot>` and one `Tau` through the existing engine-presentation boundary. It is a render-model and demo slice, not a final graphics architecture.
+Build the first concrete rendering layer on top of the completed indexed anchor. Keep this packet small: it should make a deterministic, inspectable composition of owned rendering objects from one immutable `GameState<Snapshot>` and one `Tau` through the existing engine-presentation boundary. Rendering objects are downstream products; game reasoning continues to use `GameState`. This is a render-model and demo slice, not a final graphics architecture.
 Files: rendering.vine; spec/initial.md; proposals/productization-review.md; proposals/stage-layer.md; proposals/presentation-host.md; proposals/input-and-interaction.md; roadmap.md; crates/engine-presentation/**; crates/caravan-demo/**
 Do: Dispatch the contract, projection, demo wiring, and evidence tasks only after their dependencies are reviewed. Preserve the distinction between authoritative game state and owned render output.
 Accept: The branch has one settled rendering contract, one deterministic backend-neutral projection, a runnable demo observable, and focused evidence. The current anchor, presentation, conformance, and persistence behavior remains green.
@@ -12,7 +12,7 @@ Accept: The branch has one settled rendering contract, one deterministic backend
 -> render-demo
 -> render-evidence
 -> render-projection
-> Stage owns the canonical selected Worldline, LogicalTime, and Tau; PresentationHost is platform/execution plumbing.
+> Stage owns the canonical selected Worldline, LogicalTime, and Tau; the presentation host is independent platform/execution plumbing.
 > Orchestrator is developer-authored ordinary imperative control code inside Stage. It chooses LogicalTime and Tau samples, input orchestration, lookahead, branches, persistence, and presentation, but it may not own imperative game state.
 > Only publication of a new immutable journal/worldline value may change authoritative game state. InteractionDefinition returns closed Transformation data and cannot construct timestamped journal entries directly.
 ---
@@ -24,7 +24,7 @@ Files: proposals/rendering-contract.md
 Do: Record the first rendering boundary: immutable `GameState<Snapshot>` plus `Tau` in, owned backend-neutral render value out; exact sampled `LogicalTime` and `Tau` remain observable; tile order and independent terrain, actor, and effect layers remain stable; no frame history or authoritative mutation is admitted. Name the trust boundary of `Renderer` implementations and list the deferred graphics decisions without designing them here.
 Accept: One short contract names inputs, outputs, ownership, determinism, stable ordering, and the explicit non-goals. It agrees with the initial specification, semantic contract, productization review, and existing engine-presentation traits.
 -> anchor
-> The rendering seam remains GameState plus Tau to Frame/render output; rendering does not receive Orchestrator control state or frame history.
+> The rendering seam remains GameState plus Tau to Frame/render output; rendering does not receive Orchestrator control state or frame history, and interaction never reasons over rendering objects.
 > Renderer composition belongs to Stage; backend/device execution remains outside this rendering slice.
 @artifact text/markdown proposals/rendering-contract.md
 @guidance text/markdown spec/initial.md

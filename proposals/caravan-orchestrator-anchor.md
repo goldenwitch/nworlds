@@ -36,7 +36,8 @@ Renderer<Snapshot>::render(GameState<Snapshot>, Tau)
 ```
 
 The reference query, journal writer, branch constructors, presentation
-adapter, persistence, and evidence remain the engine boundary.
+adapter, game-facing persistence codec, and evidence remain the engine
+boundary. Host byte transport remains a separate presentation-host concern.
 This proposal composes them; it does not replace them with mutable game-owned
 state. The low-level SDK already has generic journal envelopes; the current
 `engine-journal` and `engine-branches` facades remain Caravan-bound and are the
@@ -60,8 +61,9 @@ CaravanOrchestrator
     query, branch, save, and presentation decisions
 ```
 
-The initial Rust structs and host entrypoint live in `caravan-demo`; their
-shape is intentionally still application-owned. No engine-wide
+The initial Rust structs live in `caravan-demo`; their shape is intentionally
+still application-owned. A target-specific entrypoint and independent
+presentation-host ports are future composition work. No engine-wide
 `Orchestrator` trait is required until multiple concrete orchestrators reveal a
 stable variation boundary.
 
@@ -142,8 +144,8 @@ render(game_state, tau) -> frame
 The renderer receives the selected state and explicit `Tau`. It returns an
 owned presentation result through the existing `Renderer` and `Frame` boundary.
 It does not mutate the worldline, journal, game state, or prior frame. The first
-Caravan render projection remains backend-neutral and does not decide camera,
-HUD, coordinates, assets, GPU, or device behavior.
+Caravan render projection composes owned backend-neutral rendering objects and
+does not decide camera, HUD, coordinates, assets, GPU, or device behavior.
 
 ### Interact
 
@@ -185,9 +187,10 @@ These are orchestration values, not a second game-state model. The Orchestrator
 must not own or mutate an imperative board, actor set, terrain layer, effect
 layer, resource counter, or current `GameState`.
 
-The Orchestrator owns control flow and may run a literal loop or pull loop over
-host capabilities. It requests platform input, storage, clock observations, or
-backend work when needed. It decides which `Tau` to sample, whether
+The Orchestrator owns semantic control flow and may run a literal loop or pull
+loop over independent presentation-host ports when composed with a target
+entrypoint. It requests platform input, storage transport, or backend work
+when needed. It decides which `Tau` to sample, whether
 presentation time advances, whether to query, which branch to view, which
 values to save, and which frame to present. The host does not become the owner
 of logical time or journal semantics.
@@ -301,7 +304,6 @@ This proposal does not:
   `SetTerrain`/`Noop` prototype without inventing unnecessary domain rules?
 2. Which Orchestrator control state must survive persistence or replay, and
    which is disposable execution state?
-3. Which host capabilities should the first Orchestrator call without making
-  platform timing authoritative?
+3. Which independent presentation-host ports should the first target compose?
 4. Which repeated Orchestrator patterns are strong enough to extract after the
    first working traces?

@@ -29,15 +29,20 @@ relative report path has the documented location.
 ## Fixed workloads
 
 - `empty`: an empty journal.
-- `authored`: the demo's `CreateSaucer@0` and `SpawnActor(Farmer)@10` trace.
+- `authored`: the demo's `CreateSaucer@0ms` and `SpawnActor(Farmer)@10ms` trace.
 - `seeded-cafe-horizon-20`: seed `0xCAFE`, horizon 20, seven journal entries.
 - `hand-authored-behavior`: the seeded crate's deterministic behavior fixture.
+- `moving-forester-long-horizon`: a saucer and one moving forester sampled at
+  one million game ticks.
 - `authored-branch-family`: the demo's actual, counterfactual, and corrected
   branches, for a total of three immutable branch values.
 
-Direct query timings sample one fixed logical time on each trace. Scrub timing
-uses `[30, 0, 20, 10, 25, 5, 30, 15]` on the seeded worldline. Frame timing
-uses `engine_presentation::present` with explicit logical-time and tau values
+Direct query timings sample one fixed logical time on each trace. The `ms`
+suffix identifies raw fixed-point logical-time ticks; one logical second is
+1,000 of those ticks. The `game_tick_N` suffix identifies the anchor's
+one-second game-tick index. Scrub timing uses game ticks
+`[30, 0, 20, 10, 25, 5, 30, 15]` on the seeded worldline. Frame timing uses
+`engine_presentation::present` with raw logical-time and tau values
 `[0, 5, 10, 5, 2, 10]` on each branch.
 
 No cache, index, evaluator optimization, semantic change, or production-file

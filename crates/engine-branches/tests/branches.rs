@@ -78,6 +78,31 @@ fn worldline_alias_and_opaque_context_are_query_facing() {
 }
 
 #[test]
+fn branches_rebuild_negative_timestamp_prefixes() {
+    let parent = Branch::new(
+        Context::new(Definitions { marker: 8 }),
+        journal(&[
+            (-2_000, GameJournalEntry::create_saucer()),
+            set_terrain(-1_000, Terrain::Wheat),
+        ]),
+    );
+    let suffix = journal(&[spawn(-500, 4)]);
+
+    let child = parent
+        .counterfactual(time(-1_000), &suffix)
+        .expect("negative suffix should rebuild through the monotonic writer");
+
+    assert_eq!(
+        entries(&child),
+        vec![
+            (time(-2_000), GameJournalEntry::create_saucer()),
+            expected_set_terrain(-1_000, Terrain::Wheat),
+            expected_spawn(-500, 4),
+        ]
+    );
+}
+
+#[test]
 fn counterfactual_keeps_every_parent_entry_at_the_inclusive_boundary() {
     let parent = Branch::new(
         Context::new(Definitions { marker: 1 }),

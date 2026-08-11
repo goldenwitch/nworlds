@@ -15,6 +15,7 @@ pub const DEFAULT_ITERATIONS: usize = 10_000;
 pub const DEFAULT_WARMUP_ITERATIONS: usize = 1_000;
 pub const SEEDED_TRACE_SEED: u64 = 0xCAFE;
 pub const SEEDED_TRACE_HORIZON: u64 = 20;
+pub const LONG_HORIZON_GAME_TICKS: i64 = 1_000_000;
 pub const SCRUB_TRACE_TICKS: [i64; 8] = [30, 0, 20, 10, 25, 5, 30, 15];
 pub const FRAME_TAU_TICKS: [i64; 6] = [0, 5, 10, 5, 2, 10];
 
@@ -38,6 +39,7 @@ pub struct FixedTraces {
     pub authored: ReferenceWorldline,
     pub seeded: ReferenceWorldline,
     pub behavior: ReferenceWorldline,
+    pub moving: ReferenceWorldline,
     pub branches: BranchTraces,
 }
 
@@ -54,6 +56,7 @@ impl FixedTraces {
                 SEEDED_TRACE_HORIZON,
             )),
             behavior: actual(hand_authored_behavior_fixture()),
+            moving: actual(moving_journal()),
         }
     }
 }
@@ -198,10 +201,21 @@ pub fn run(config: BenchmarkConfig) -> BenchmarkReport {
 
     let traces = FixedTraces::new();
     let direct_reference_queries = vec![
-        named_query("empty@7", &traces.empty, 7, config),
-        named_query("authored@10", &traces.authored, 10, config),
-        named_query("seeded@30", &traces.seeded, 30, config),
-        named_query("behavior@4", &traces.behavior, 4, config),
+        named_query("empty@7ms", &traces.empty, time(7), config),
+        named_query("authored@10ms", &traces.authored, time(10), config),
+        named_query("seeded@game_tick_30", &traces.seeded, game_time(30), config),
+        named_query(
+            "behavior@game_tick_4",
+            &traces.behavior,
+            game_time(4),
+            config,
+        ),
+        named_query(
+            "moving-forester@game_tick_1000000",
+            &traces.moving,
+            game_time(LONG_HORIZON_GAME_TICKS),
+            config,
+        ),
     ];
 
     let scrub_query_latency = NamedTiming::new(
@@ -209,7 +223,7 @@ pub fn run(config: BenchmarkConfig) -> BenchmarkReport {
         SCRUB_TRACE_TICKS.len(),
         measure(config, || {
             for ticks in SCRUB_TRACE_TICKS {
-                std::hint::black_box(state(&traces.seeded, time(ticks)));
+                std::hint::black_box(state(&traces.seeded, game_time(ticks)));
             }
         }),
     );
@@ -255,6 +269,12 @@ pub fn run(config: BenchmarkConfig) -> BenchmarkReport {
                 branch_journal_lengths: &[10],
             },
             FixtureSummary {
+                name: "moving-forester-long-horizon",
+                journal_length: traces.moving.journal().len(),
+                branch_count: 1,
+                branch_journal_lengths: &[2],
+            },
+            FixtureSummary {
                 name: "authored-branch-family",
                 journal_length: traces.branches.actual.journal().len(),
                 branch_count: traces.branches.count(),
@@ -274,11 +294,12 @@ pub fn render_json(report: &BenchmarkReport, command: &str) -> String {
     output.push_str(&format!("  \"command\": \"{}\",\n", escape_json(command)));
     output.push_str("  \"conditions\": {\n");
     output.push_str(&format!(
-        "    \"profile\": \"{}\",\n    \"timer\": \"std::time::Instant\",\n    \"iterations\": {},\n    \"warmup_iterations\": {},\n    \"seed\": \"0xCAFE\",\n    \"seeded_horizon_game_ticks\": {},\n    \"cache_policy\": \"No cache or optimization is added by this crate\",\n    \"scrub_ticks\": {},\n    \"frame_tau_ticks\": {}\n",
+        "    \"profile\": \"{}\",\n    \"timer\": \"std::time::Instant\",\n    \"iterations\": {},\n    \"warmup_iterations\": {},\n    \"seed\": \"0xCAFE\",\n    \"seeded_horizon_game_ticks\": {},\n    \"long_horizon_game_ticks\": {},\n    \"cache_policy\": \"No cache or optimization is added by this crate\",\n    \"scrub_game_ticks\": {},\n    \"frame_tau_ticks\": {}\n",
         report.profile,
         report.config.iterations,
         report.config.warmup_iterations,
         SEEDED_TRACE_HORIZON,
+        LONG_HORIZON_GAME_TICKS,
         format_i64_array(&SCRUB_TRACE_TICKS),
         format_i64_array(&FRAME_TAU_TICKS),
     ));
@@ -319,14 +340,14 @@ pub fn render_json(report: &BenchmarkReport, command: &str) -> String {
 fn named_query(
     name: &'static str,
     worldline: &ReferenceWorldline,
-    ticks: i64,
+    logical_time: LogicalTime,
     config: BenchmarkConfig,
 ) -> NamedTiming {
     NamedTiming::new(
         name,
         1,
         measure(config, || {
-            std::hint::black_box(state(worldline, time(ticks)))
+            std::hint::black_box(state(worldline, logical_time))
         }),
     )
 }
@@ -386,6 +407,13 @@ fn authored_journal() -> Journal {
     ])
 }
 
+fn moving_journal() -> Journal {
+    journal([
+        (0, GameJournalEntry::create_saucer()),
+        (0, spawn(1, ActorKind::Forester, TileId::origin())),
+    ])
+}
+
 fn journal(entries: impl IntoIterator<Item = (i64, GameJournalEntry)>) -> Journal {
     let mut writer = JournalWriter::new();
     for (ticks, payload) in entries {
@@ -407,6 +435,10 @@ fn spawn(id: u64, kind: ActorKind, tile: TileId) -> GameJournalEntry {
 
 fn time(ticks: i64) -> LogicalTime {
     LogicalTime::from_ticks(ticks)
+}
+
+fn game_time(game_ticks: i64) -> LogicalTime {
+    LogicalTime::from_game_ticks(game_ticks).expect("benchmark game time is representable")
 }
 
 fn tau(ticks: i64) -> Tau {
@@ -472,7 +504,7 @@ fn escape_json(value: &str) -> String {
 mod tests {
     use super::{
         render_json, run, BenchmarkConfig, FixedTraces, TraceRenderValue, FRAME_TAU_TICKS,
-        SEEDED_TRACE_HORIZON, SEEDED_TRACE_SEED,
+        LONG_HORIZON_GAME_TICKS, SEEDED_TRACE_HORIZON, SEEDED_TRACE_SEED,
     };
     use caravan_domain::ActorKind;
     use engine_branches::BranchKind;
@@ -485,6 +517,7 @@ mod tests {
         assert_eq!(traces.authored.journal().len(), 2);
         assert_eq!(traces.seeded.journal().len(), 7);
         assert_eq!(traces.behavior.journal().len(), 10);
+        assert_eq!(traces.moving.journal().len(), 2);
         assert_eq!(traces.branches.count(), 3);
         assert_eq!(
             traces.branches.kinds(),
@@ -496,6 +529,7 @@ mod tests {
         );
         assert_eq!(SEEDED_TRACE_SEED, 0xCAFE);
         assert_eq!(SEEDED_TRACE_HORIZON, 20);
+        assert_eq!(LONG_HORIZON_GAME_TICKS, 1_000_000);
         assert_eq!(FRAME_TAU_TICKS.len(), 6);
     }
 
@@ -542,6 +576,9 @@ mod tests {
 
         assert!(json.contains("caravan-benchmarks-v1"));
         assert!(json.contains("scrub_query_latency"));
+        assert!(json.contains("long_horizon_game_ticks"));
+        assert!(json.contains("scrub_game_ticks"));
+        assert!(json.contains("moving-forester@game_tick_1000000"));
         assert!(json.contains("frame_production"));
         assert!(json.contains("No cache or optimization is added by this crate"));
     }
