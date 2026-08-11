@@ -4,6 +4,11 @@ This proposal records the smallest Stage-facing input boundary currently
 agreed. It keeps input abstract and value-producing; it does not define an OS
 event model, a device protocol, or journal authoring commands.
 
+The reusable transport and journal semantics are owned by the
+[transport and journal layer proposal](transport-and-journal.md). This
+proposal owns the current Stage interaction seam and its small prototype
+vocabulary.
+
 ## Vocabulary
 
 This proposal uses **bold** for conceptual vocabulary and backticks for exact
@@ -13,7 +18,9 @@ Rust/API spellings:
 > prototype/API spelling is `InputPacket`.
 >
 > **input packet set**: The finite set supplied to one pure interaction query.
-> Its prototype/API spelling is `InputPacketSet`.
+> Its current prototype/API spelling is `InputPacketSet`. In the reusable
+> transport layer, this is a derived membership view of an ordered semantic
+> input batch, not the canonical transport collection.
 >
 > **interaction definition**: Developer-authored pure logic that interprets an
 > selected read-only **GameState** and input packet set at a selected **Tau**.
@@ -68,9 +75,10 @@ logic. It is a Stage-owned dependency composed statically with the concrete
 game Stage. It is not a packet, a host callback, a renderer, or an automatic
 journal mutation.
 
-## Pure Set Query
+## Current Prototype Query
 
-The interaction operation is a pure set operation over a selected sample:
+The current interaction operation is a pure membership-view query over a
+selected sample:
 
 ```text
 InteractionDefinition
@@ -87,6 +95,10 @@ interaction_query(definition, state, packets, tau)
   -> Transformation
 ```
 
+This is the first application seam and remains intentionally small. The
+reusable ordered-batch boundary and the rules for deriving a membership view
+are defined in [transport-and-journal.md](transport-and-journal.md).
+
 The definition, selected read-only `GameState`, and packet set are present for
 every call. The Orchestrator queries the selected immutable `Worldline` at its
 selected `LogicalTime` and passes that result to the interaction definition.
@@ -101,19 +113,21 @@ the present, or in the future follows exactly the same path. A pointer pick or
 raycast is an ordinary query against the selected `GameState`, not a special
 past/future API.
 
-The word `set` is intentional: set semantics do not provide packet ordering or
-duplicate identical values. If a later interaction requires either property,
-the packet vocabulary must carry explicit identity or ordering, or a different
-collection contract must be chosen. Iteration order must not become an
-accidental part of interaction meaning.
+The prototype's set semantics are intentional for interactions that only need
+membership. They do not provide packet ordering or repeated equal payloads and
+must not become the reusable transport contract. An interaction that needs
+press/release order, repeated actions, or deterministic event replay must use
+the ordered batch or an explicit derived view defined by the transport/journal
+layer.
 
 ## Packet-Set Construction
 
-The interaction boundary is transparent to how its packet set was constructed.
-Stage may receive packets directly for one call, or it may retain packets across
-calls and combine them with newly supplied packets. These are implementation
-strategies for constructing an `InputPacketSet`, not different interaction
-APIs.
+The current application boundary is transparent to how its membership view was
+constructed. Stage may receive packets directly for one call, or it may retain
+packets across calls and combine them with newly supplied packets. These are
+prototype strategies for constructing an `InputPacketSet`, not different
+interaction APIs. Reusable source identity, ordering, duplicate handling, and
+normalization belong to [transport-and-journal.md](transport-and-journal.md).
 
 The labels **unbuffered input** and **buffered input** may describe those two
 Stage behaviors internally:
@@ -131,12 +145,11 @@ presence may affect gameplay; that is a property of the packet-set contents,
 not a mode flag.
 
 The host may queue platform events as plumbing behind the input ingress, but it
-does not decide which abstract packets remain semantically active for a Stage
-query. Retention,
-flush, consume, and expiry are part of Stage's game logic and orchestration,
-not a separate packet-policy dependency. The pure interaction query still
-receives an explicit set rather than hidden input history, and buffering does
-not make input authoritative game state.
+does not decide packet meaning or author journal facts. The current prototype's
+retention, flush, and clear behavior remains Stage/Orchestrator policy; the
+reusable transport-layer lifecycle and normalization rules are defined in
+[transport-and-journal.md](transport-and-journal.md). Buffering does not make
+input authoritative game state.
 
 ## Transformations Without a Magic Interactable Object
 
@@ -223,7 +236,7 @@ This proposal does not:
 
 - define raw OS, mouse, keyboard, controller, touch, or device events;
 - define host or input timestamps;
-- choose the concrete packet set representation or packet identity rules;
+- define source-specific transport envelopes, batch identity, or merge rules;
 - define a concrete raycast, coordinate, widget, or menu model;
 - assign camera or HUD ownership;
 - define a universal interactable-description object;
@@ -233,8 +246,9 @@ This proposal does not:
 
 ## Open Questions
 
-1. What is the smallest `InputPacket` and `Transformation` vocabulary?
-2. What are the explicit lifetime, flush, consume, and expiry rules for
-  buffered packet sets?
-3. Which transformations are Stage-local view operations, journal facts, or branch
-   operations?
+1. What is the smallest `InputPacket` and `Transformation` vocabulary for the
+  current Caravan interaction?
+2. Which interactions need an ordered batch directly, and which need only a
+  membership view?
+3. Which transformations are Stage-local view operations, journal facts, or
+  branch operations?

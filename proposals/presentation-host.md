@@ -223,7 +223,9 @@ platform event
 The ingress transports packets. `Tau`, `LogicalTime`, packet-set meaning, and
 journal authoring remain in the Stage/Orchestrator path; ingress queueing is
 transport buffering while the Orchestrator constructs the packet set it gives
-to `InteractionDefinition`.
+to `InteractionDefinition`. Reusable identity, ordering, duplicate handling,
+and normalization semantics are owned by the
+[transport and journal layer](transport-and-journal.md).
 
 ## Input Crossing
 

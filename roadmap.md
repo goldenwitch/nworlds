@@ -82,6 +82,12 @@ composition remain planned layers on top of that completed boundary.
 Extend the domain only when a concrete requirement identifies the additional
 definitions, composition rules, and evidence needed beyond the current anchor.
 
+The reusable transport and journal layer is planned in
+[proposals/transport-and-journal.md](proposals/transport-and-journal.md) and
+[transport.vine](transport.vine). The current `InputPacketSet` remains the
+small application prototype until ordered-batch and cross-source evidence
+binds a migration.
+
 Reusable DSL extraction and generic compact journal-entry expansion are
 deferred until Orchestrator prototypes reveal repeated patterns worth making
 canonical. They are not current implementation obligations.

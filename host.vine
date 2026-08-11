@@ -14,6 +14,7 @@ Accept: The host proposal names distinct adapter roles; the support matrix recor
 -> host-composition
 -> host-evidence
 -> orchestrator
+-> transport
 -> rendering
 @guidance text/markdown proposals/presentation-host.md
 @guidance text/markdown proposals/platform-support-matrix.md
@@ -28,6 +29,10 @@ publication boundaries.
 ref [rendering] Backend-neutral rendering slice (rendering.vine)
 The render adapter remains downstream of the rendering contract and its owned
 backend-neutral output shape.
+---
+ref [transport] Canonical transport and journal layer (transport.vine)
+The input adapter consumes the reusable ordered-batch and transport/journal
+contract without importing source-specific transport semantics into Stage.
 ---
 [host-contract] Settle independent adapter ports and ownership (notstarted)
 Files: proposals/presentation-host.md
@@ -45,6 +50,7 @@ Files: crates/caravan-demo/src/host/input.rs
 Do: Add the smallest in-memory InputIngress and packet-delivery adapter behind the host contract. It must carry abstract InputPacket values without exposing native event types, preserve transport buffering as distinct from Stage packet retention, and return explicit transport errors if the chosen contract needs them.
 Accept: Integration tests can deliver button press/release permutations through the ingress; transport delivery remains separate from Stage packet-set behavior; and the adapter is replaceable without changing InteractionDefinition.
 -> host-contract
+-> transport
 ---
 [storage-adapter] Implement the in-memory storage transport path (notstarted)
 Files: crates/caravan-demo/src/host/storage.rs

@@ -35,6 +35,12 @@ it does not advance or mutate a hidden current state.
   the in-memory host proof and later platform adapters.
 - [Input and interaction boundary](proposals/input-and-interaction.md) - the
   abstract packet set, interaction-definition, and buffering boundary.
+- [Transport and journal layer](proposals/transport-and-journal.md) - the
+  reusable identity, ordering, transport-envelope, membership-view, and
+  immutable journal-operation pattern for local, replay, and future network
+  input.
+- [Transport and journal graph](transport.vine) - the planned contract,
+  ordered-batch, journal-bridge, and cross-source evidence packets.
 - [Caravan Orchestrator anchor](proposals/caravan-orchestrator-anchor.md) -
   the completed application checkpoint for exercising Stage and Orchestrator
   around the existing immutable engine seams.
