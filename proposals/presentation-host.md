@@ -120,10 +120,10 @@ Frame<RenderOutput>
     -> backend/device/surface
 ```
 
-The exact `RenderOutput` shape remains owned by the planned rendering
-contract. The current generic boundary is `Renderer<S>::render(GameState<S>,
-Tau) -> Output` carried by `Frame<Output>`; this adapter owns only the
-backend/device/surface execution step.
+The exact `RenderOutput` shape is owned by the completed rendering contract.
+The current generic boundary is `Renderer<S>::render(GameState<S>, Tau) ->
+Output` carried by `Frame<Output>`; this adapter owns only the backend/device/
+surface execution step.
 
 ### Platform lifecycle and resource adapters
 
@@ -239,8 +239,9 @@ packet meaning or retain semantic input state.
 ## Rendering Crossing
 
 The Stage-side `GameState + Tau -> Frame<RenderOutput>` composition is owned by
-the planned rendering contract on top of the current generic renderer/frame
-boundary. The host owns device execution:
+the completed rendering contract on top of the current generic renderer/frame
+boundary. Gameplay-specific presentation remains a Stage/render-model concern;
+the host owns device execution:
 
 ```text
 Frame<RenderOutput>
@@ -248,11 +249,10 @@ Frame<RenderOutput>
     -> target backend/surface
 ```
 
-The planned rendering contract will define the exact `RenderOutput`
-representation as an owned composition of rendering objects, opaque to game
-reasoning. The host consumes that selected output through an independent render
-sink; backend commands, device state, and surface work remain below this
-boundary.
+The rendering contract defines the exact `RenderOutput` representation as an
+owned composition of rendering objects, opaque to game reasoning. The host
+consumes that selected output through an independent render sink; backend
+commands, device state, and surface work remain below this boundary.
 
 Frame history and persistent device simulation are outside this boundary. GPU
 or backend state is plumbing around the indexed query and Stage journal path.

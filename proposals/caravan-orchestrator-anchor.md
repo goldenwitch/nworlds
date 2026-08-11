@@ -154,7 +154,7 @@ does not decide camera, HUD, coordinates, assets, GPU, or device behavior.
 interaction_query(
     interaction_definition,
     game_state,
-    input_packet_set,
+  semantic_input_batch,
     tau,
 ) -> transformation
 ```
@@ -305,6 +305,7 @@ This proposal does not:
   `SetTerrain`/`Noop` prototype without inventing unnecessary domain rules?
 2. Which Orchestrator control state must survive persistence or replay, and
    which is disposable execution state?
-3. Which independent presentation-host ports should the first target compose?
+3. Which additional target profiles or production host policies should follow
+  the completed first composition?
 4. Which repeated Orchestrator patterns are strong enough to extract after the
    first working traces?
