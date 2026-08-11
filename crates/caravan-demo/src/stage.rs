@@ -3,7 +3,7 @@ use engine_presentation::{present, Renderer};
 use engine_sdk::{Frame, GameState};
 use engine_time::{LogicalTime, Tau};
 
-use crate::input::{InputPacket, InteractionDefinition};
+use crate::input::{InputPacket, InteractionDefinition, OrderedInputBatch};
 use crate::orchestrator::{CaravanInteraction, CaravanOrchestrator, OrchestratorError};
 use crate::transformation::Transformation;
 
@@ -34,6 +34,11 @@ where
     /// Receives one abstract packet through the Stage boundary.
     pub fn receive_packet(&mut self, packet: InputPacket) {
         self.orchestrator.receive_packet(packet);
+    }
+
+    /// Ingests one normalized transport batch through the Stage boundary.
+    pub fn ingest_batch(&mut self, batch: OrderedInputBatch) -> Result<(), OrchestratorError> {
+        self.orchestrator.ingest_batch(batch)
     }
 
     /// Sets the Stage-owned presentation sample.
@@ -76,6 +81,14 @@ where
     ) -> Result<bool, OrchestratorError> {
         self.orchestrator
             .apply_corrected(fork_boundary, authoring_time, transformation)
+    }
+
+    /// Loads a new immutable worldline through the Stage's Orchestrator.
+    pub fn load_selected(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<(), engine_persistence::PersistenceError> {
+        self.orchestrator.load_selected(bytes)
     }
 
     /// Presents the Orchestrator's currently selected Tau.

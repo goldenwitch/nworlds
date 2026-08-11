@@ -45,6 +45,7 @@ duplicated in the separate conformance runner or stamped into its report.
 | Negative timestamp persistence and replay | `negative_timestamp_journals_round_trip_and_replay` | `crates/engine-persistence/tests/persistence.rs` | Runtime pass |
 | Bounded projection parity | `legacy_fold_matches_projection_on_shared_fixture`, `frozen_expected_corpus_matches_the_projection` | `crates/caravan-reference/src/legacy_evaluator.rs`; `crates/caravan-reference/tests/parity.rs` | Runtime pass; legacy equivalence is fixture-scoped |
 | Low-level timestamp facade boundary | `no_low_level_timestamp_import` | `crates/purity-tests/tests/ui/` | Compile-fail pass; intentional interoperability API remains documented |
+| Concrete Caravan rendering projection | `empty_state_projects_to_owned_empty_output`, `saucer_projection_preserves_stable_tile_order`, `projection_preserves_layers_actors_and_resources`, `repeated_equal_state_and_tau_inputs_project_equal_output` | `crates/caravan-demo/src/render.rs` | Runtime pass; owned render objects preserve state layers, resources, logical time, and `Tau` through `Frame` |
 
 | Long-horizon query measurement | `moving-forester@game_tick_1000000` | `evidence/benchmarks/anchor-report.json` | Release benchmark report records the million-game-tick moving trajectory workload |
 
@@ -56,6 +57,9 @@ separate conformance catalog:
 | Clause | Test | Evidence | Coverage |
 | --- | --- | --- | --- |
 | State-aware interaction and explicit projection failure | `identical_input_and_tau_use_the_selected_logical_state`, `malformed_selected_state_fails_before_interaction` | `crates/caravan-demo/tests/input.rs` | Root workspace runtime pass |
+| Ordered transport batch to semantic interaction | `ordered_transport_batch_derives_the_current_membership_interaction_view` | `crates/caravan-demo/tests/input.rs` | Runtime pass; identity/order normalize into the payload-only semantic batch while the membership view remains compatible |
+| Orchestrator input-window lifecycle | `input_buffer_snapshots_and_resolves_only_the_captured_window`, `retained_window_survives_an_interaction_resolution`, `empty_input_is_a_noop_and_branch_append_requires_explicit_policy` | `crates/caravan-demo/src/input.rs`; `crates/caravan-demo/src/orchestrator.rs` | Runtime pass; later arrivals remain pending, successful/no-op windows resolve, and rejected publication retains input |
+| In-memory host crossing | `host_crossing_delivers_input_publishes_immutable_state_and_collects_frame`, `input_transport_order_is_preserved_before_semantic_batch_conversion`, `host_storage_round_trip_preserves_selected_worldline_and_scrubbing` | `crates/caravan-demo/tests/host.rs` | Runtime pass; independent input, render, storage, publication, and scrubbing crossings remain observable |
 
 ## Explicit Gaps
 

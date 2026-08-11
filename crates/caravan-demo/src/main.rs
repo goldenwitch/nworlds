@@ -1,14 +1,15 @@
 #![forbid(unsafe_code)]
 
 use caravan_demo::input::{Button, InputPacket};
-use caravan_demo::{CaravanInteraction, CaravanOrchestrator, CaravanStage};
+use caravan_demo::{
+    CaravanInteraction, CaravanOrchestrator, CaravanRenderer, CaravanStage, RenderOutput,
+};
 use caravan_domain::{ActorId, ActorKind, Effect, GameJournalEntry, Terrain, TileId};
 use caravan_reference::{actual, state, ReferenceWorldline, Snapshot};
 use caravan_seeded::generate_spawn_journal;
 use engine_journal::{Journal, JournalWriter};
 use engine_lookahead::{branch_view, future, ViewKind};
-use engine_presentation::Renderer;
-use engine_sdk::{Frame, GameState};
+use engine_sdk::Frame;
 use engine_time::{LogicalTime, Tau, TICKS_PER_LOGICAL_SECOND};
 
 fn main() {
@@ -215,41 +216,20 @@ fn main() {
     );
 }
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-struct RenderValue {
-    sampled_time: i64,
-    tau: i64,
-    actor_ids: Vec<u64>,
-    wheat: u64,
-    wood: u64,
-}
-
-struct TraceRenderer;
-
-impl Renderer<Snapshot> for TraceRenderer {
-    type Output = RenderValue;
-
-    fn render(&self, state: &GameState<Snapshot>, tau: Tau) -> Self::Output {
-        RenderValue {
-            sampled_time: state.logical_time().ticks(),
-            tau: tau.ticks(),
-            actor_ids: actor_ids(state.payload()),
-            wheat: state.payload().resources().wheat(),
-            wood: state.payload().resources().wood(),
-        }
-    }
-}
-
-fn print_frame(label: &str, frame: Frame<RenderValue>) {
+fn print_frame(label: &str, frame: Frame<RenderOutput>) {
     let rendered = frame.payload();
     println!(
         "presentation {}: sdk_tau={} game_t_={} actor_ids={:?} wheat={} wood={}",
         label,
-        rendered.tau,
-        rendered.sampled_time,
-        rendered.actor_ids,
-        rendered.wheat,
-        rendered.wood,
+        frame.tau().ticks(),
+        rendered.logical_time().ticks(),
+        rendered
+            .actors()
+            .iter()
+            .map(|actor| actor.id().get())
+            .collect::<Vec<_>>(),
+        rendered.resources().wheat(),
+        rendered.resources().wood(),
     );
 }
 
@@ -257,10 +237,10 @@ fn stage(
     worldline: ReferenceWorldline,
     logical_time: LogicalTime,
     tau: Tau,
-) -> CaravanStage<CaravanInteraction, TraceRenderer> {
+) -> CaravanStage<CaravanInteraction, CaravanRenderer> {
     let orchestrator = CaravanOrchestrator::new(worldline, logical_time, tau, CaravanInteraction)
         .expect("demo orchestrator should initialize");
-    CaravanStage::new(orchestrator, TraceRenderer)
+    CaravanStage::new(orchestrator, CaravanRenderer)
 }
 
 fn journal(entries: impl IntoIterator<Item = (i64, GameJournalEntry)>) -> Journal {

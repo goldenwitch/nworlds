@@ -22,8 +22,14 @@ Rust/API spellings:
 > transport layer, this is a derived membership view of an ordered semantic
 > input batch, not the canonical transport collection.
 >
+> **semantic input batch**: The ordered payload-only value supplied to the
+> game-facing interaction query. Its prototype/API spelling is
+> `SemanticInputBatch`; it carries repeated equal payloads and semantic order,
+> but no transport identity or delivery metadata.
+>
 > **interaction definition**: Developer-authored pure logic that interprets an
-> selected read-only **GameState** and input packet set at a selected **Tau**.
+> selected read-only **GameState** and semantic input batch at a selected
+> **Tau**.
 > Its
 > prototype/API spelling is `InteractionDefinition`.
 >
@@ -55,35 +61,35 @@ backend-specific coordinates as part of this boundary.
 InputIngress
   abstract input packets
     -> Orchestrator
-    -> InputPacketSet
+    -> SemanticInputBatch
 
 Stage
   selected GameState at LogicalTime
   InteractionDefinition
-  InputPacketSet
+  SemanticInputBatch
     -> pure interaction query
     -> Transformation
 ```
 
-An `InputPacket` is data for one abstract input observation. An
-`InputPacketSet` is the finite set of packets supplied to one interaction
-query. The packet vocabulary and its platform-neutral coordinate model remain
-open.
+An `InputPacket` is data for one abstract input observation. A
+`SemanticInputBatch` is the ordered payload-only value supplied to one
+interaction query. The packet vocabulary and its platform-neutral coordinate
+model remain open.
 
 An `InteractionDefinition` is the place where the developer writes interaction
 logic. It is a Stage-owned dependency composed statically with the concrete
 game Stage. It is not a packet, a host callback, a renderer, or an automatic
 journal mutation.
 
-## Current Prototype Query
+## Semantic Interaction Query
 
-The current interaction operation is a pure membership-view query over a
+The interaction operation is a pure query over an ordered semantic batch and a
 selected sample:
 
 ```text
 InteractionDefinition
   x read-only GameState
-  x InputPacketSet
+  x SemanticInputBatch
   x Tau
   -> Transformation
 ```
@@ -96,12 +102,14 @@ interaction_query(definition, state, packets, tau)
 ```
 
 This is the first application seam and remains intentionally small. The
-reusable ordered-batch boundary and the rules for deriving a membership view
-are defined in [transport-and-journal.md](transport-and-journal.md).
+transport layer derives the payload-only batch from identity-bearing transport
+observations; the rules for that normalization and for the compatibility
+membership view are defined in [transport-and-journal.md](transport-and-journal.md).
 
-The definition, selected read-only `GameState`, and packet set are present for
-every call. The Orchestrator queries the selected immutable `Worldline` at its
-selected `LogicalTime` and passes that result to the interaction definition.
+The definition, selected read-only `GameState`, and semantic input batch are
+present for every call. The Orchestrator queries the selected immutable
+`Worldline` at its selected `LogicalTime` and passes that result to the
+interaction definition.
 The exact logical time is carried by `GameState`; `Tau` selects only
 presentation sampling and never selects logical state. The definition remains part of the
 Stage's static composition.
@@ -113,21 +121,20 @@ the present, or in the future follows exactly the same path. A pointer pick or
 raycast is an ordinary query against the selected `GameState`, not a special
 past/future API.
 
-The prototype's set semantics are intentional for interactions that only need
-membership. They do not provide packet ordering or repeated equal payloads and
-must not become the reusable transport contract. An interaction that needs
-press/release order, repeated actions, or deterministic event replay must use
-the ordered batch or an explicit derived view defined by the transport/journal
-layer.
+The prototype's set semantics remain available as a derived compatibility view
+for interactions that only need membership. They do not provide packet ordering
+or repeated equal payloads and must not replace `SemanticInputBatch` as the
+game-facing canonical value. An interaction that needs press/release order,
+repeated actions, or deterministic event replay receives the semantic batch.
 
-## Packet-Set Construction
+## Membership View Construction
 
-The current application boundary is transparent to how its membership view was
-constructed. Stage may receive packets directly for one call, or it may retain
-packets across calls and combine them with newly supplied packets. These are
-prototype strategies for constructing an `InputPacketSet`, not different
-interaction APIs. Reusable source identity, ordering, duplicate handling, and
-normalization belong to [transport-and-journal.md](transport-and-journal.md).
+The current application boundary is transparent to how a semantic input batch
+was constructed. Stage may receive packets directly for one call, or it may
+retain packets across calls and combine them with newly supplied packets. These
+are orchestration strategies for constructing the semantic batch, not
+different interaction APIs. Reusable source identity, ordering, duplicate
+handling, and normalization belong to [transport-and-journal.md](transport-and-journal.md).
 
 The labels **unbuffered input** and **buffered input** may describe those two
 Stage behaviors internally:
@@ -138,16 +145,16 @@ Stage behaviors internally:
 
 Neither label is visible to `InteractionDefinition` or
 `interaction_query`. The query receives the selected read-only `GameState`, the
-resulting packet set, and `Tau`. If two construction strategies produce equal
-packet sets for the same selected state and `Tau`, they must
-produce equal interaction results. If a retained packet remains in the set, its
-presence may affect gameplay; that is a property of the packet-set contents,
-not a mode flag.
+resulting semantic batch, and `Tau`. If two construction strategies produce
+equal semantic batches for the same selected state and `Tau`, they must
+produce equal interaction results. If a retained packet remains in the semantic
+batch, its presence may affect gameplay; that is a property of the batch
+contents, not a mode flag.
 
 The host may queue platform events as plumbing behind the input ingress, but it
-does not decide packet meaning or author journal facts. The current prototype's
-retention, flush, and clear behavior remains Stage/Orchestrator policy; the
-reusable transport-layer lifecycle and normalization rules are defined in
+does not decide packet meaning or author journal facts. The Orchestrator's
+`InputBuffer` captures a semantic batch in an immutable `InputWindow`; its
+retain, consume, and discard behavior is defined in
 [transport-and-journal.md](transport-and-journal.md). Buffering does not make
 input authoritative game state.
 

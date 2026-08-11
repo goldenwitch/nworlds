@@ -55,6 +55,18 @@ introduced.
 > interaction that only needs packet presence. The current `InputPacketSet` is
 > this prototype-shaped specialization.
 >
+> **input buffer**: Orchestrator-owned pending retention for normalized
+> observations. It accepts batches, captures windows, and applies explicit
+> resolution without interpreting packet meaning.
+>
+> **input window**: An immutable snapshot of exactly the observations supplied
+> to one interaction attempt. Later arrivals are not silently included in that
+> window.
+>
+> **input resolution**: The explicit result of an interaction attempt:
+> `Retain`, `Consume`, or `Discard`. Publication failure retains the window;
+> accepted transformations consume it; a successful no-op discards it.
+>
 > **journal operation**: A value-producing operation that admits an accepted
 > transformation through `JournalWriter`, counterfactual construction, or
 > corrected-branch construction. It does not mutate an existing journal.
@@ -88,6 +100,22 @@ InputPacket
 
 It must not become the canonical reusable collection for network or replay
 semantics because it intentionally discards order and repeated equal payloads.
+
+The Orchestrator-facing lifecycle is separate from transport delivery:
+
+```text
+InputIngress
+  -> OrderedInputBatch
+  -> InputBuffer::ingest
+  -> InputBuffer::snapshot
+  -> InputWindow
+  -> interaction / admission
+  -> InputBuffer::resolve(window, resolution)
+```
+
+The buffer does not consume arrivals that occur after a window is captured.
+`Retain` leaves the captured observations pending, while `Consume` and
+`Discard` remove only that window's identities.
 
 ## Transport Metadata
 
@@ -150,7 +178,8 @@ three different interaction APIs.
 - Source adapters translate native or wire observations and transport their
   envelopes.
 - The transport and journal layer normalizes identity/order, derives membership
-  views, and coordinates journal admission/publication operations.
+  views, owns the input-buffer/window lifecycle, and coordinates journal
+  admission/publication operations.
 - Stage/Orchestrator owns interaction meaning, admission decisions, selected
   `LogicalTime`/`Tau`, and whether an accepted result becomes actual,
   counterfactual, or corrected history.
@@ -180,6 +209,8 @@ A future implementation of this layer is complete when focused evidence proves:
 - duplicate identities are handled deterministically;
 - repeated equal payloads remain distinct when their identities differ;
 - membership views reproduce the current set-based interaction behavior;
+- captured windows resolve deterministically as retain, consume, or discard;
+- publication and projection failures retain the captured window for retry;
 - out-of-order delivery does not become accidental semantic order;
 - accepted inputs publish immutable journal or branch values;
 - late inputs do not mutate the published parent;

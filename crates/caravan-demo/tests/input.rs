@@ -1,4 +1,7 @@
-use caravan_demo::input::{Button, InputPacket, InputPacketSet, InteractionDefinition};
+use caravan_demo::input::{
+    Button, InputObservation, InputPacket, InputPacketSet, InteractionDefinition, ObservationId,
+    OrderedInputBatch, SemanticInputBatch,
+};
 use caravan_demo::transformation::Transformation;
 use caravan_demo::{CaravanOrchestrator, OrchestratorError};
 use caravan_domain::{GameJournalEntry, Terrain, TileId};
@@ -11,8 +14,8 @@ struct StateAwareInteraction;
 impl InteractionDefinition for StateAwareInteraction {
     type Transformation = Transformation;
 
-    fn query(&self, state: &State, packets: &InputPacketSet, tau: Tau) -> Self::Transformation {
-        assert!(packets.contains(&InputPacket::ButtonPressed(Button::Primary)));
+    fn query(&self, state: &State, input: &SemanticInputBatch, tau: Tau) -> Self::Transformation {
+        assert!(input.contains(&InputPacket::ButtonPressed(Button::Primary)));
         assert_eq!(tau, Tau::from_ticks(7));
 
         match state.payload().terrain_at(TileId::origin()) {
@@ -138,4 +141,42 @@ fn malformed_selected_state_fails_before_interaction() {
     );
     assert_eq!(orchestrator.worldline(), &parent);
     assert_eq!(orchestrator.packets().len(), 1);
+}
+
+#[test]
+fn ordered_transport_batch_derives_the_current_membership_interaction_view() {
+    let batch = OrderedInputBatch::from_observations([
+        InputObservation::new(
+            ObservationId::new(2, 1),
+            InputPacket::ButtonReleased(Button::Secondary),
+        ),
+        InputObservation::new(
+            ObservationId::new(1, 2),
+            InputPacket::ButtonPressed(Button::Primary),
+        ),
+        InputObservation::new(
+            ObservationId::new(1, 1),
+            InputPacket::ButtonPressed(Button::Primary),
+        ),
+    ])
+    .expect("source observations have distinct identities");
+
+    assert_eq!(batch.len(), 3);
+    assert_eq!(
+        batch
+            .observations()
+            .iter()
+            .map(|observation| observation.id())
+            .collect::<Vec<_>>(),
+        vec![
+            ObservationId::new(1, 1),
+            ObservationId::new(1, 2),
+            ObservationId::new(2, 1),
+        ]
+    );
+
+    let membership = InputPacketSet::from_batch(&batch);
+    assert_eq!(membership.len(), 2);
+    assert!(membership.contains(&InputPacket::ButtonPressed(Button::Primary)));
+    assert!(membership.contains(&InputPacket::ButtonReleased(Button::Secondary)));
 }

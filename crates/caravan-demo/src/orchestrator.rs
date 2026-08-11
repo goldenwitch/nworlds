@@ -4,7 +4,11 @@ use engine_branches::BranchError;
 use engine_journal::{Journal, JournalWriter, JournalWriterError};
 use engine_time::{LogicalTime, Tau};
 
-use crate::input::{interaction_query, Button, InputPacket, InputPacketSet, InteractionDefinition};
+use crate::input::{
+    interaction_query, Button, InputBatchError, InputBuffer, InputPacket, InputPacketSet,
+    InputResolution, InputWindow, InteractionDefinition, ObservationId, OrderedInputBatch,
+    SemanticInputBatch,
+};
 use crate::publication::{
     publish_corrected, publish_counterfactual, writer_from_journal, PublicationError,
 };
@@ -15,6 +19,7 @@ use crate::transformation::Transformation;
 pub enum OrchestratorError {
     Publication(PublicationError),
     AppendRequiresActualWorldline,
+    InputBatch(InputBatchError),
     Projection(ProjectionError),
     TauOverflow,
 }
@@ -43,6 +48,12 @@ impl From<ProjectionError> for OrchestratorError {
     }
 }
 
+impl From<InputBatchError> for OrchestratorError {
+    fn from(error: InputBatchError) -> Self {
+        Self::InputBatch(error)
+    }
+}
+
 /// Developer-authored interaction logic for the first Caravan event.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct CaravanInteraction;
@@ -50,8 +61,8 @@ pub struct CaravanInteraction;
 impl InteractionDefinition for CaravanInteraction {
     type Transformation = Transformation;
 
-    fn query(&self, _state: &State, packets: &InputPacketSet, _tau: Tau) -> Self::Transformation {
-        if packets.contains(&InputPacket::ButtonPressed(Button::Primary)) {
+    fn query(&self, _state: &State, input: &SemanticInputBatch, _tau: Tau) -> Self::Transformation {
+        if input.contains(&InputPacket::ButtonPressed(Button::Primary)) {
             Transformation::SetTerrain {
                 tile: TileId::origin(),
                 terrain: Terrain::Wheat,
@@ -68,7 +79,8 @@ pub struct CaravanOrchestrator<I = CaravanInteraction> {
     writer: JournalWriter,
     logical_time: LogicalTime,
     tau: Tau,
-    packets: InputPacketSet,
+    input_buffer: InputBuffer,
+    next_local_sequence: u64,
     interaction: I,
 }
 
@@ -89,7 +101,8 @@ where
             writer,
             logical_time,
             tau,
-            packets: InputPacketSet::new(),
+            input_buffer: InputBuffer::new(),
+            next_local_sequence: 0,
             interaction,
         })
     }
@@ -140,35 +153,87 @@ where
 
     /// Adds one abstract packet to the current packet accumulation.
     pub fn receive_packet(&mut self, packet: InputPacket) {
-        self.packets.insert(packet);
+        let observation = crate::input::InputObservation::new(
+            ObservationId::new(0, self.next_local_sequence),
+            packet,
+        );
+        self.next_local_sequence = self
+            .next_local_sequence
+            .checked_add(1)
+            .expect("local input sequence exhausted");
+        self.ingest_batch(
+            OrderedInputBatch::from_observations([observation])
+                .expect("one local observation has a unique identity"),
+        )
+        .expect("local input ingestion cannot duplicate its own sequence");
+    }
+
+    /// Ingests one normalized transport batch into Orchestrator retention.
+    pub fn ingest_batch(&mut self, batch: OrderedInputBatch) -> Result<(), OrchestratorError> {
+        self.input_buffer.ingest(batch)?;
+        Ok(())
+    }
+
+    /// Captures the observations currently pending for one interaction.
+    pub fn input_window(&self) -> InputWindow {
+        self.input_buffer.snapshot()
+    }
+
+    /// Resolves one captured interaction window.
+    pub fn resolve_input_window(&mut self, window: &InputWindow, resolution: InputResolution) {
+        self.input_buffer.resolve(window, resolution);
     }
 
     /// Removes all currently accumulated packets after an interaction call.
     pub fn clear_packets(&mut self) {
-        self.packets = InputPacketSet::new();
+        self.input_buffer.clear();
     }
 
     /// Borrows the current packet set for inspection by the orchestration code.
-    pub fn packets(&self) -> &InputPacketSet {
-        &self.packets
+    pub fn packets(&self) -> InputPacketSet {
+        self.input_buffer.membership_view()
+    }
+
+    /// Returns the current payload-only ordered input batch.
+    pub fn input_batch(&self) -> SemanticInputBatch {
+        self.input_buffer.semantic_batch()
     }
 
     /// Runs the pure interaction seam at the current selected sample.
     pub fn interaction(&self) -> Result<Transformation, OrchestratorError> {
+        let window = self.input_window();
+        self.interaction_in_window(&window)
+    }
+
+    /// Runs interaction against one immutable captured input window.
+    pub fn interaction_in_window(
+        &self,
+        window: &InputWindow,
+    ) -> Result<Transformation, OrchestratorError> {
         let state = self.sample()?;
+        let input = window.semantic_batch();
         Ok(interaction_query(
             &self.interaction,
             &state,
-            &self.packets,
+            &input,
             self.tau,
         ))
     }
 
-    /// Applies the current interaction and clears its packet accumulation.
+    /// Applies the current interaction and resolves its captured input window.
     pub fn interact_and_apply(&mut self) -> Result<bool, OrchestratorError> {
-        let transformation = self.interaction()?;
-        self.clear_packets();
-        self.apply_transformation(transformation)
+        let window = self.input_window();
+        let transformation = self.interaction_in_window(&window)?;
+        let applied = self.apply_transformation(transformation)?;
+        self.resolve_input_window(
+            &window,
+            if applied {
+                InputResolution::Consume
+            } else {
+                InputResolution::Discard
+            },
+        );
+        Ok(applied)
     }
 
     /// Publishes an accepted transformation onto the selected actual branch.
@@ -251,6 +316,18 @@ where
     /// Serializes the selected immutable worldline for an Orchestrator save choice.
     pub fn save_selected(&self) -> Result<Vec<u8>, engine_persistence::PersistenceError> {
         engine_persistence::encode(&self.worldline)
+    }
+
+    /// Loads a new immutable worldline from an encoded persistence record.
+    pub fn load_selected(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<(), engine_persistence::PersistenceError> {
+        let worldline = engine_persistence::decode(bytes)?;
+        self.writer = writer_from_journal(worldline.journal())
+            .map_err(engine_persistence::PersistenceError::from)?;
+        self.worldline = worldline;
+        Ok(())
     }
 
     fn replace_worldline(
@@ -341,6 +418,7 @@ mod tests {
                 .terrain_at(caravan_domain::TileId::origin()),
             Some(caravan_domain::Terrain::Wheat)
         );
+        assert_eq!(orchestrator.packets().len(), 0);
     }
 
     #[test]
@@ -369,6 +447,7 @@ mod tests {
             &child_before_rejected_append,
             "rejected child append must not publish a replacement"
         );
+        assert_eq!(orchestrator.packets().len(), 1);
     }
 
     #[test]
