@@ -59,6 +59,8 @@ host; Space sends the first semantic interaction and changes the center tile.
 - [Host graph](host.vine) - completed host and Windows `wgpu` composition.
 - [Support graph](support.vine) - committed desktop targets, explicit gaps, and
 	native or appropriate CI work.
+- [Demo gameplay plan](gameplay.vine) - the design-derived inventory and
+	ordered plan for the remaining player-facing demo loop.
 
 ## Development Checks
 

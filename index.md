@@ -39,6 +39,8 @@ it does not advance or mutate a hidden current state.
   `winit`/`wgpu` host composition.
 - [Target support graph](support.vine) - the closed desktop target universe,
   explicit gaps, and native or appropriate CI plan.
+- [Demo gameplay plan](gameplay.vine) - the design-derived inventory and
+  ordered plan for the remaining player-facing demo loop.
 - [Input and interaction boundary](proposals/input-and-interaction.md) - the
   semantic batch, interaction-definition, and buffering boundary.
 - [Transport and journal layer](proposals/transport-and-journal.md) - the

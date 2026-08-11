@@ -109,6 +109,15 @@ target-specific host and CI tasks in [support.vine](support.vine). Keep Web,
 mobile, other architectures, and consoles explicitly out of scope until a
 concrete requirement activates them.
 
+### Demo gameplay
+
+The remaining player-facing work is planned from the existing design corpus in
+[proposals/demo-gameplay.md](proposals/demo-gameplay.md) and
+[gameplay.vine](gameplay.vine). The engine and Caravan rules already provide
+actors, effects, resources, time, branches, persistence, and deterministic
+fixtures; the planning gap is selecting one coherent loop that makes those
+capabilities observable without creating a second authoritative state model.
+
 ## Deferred Until Activated
 
 - Networking and synchronization

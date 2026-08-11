@@ -1,0 +1,72 @@
+vine 1.2.0
+prefix: gameplay
+title: Remaining Caravan demo gameplay
+---
+[root] Plan remaining demo gameplay from canonical design (planning)
+Files: gameplay.vine; proposals/demo-gameplay.md; spec/**; proposals/**; crates/caravan-demo/**; evidence/**
+Do: Turn the existing Caravan domain, temporal, branch, persistence, input, and rendering commitments into one ordered player-facing demo plan. Keep the game-facing meaning above host and transport plumbing, and keep implementation downstream of an explicit gameplay ruling.
+Accept: The design inventory distinguishes existing substrate from player-facing gaps; one first demo loop is selected from the old design commitments; its commands, temporal controls, composition, and evidence have disjoint owners; the full demo remains an immutable-worldline toy; and no generic engine extraction is introduced without a concrete repeated boundary.
+-> design-inventory
+-> first-loop
+-> interaction-surface
+-> temporal-surface
+-> demo-composition
+-> demo-presentation
+-> gameplay-evidence
+-> boundary-polish
+@guidance text/markdown proposals/demo-gameplay.md
+@guidance text/markdown spec/initial.md
+@guidance text/markdown spec/cellular-automata-anchor.md
+@guidance text/markdown proposals/input-and-interaction.md
+@guidance text/markdown proposals/stage-layer.md
+@guidance text/markdown proposals/rendering-contract.md
+@guidance text/markdown proposals/caravan-orchestrator-anchor.md
+---
+[design-inventory] Reconcile old gameplay commitments (complete)
+Files: proposals/demo-gameplay.md; spec/initial.md; spec/cellular-automata-anchor.md; proposals/input-and-interaction.md; proposals/stage-layer.md; proposals/rendering-contract.md; proposals/caravan-orchestrator-anchor.md
+Do: Record the player-facing feature commitments already present in the design corpus and distinguish them from implemented engine/world substrate and explicit non-goals.
+Accept: The inventory names world creation, terrain, actors, effects, resources, logical time, presentation time, branches, persistence, seeded worlds, input, and rendering gaps without claiming unimplemented gameplay exists.
+@artifact text/markdown proposals/demo-gameplay.md
+---
+[first-loop] Select the first player-facing demo loop (planning)
+Files: proposals/demo-gameplay.md; gameplay.vine
+Do: Use the design inventory to select one coherent player-facing loop. State its player action, temporal consequence, visible result, authoritative journal/branch consequence, and completion evidence. Keep the ruling at the demo/world layer.
+Accept: One loop is selected with one concrete acceptance trace; the first implementation does not begin with an unbounded feature list or an engine abstraction request.
+-> design-inventory
+---
+[interaction-surface] Define the selected interaction surface (notstarted)
+Files: crates/caravan-demo/src/input.rs; crates/caravan-demo/src/transformation.rs; crates/caravan-demo/src/orchestrator.rs; proposals/input-and-interaction.md
+Do: Define the closed input packets and transformations needed by the selected loop. Preserve SemanticInputBatch as the game-facing input value and JournalWriter as timestamp authority.
+Accept: Every selected command has a closed transformation or explicit no-op/rejection path; transport identity remains below interaction logic; authoritative changes still require immutable journal or branch publication.
+-> first-loop
+---
+[temporal-surface] Define selected time, branch, and replay controls (notstarted)
+Files: crates/caravan-demo/src/orchestrator.rs; crates/caravan-demo/src/stage.rs; proposals/caravan-orchestrator-anchor.md; spec/initial.md
+Do: Define only the LogicalTime, Tau, branch, lookahead, persistence, or replay controls required by the selected loop. Keep host execution time non-authoritative and preserve arbitrary direct queries.
+Accept: The selected controls have explicit ownership and deterministic behavior in past, present, future, branch, and replay cases where applicable; no mutable current-game-state shadow is introduced.
+-> first-loop
+---
+[demo-composition] Compose the selected loop through the game seams (notstarted)
+Files: crates/caravan-demo/src/orchestrator.rs; crates/caravan-demo/src/stage.rs; crates/caravan-demo/src/publication.rs; crates/caravan-demo/src/host/**
+Do: Wire the selected input and temporal controls through Stage, Orchestrator, journal/branch publication, and the existing host ports. Reuse existing domain rules before adding new world behavior.
+Accept: One complete player action cycle crosses input, interaction, authoritative publication or explicit view operation, direct state query, and presentation without introducing a parallel authoritative state model.
+-> interaction-surface
+-> temporal-surface
+---
+[demo-presentation] Make the selected consequence legible (notstarted)
+Files: crates/caravan-demo/src/render.rs; crates/caravan-demo/src/host/**; crates/caravan-demo/src/bin/**; proposals/rendering-contract.md
+Do: Present the selected loop's relevant actors, terrain, effects, resources, logical time, branch identity, or persistence status through owned render output and target-local presentation. Keep render output downstream of GameState.
+Accept: A user can observe the selected action and its consequence in the native demo; equal worldline/time inputs remain deterministic; rendering does not become an interaction authority.
+-> demo-composition
+---
+[gameplay-evidence] Add gameplay acceptance evidence (notstarted)
+Files: crates/caravan-demo/tests/**; crates/caravan-demo/snapshots/**; evidence/clause-to-test.md; proposals/demo-gameplay.md
+Do: Add a deterministic trace and focused runtime/manual evidence for the selected loop, including parent isolation and exact temporal behavior where relevant.
+Accept: The selected loop is reproducible from a documented command or sequence; authoritative changes are visible in immutable query results; failure/no-op behavior is explicit; and existing anchor, conformance, purity, and host evidence remains green.
+-> demo-presentation
+---
+[boundary-polish] Polish only concrete exposed boundaries (notstarted)
+Files: crates/**; proposals/**; evidence/**
+Do: Apply the smallest API, error, persistence, or abstraction improvements demanded by the selected gameplay evidence. Keep engine and demo ownership honest; promote a boundary only when a second concrete composition or consumer demonstrates the need.
+Accept: Every polish change names the observed requirement and preserves the demo's immutable-worldline semantics; no speculative genericization is introduced.
+-> gameplay-evidence
