@@ -61,9 +61,20 @@ separate conformance catalog:
 | Orchestrator input-window lifecycle | `input_buffer_snapshots_and_resolves_only_the_captured_window`, `retained_window_survives_an_interaction_resolution`, `empty_input_is_a_noop_and_branch_append_requires_explicit_policy` | `crates/caravan-demo/src/input.rs`; `crates/caravan-demo/src/orchestrator.rs` | Runtime pass; later arrivals remain pending, successful/no-op windows resolve, and rejected publication retains input |
 | In-memory host crossing | `host_crossing_delivers_input_publishes_immutable_state_and_collects_frame`, `input_transport_order_is_preserved_before_semantic_batch_conversion`, `host_storage_round_trip_preserves_selected_worldline_and_scrubbing` | `crates/caravan-demo/tests/host.rs` | Runtime pass; independent input, render, storage, publication, and scrubbing crossings remain observable |
 
+## Native Windows Evidence
+
+| Clause | Evidence | Coverage |
+| --- | --- | --- |
+| Windows `winit`/`wgpu` target launches and presents the owned render output | `cargo run --manifest-path crates/caravan-demo/Cargo.toml --bin caravan-windows` | Manual local acceptance: the window opened and rendered the Caravan scene on `x86_64-pc-windows-msvc` |
+| Native resize remains below the game layer | Local window resize observation | Manual local acceptance: resizing stretched the presentation without changing the game-facing path |
+| Native input reaches the unchanged semantic interaction path | Space key through `winit` keyboard input | Manual local acceptance: Space changed the center tile color |
+| Native shutdown is owned by the target event loop | Close request through the Windows window | Manual local acceptance: the target exited cleanly |
+
 ## Explicit Gaps
 
 - The authoritative engine boundary has compiler-checked purity evidence in
   `crates/purity-tests`. Rust cannot prove arbitrary `Renderer` implementation
   bodies have no side effects; those remain a trusted presentation extension
   boundary.
+- Native window, input, resize, and GPU observations are manual local evidence;
+  no CI pixel or device test is claimed by this slice.

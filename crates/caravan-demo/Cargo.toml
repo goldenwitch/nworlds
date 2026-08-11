@@ -14,3 +14,7 @@ engine-persistence = { path = "../engine-persistence" }
 engine-presentation = { path = "../engine-presentation" }
 engine-sdk = { path = "../engine-sdk" }
 engine-time = { path = "../engine-time" }
+bytemuck = { version = "1", features = ["derive"] }
+pollster = "1"
+wgpu = "30"
+winit = "0.30"

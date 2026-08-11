@@ -42,19 +42,22 @@ Every target row records these independent decisions:
 
 ## Target Rows
 
-No target platform is selected by this checkpoint. Rows remain explicit work
-items until the user chooses a target regime.
+The first executable target is selected for local Windows development. The
+native composition uses `winit` for window and input events and `wgpu` for
+render execution; those choices remain below the Stage and game-facing
+renderer boundaries.
 
 | Target profile | Lifecycle/resource | Input | Ingress | Render/`wgpu` | Persistence codec | Storage transport | Evidence | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| First in-memory host proof | In-memory lifecycle | Abstract packets | `MemoryInputIngress` | `CollectingRenderSink`; no GPU | Anchor codec | `MemoryStorage` | Root workspace integration tests | selected, notstarted |
-| First desktop target | TBD | TBD | TBD | TBD, including `wgpu` backend | Anchor codec or target requirement | TBD | TBD | unselected |
+| First in-memory host proof | In-memory lifecycle | Abstract packets | `MemoryInputIngress` | `CollectingRenderSink`; no GPU | Anchor codec | `MemoryStorage` | Root workspace integration tests | complete |
+| Windows desktop (`x86_64-pc-windows-msvc`) | `winit` window/event loop; `wgpu` surface, device, queue, resize, and shutdown | `winit` native events -> `PlatformInputAdapter` -> `InputPacket` | `MemoryInputIngress`, fed by the native adapter | `WgpuRenderSink`; `wgpu` platform-default adapter selection | Anchor codec | `MemoryStorage` for the first executable slice | Local `cargo run` opens a window, renders a frame, accepts input, and survives resize; workspace tests remain green | complete |
 | Additional target | TBD | TBD | TBD | TBD | TBD | TBD | TBD | unselected |
 
 The in-memory row proves independent port ownership and composition without
 pretending to be a platform. Its persistence codec is game-facing; its
-`MemoryStorage` cell is only byte transport. The desktop and additional rows
-require a concrete target decision before implementation.
+`MemoryStorage` cell is only byte transport. The Windows row is the first
+native execution slice and reuses the same Stage, Orchestrator, semantic input
+batch, worldline, and backend-neutral `CaravanRenderer`.
 
-The in-memory row is selected as the first target composition but remains
-notstarted. Other rows remain unselected until their target profile is chosen.
+The Windows row is complete for the first local execution slice. Additional
+rows remain unselected until their target profile is chosen.

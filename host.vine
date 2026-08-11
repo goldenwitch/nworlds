@@ -4,8 +4,8 @@ title: Target entrypoint and presentation-host adapter wiring
 ---
 [root] Wire the target entrypoint and presentation-host ports (complete)
 Files: host.vine; proposals/presentation-host.md; proposals/platform-support-matrix.md; crates/caravan-demo/**; tests/**
-Do: Build the first target composition around independent translation, transport, storage, render-execution, and lifecycle/resource ports. The Orchestrator pulls those ports; the target entrypoint supplies their concrete adapters. Execute the in-memory proof first; native platform adapters, windowing, device resources, wgpu, and target-specific support rows remain later composition choices.
-Accept: The host proposal names distinct adapter roles; the support matrix records independent axes and unselected target cells; an in-memory target composition can deliver abstract packets, submit owned render output, save/load encoded values, and compose with Stage/Orchestrator ownership; integration tests cover input permutations and failure boundaries; and all existing anchor/conformance evidence remains green.
+Do: Build the first target composition around independent translation, transport, storage, render-execution, and lifecycle/resource ports. The in-memory proof is complete. Execute the selected Windows desktop composition with winit lifecycle/input plumbing and wgpu render execution; the Orchestrator pulls the ports and the target entrypoint supplies their concrete adapters.
+Accept: The host proposal names distinct adapter roles; the support matrix records the completed in-memory proof and selected Windows target; the native composition launches locally, accepts native input, submits owned render output through wgpu, and preserves Stage/Orchestrator ownership; and all existing anchor/conformance evidence remains green.
 -> host-composition
 -> host-contract
 -> host-evidence
@@ -16,6 +16,7 @@ Accept: The host proposal names distinct adapter roles; the support matrix recor
 -> storage-adapter
 -> support-matrix
 -> transport
+-> windows-evidence
 @guidance text/markdown proposals/presentation-host.md
 @guidance text/markdown proposals/platform-support-matrix.md
 @guidance text/markdown proposals/input-and-interaction.md
@@ -966,8 +967,8 @@ Accept: The proposal names distinct translation, transport, byte-storage, render
 ---
 [support-matrix] Record target composition axes (complete)
 Files: proposals/platform-support-matrix.md
-Do: Maintain the support-matrix axes, the in-memory proof row, and explicit unselected target rows. Record wgpu as a backend choice inside render execution rather than a game or engine dependency. Leave target platforms, backend availability, and CI cells unselected until a target regime is chosen.
-Accept: Every target row names lifecycle, input translation, ingress, render/wgpu, persistence codec, storage transport, and evidence cells; the in-memory row is selected but notstarted; remaining rows are unselected.
+Do: Maintain the support-matrix axes, record the completed in-memory proof, and keep the selected Windows x86_64-pc-windows-msvc target explicit: winit for window/input events, MemoryInputIngress for the first ingress composition, wgpu for render execution, Anchor codec, and MemoryStorage for the first executable slice.
+Accept: Every target row names lifecycle, input translation, ingress, render/wgpu, persistence codec, storage transport, and evidence cells; the in-memory row is complete; the Windows row is selected and notstarted; remaining rows are unselected.
 -> host-contract
 ---
 [input-adapter] Implement the in-memory input adapter path (complete)
@@ -1000,3 +1001,56 @@ Files: crates/caravan-demo/tests/host.rs; evidence/clause-to-test.md
 Do: Add integration evidence for empty, duplicate, press/release, retained, malformed-state, repeated, and non-monotonic input permutations, plus storage round-trip and collecting-render-sink behavior. Record parent-worldline equality and the separate input/render observations.
 Accept: The in-memory host evidence passes with deterministic results; transport delivery and semantic packet-set behavior are observable separately; and root workspace/conformance/purity evidence remains green.
 -> host-composition
+---
+[windows-wgpu-profile] Windows wgpu target profile (complete)
+Files: proposals/platform-support-matrix.md; proposals/presentation-host.md; host.vine
+Do: Record the first local native target profile and its adapter choices without changing game-facing contracts.
+Accept: The target is x86_64-pc-windows-msvc; winit owns window and native input events; wgpu owns surface/device/queue render execution with platform-default adapter selection; the first executable slice reuses the existing Stage, Orchestrator, semantic input batch, CaravanRenderer, MemoryInputIngress, and MemoryStorage.
+-> support-matrix
+> Target profile is x86_64-pc-windows-msvc for local Windows development.
+> winit owns the native window/event-loop and input-event boundary.
+> wgpu owns render surface/device/queue execution with platform-default adapter selection.
+> The first executable slice reuses Stage, Orchestrator, SemanticInputBatch, CaravanRenderer, MemoryInputIngress, and MemoryStorage without game-layer changes.
+---
+[windows-lifecycle] Windows lifecycle and wgpu resources (complete)
+Files: crates/caravan-demo/**; Cargo.toml
+Do: Implement the target-local winit window/event-loop boundary and wgpu instance, surface, adapter, device, queue, resize, and shutdown ownership. Keep lifecycle and device values below the existing render sink boundary.
+Accept: A local debug executable creates and owns a window and wgpu resources, handles resize and shutdown conditions, and exposes no window or device types to Stage, GameState, InputPacket, or CaravanRenderer.
+-> host-contract
+-> windows-wgpu-profile
+---
+[windows-input] Windows native input adapter (complete)
+Files: crates/caravan-demo/**; Cargo.toml
+Do: Translate winit native input events into the closed InputPacket vocabulary and deliver them through the existing InputIngress. Preserve OrderedInputBatch normalization and InputBuffer/InputWindow semantic lifecycle.
+Accept: Keyboard/button input reaches the existing interaction and publication path through the native adapter; transport identity and ordering remain below SemanticInputBatch; no game rule or interaction API changes are required.
+-> input-adapter
+-> transport
+-> windows-wgpu-profile
+---
+[windows-render] Windows wgpu render sink (complete)
+Files: crates/caravan-demo/**; Cargo.toml
+Do: Implement the native RenderSinkAdapter that consumes Frame<RenderOutput> and owns wgpu surface configuration, buffers, pipelines, and submission. Keep RenderOutput as the only render-model input and keep GPU state out of authoritative game state.
+Accept: CaravanRenderer output reaches a wgpu surface on the local Windows target as a visible frame; resize and surface-loss handling remain render-host concerns; GameState, Tau, and interaction semantics are unchanged.
+-> render-adapter
+-> rendering
+-> windows-wgpu-profile
+---
+[windows-entrypoint] Windows target entrypoint composition (complete)
+Files: crates/caravan-demo/**; Cargo.toml
+Do: Compose the selected lifecycle, native input, ingress, existing Stage/Orchestrator, MemoryStorage, and wgpu render sink in a target-specific executable entrypoint. Use an explicit presentation-sampling policy without making host time authoritative.
+Accept: A local cargo run launches the Windows target, presents the existing Caravan scene, routes native input through the unchanged game-facing path, and keeps storage, rendering, and lifecycle ownership in their selected adapters.
+-> host-composition
+-> windows-input
+-> windows-lifecycle
+-> windows-render
+---
+[windows-evidence] Windows wgpu local evidence (complete)
+Files: crates/caravan-demo/tests/**; evidence/clause-to-test.md; host.vine
+Do: Add the smallest reproducible evidence for the native target: compile, launch, visible frame, input-to-publication behavior, resize, shutdown, and preservation of existing workspace/conformance evidence.
+Accept: The selected target has a documented local run command and observable acceptance conditions; focused tests and the full workspace/conformance checks remain green; no target-specific behavior is attributed to the game layer.
+-> host-evidence
+-> windows-entrypoint
+> Manual local acceptance confirmed a visible Caravan frame on x86_64-pc-windows-msvc.
+> Manual resize confirmed the wgpu presentation stretches without changing the game-facing path.
+> Manual Space input confirmed the native adapter reaches the unchanged interaction path by changing the center tile color.
+> Manual close confirmed clean target shutdown; native visual/device behavior remains local evidence rather than CI pixel evidence.

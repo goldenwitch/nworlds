@@ -12,6 +12,7 @@ pub mod host {
     pub mod input;
     pub mod render;
     pub mod storage;
+    pub mod wgpu;
 }
 
 pub use orchestrator::{CaravanInteraction, CaravanOrchestrator, OrchestratorError};

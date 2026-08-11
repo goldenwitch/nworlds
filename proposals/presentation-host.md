@@ -147,12 +147,13 @@ LifecycleResourceAdapter   platform lifecycle/resources -> host conditions
 
 The support-matrix axes and target cells are recorded separately in the
 [platform support matrix](platform-support-matrix.md). This proposal defines
-where adaptation lives; unselected platform rows remain pending in that matrix.
+where adaptation lives. The first native row is Windows
+(`x86_64-pc-windows-msvc`) with `winit` lifecycle/input plumbing and a `wgpu`
+render sink; additional platform rows remain pending in that matrix.
 
 The dependency-ordered implementation plan is recorded in
-[host.vine](../host.vine). Its first planned row is the in-memory host proof;
-platform-specific rows activate only after a target profile and support-matrix
-cell are selected.
+[host.vine](../host.vine). Its in-memory host proof is complete; the selected
+Windows/`wgpu` row is the next implementation slice.
 
 ## Host Responsibilities
 
@@ -294,8 +295,8 @@ Traits and generics belong at real substitution boundaries such as input
 transport, render sink, or storage variation. The composition remains ordinary
 static Rust without a broad capabilities object.
 
-The first executable host composition should use in-memory adapters to prove
-the crossings before platform backends are selected:
+The first executable host composition uses in-memory adapters to prove the
+crossings independently of a platform:
 
 ```text
 MemoryInputIngress
@@ -305,8 +306,9 @@ CollectingRenderSink
 ```
 
 This composition is test infrastructure and a wiring proof, not a product
-platform. Native input, windowing, device resources, and `wgpu` remain later
-adapter selections governed by the support matrix.
+platform. The selected Windows composition adds native input, windowing,
+device resources, and `wgpu` behind the same ports and leaves the game-facing
+Stage and renderer unchanged.
 
 ## Time Boundary
 
@@ -327,7 +329,8 @@ The current host packet leaves these selections for later packets or their
 owning proposals:
 
 - operating-system and windowing API;
-- `wgpu` choice and platform support matrix cells;
+- native Windows entrypoint, `winit` lifecycle/input integration, and `wgpu`
+    device/render execution;
 - raw input packet variants;
 - camera, HUD, widgets, and interactable objects;
 - render scene and coordinate projection;
