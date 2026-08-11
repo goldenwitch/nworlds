@@ -32,7 +32,7 @@ cargo check --manifest-path crates/caravan-demo/Cargo.toml --bin caravan-windows
 ```
 
 Pull requests pass the required GitHub Actions checks: `Rust checks`,
-`Windows host build`, and `Analyze Rust`.
+`Windows host build`, `Arch Linux host build`, and `Analyze Rust`.
 
 Also run `git diff --check` and validate any edited VINE graph. Keep manual
 Windows observations separate from automated test claims.

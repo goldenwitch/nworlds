@@ -6,14 +6,14 @@ title: Canonical desktop target support and native CI
 Files: support.vine; proposals/platform-support-matrix.md; .github/workflows/**; crates/caravan-demo/**; tests/**; evidence/clause-to-test.md
 Do: Close the committed desktop target gaps one target regime at a time. Preserve the game-facing Stage, Orchestrator, SemanticInputBatch, immutable worldline, and CaravanRenderer boundaries while supplying target-local lifecycle, input, render, storage, runtime evidence, and appropriate CI. Require native runtime/device evidence before changing a matrix row to complete.
 Accept: The support matrix is the authoritative closed target universe; Windows remains complete; Ubuntu Linux, Arch/SteamOS-family Linux, physical Steam Deck, macOS Intel, and macOS Apple Silicon each have an owned implementation/evidence task; native or appropriate CI exists for each target; out-of-scope rows are explicit; and all existing workspace, conformance, purity, and CodeQL evidence remains green.
--> matrix
 -> ci-foundation
--> linux-ubuntu
 -> linux-arch
--> steamdeck
--> macos-intel
+-> linux-ubuntu
 -> macos-arm64
+-> macos-intel
+-> matrix
 -> out-of-scope
+-> steamdeck
 -> support-evidence
 @guidance text/markdown proposals/platform-support-matrix.md
 @guidance text/markdown proposals/presentation-host.md
@@ -24,7 +24,7 @@ Files: proposals/platform-support-matrix.md; support.vine
 Do: Record the closed desktop support universe, complete Windows baseline, explicit committed gaps, CI/runtime meaning of complete, and explicit out-of-scope rows.
 Accept: No target is hidden under an additional-target placeholder; every committed gap has a task in this graph; out-of-scope targets name the missing requirement; and the matrix links this plan.
 ---
-[ci-foundation] Native and appropriate CI foundation (notstarted)
+[ci-foundation] Native and appropriate CI foundation (started)
 Files: .github/workflows/ci.yml; .github/workflows/codeql.yml; rust-toolchain.toml; CONTRIBUTING.md
 Do: Define stable check names and target-specific CI lanes for the committed rows. Keep the pinned Rust toolchain and locked dependencies. Use hosted native runners where available, an Arch-compatible Linux lane for the SteamOS family, and a documented self-hosted/manual lane where hosted CI cannot provide the target device or display environment.
 Accept: CI names and reports map one-to-one to matrix rows; Ubuntu, Arch-family Linux, macOS Intel, macOS Apple Silicon, and Windows checks are target-specific; Steam Deck hardware evidence has an explicit non-hosted lane; protected main checks remain reviewable without claiming a headless build is runtime evidence.
@@ -34,37 +34,37 @@ Accept: CI names and reports map one-to-one to matrix rows; Ubuntu, Arch-family 
 Files: crates/caravan-demo/**; .github/workflows/ci.yml; evidence/clause-to-test.md
 Do: Add the Linux target-local entrypoint and adapters behind the existing host ports. Exercise X11 and Wayland lifecycle/input/render paths where the runner supports them, and keep storage/game semantics unchanged.
 Accept: `x86_64-unknown-linux-gnu` builds on a native Ubuntu runner; the target launches and renders under an appropriate X11 and Wayland smoke environment; native input reaches the existing semantic interaction path; resize and shutdown are observed; and the matrix row remains gap until runtime evidence is recorded.
--> matrix
 -> ci-foundation
+-> matrix
 ---
-[linux-arch] Arch and SteamOS-family Linux target (notstarted)
+[linux-arch] Arch and SteamOS-family Linux target (started)
 Files: crates/caravan-demo/**; .github/workflows/ci.yml; evidence/clause-to-test.md
 Do: Add an Arch-compatible build/runtime lane for the same Linux target and verify the Vulkan-first wgpu path with Wayland/X11 conditions representative of SteamOS-family desktops. Keep distro work below the game-facing boundary.
 Accept: The Arch-compatible lane builds the native target; a reproducible Arch-family runtime smoke path launches and renders; native input, resize, and shutdown are observed; and the matrix records remaining SteamOS hardware uncertainty separately from distro evidence.
--> matrix
 -> ci-foundation
 -> linux-ubuntu
+-> matrix
 ---
 [steamdeck] Physical Steam Deck and SteamOS target (notstarted)
 Files: .github/workflows/ci.yml; evidence/clause-to-test.md; proposals/platform-support-matrix.md
 Do: Establish the SteamOS 3 / Steam Deck x86_64 target lane, including physical device setup, gamescope/Wayland behavior, controller/keyboard input translation, Vulkan device selection, resize/fullscreen behavior, shutdown, and a practical self-hosted runner or manual evidence procedure.
 Accept: The target launches on physical Steam Deck hardware, renders a visible frame, accepts the selected input devices, survives display-mode changes, and shuts down cleanly; the evidence identifies which checks are self-hosted versus manual; the matrix does not claim Steam Deck support from desktop Linux CI alone.
--> matrix
 -> linux-arch
+-> matrix
 ---
 [macos-intel] macOS Intel target (notstarted)
 Files: crates/caravan-demo/**; .github/workflows/ci.yml; evidence/clause-to-test.md
 Do: Add the target-local macOS entrypoint and Metal-backed wgpu composition for `x86_64-apple-darwin`. Exercise native window/input/render lifecycle without exposing macOS types to Stage or game logic.
 Accept: A native Intel macOS runner builds the target; a designated Intel Mac launches and renders the demo; input, resize, and shutdown are observed; and the matrix row remains gap until runtime evidence is recorded.
--> matrix
 -> ci-foundation
+-> matrix
 ---
 [macos-arm64] macOS Apple Silicon target (notstarted)
 Files: crates/caravan-demo/**; .github/workflows/ci.yml; evidence/clause-to-test.md
 Do: Add or verify the target-local macOS entrypoint and Metal-backed wgpu composition for `aarch64-apple-darwin`. Keep architecture-specific resource behavior inside the host/backend boundary.
 Accept: A native Apple Silicon macOS runner builds the target; a designated Apple Silicon Mac launches and renders the demo; input, resize, and shutdown are observed; and the matrix row remains gap until runtime evidence is recorded.
--> matrix
 -> ci-foundation
+-> matrix
 ---
 [out-of-scope] Explicit out-of-scope target register (complete)
 Files: proposals/platform-support-matrix.md; support.vine
@@ -76,9 +76,9 @@ Accept: No out-of-scope target is implied to be supported by generic wgpu or win
 Files: evidence/clause-to-test.md; proposals/platform-support-matrix.md; .github/workflows/**
 Do: Reconcile target-specific CI results, native runtime observations, device/display conditions, and known limitations into the evidence matrix. Close each target only after its build, runtime, input, resize, render, storage, and shutdown acceptance is reproducible at the target’s declared evidence level.
 Accept: Every matrix status is backed by a named CI job or manual/self-hosted artifact; target-specific gaps remain visible; no compile-only result is reported as runtime support; and the full workspace/conformance/purity/CodeQL evidence remains green.
--> linux-ubuntu
 -> linux-arch
--> steamdeck
--> macos-intel
+-> linux-ubuntu
 -> macos-arm64
+-> macos-intel
 -> out-of-scope
+-> steamdeck
