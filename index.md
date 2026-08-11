@@ -1,4 +1,6 @@
-# Caravan of Seasons
+# nworlds
+
+Caravan of Seasons is the first implemented world in this workspace.
 
 Caravan of Seasons is a Rust workspace for a deterministic, directly indexed
 temporal game engine. Its reference query is:
