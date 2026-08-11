@@ -40,11 +40,11 @@ Accept: A concrete Caravan Orchestrator can interpret one input packet set, prod
 > The engine's authoritative state changes only through publication of a new immutable journal/worldline value.
 > The Orchestrator is ordinary developer-written imperative control code; no universal engine Orchestrator trait or loop API is introduced in this slice.
 > Worldline, Journal, and GameState remain immutable published values; the Orchestrator may replace selected values but may not own an imperative board, actor layer, resource counter, effect layer, or current GameState.
-> InteractionDefinition is the current pure seam: GameState + InputPacketSet + Tau -> Transformation.
+> InteractionDefinition is the current pure seam: GameState + SemanticInputBatch + Tau -> Transformation. InputPacketSet is a derived membership compatibility view.
 > Journal heterogeneity uses one closed game-owned enum/DU payload type; no runtime object collection, Any, or untyped journal bag.
 > JournalWriter is the game-facing timestamp authority. No InputTime or packet timestamp is added.
 > Camera, HUD, backend, device, host clock, and reusable DSL extraction are outside this slice.
-> Input ingress is the conceptual transport boundary. Target-specific presentation-host ports and entrypoint composition are future host design work; this slice has no clock port or broad capabilities object.
+> Input ingress is the conceptual transport boundary. Target-specific presentation-host ports and entrypoint composition are owned by the completed host graph; this slice has no clock port or broad capabilities object.
 ---
 [orchestrator/anchor] Caravan anchor implementation (packet plan) (complete)
 Execute the independent packets below. Keep SDK objects separate from Caravan game objects, use direct indexed queries rather than interval stepping, and dispatch packets only after their dependencies are reviewed. The cellular automata anchor specification is the shared behavior target. Files: spec/cellular-automata-anchor.md; roadmap.md; spec/initial.md
@@ -264,7 +264,7 @@ Accept: Conditions and results are reproducible; any proposed cache or index has
 ---
 [caravan/productization] Conditional productization (complete)
 Files: proposals/productization-review.md
-Do: Add only platform, packaging, content, audio/input, or tooling work shown to bind after the anchor evidence. Keep networking, merge, and final GPU choices deferred unless activated.
+Do: Add only platform, packaging, content, audio/input, or tooling work shown to bind after the anchor evidence. The first Windows wgpu host slice is activated and owned by host.vine; keep networking, merge, additional target profiles, and production GPU architecture deferred unless activated.
 Accept: Each activated concern has an owner, contract, dependency, and reproducible acceptance evidence.
 -> caravan/benchmarks
 -> caravan/persistence
@@ -727,7 +727,7 @@ Accept: Conditions and results are reproducible; any proposed cache or index has
 ---
 [rendering/caravan/productization] Conditional productization (complete)
 Files: proposals/productization-review.md
-Do: Add only platform, packaging, content, audio/input, or tooling work shown to bind after the anchor evidence. Keep networking, merge, and final GPU choices deferred unless activated.
+Do: Add only platform, packaging, content, audio/input, or tooling work shown to bind after the anchor evidence. The first Windows wgpu host slice is activated and owned by host.vine; keep networking, merge, additional target profiles, and production GPU architecture deferred unless activated.
 Accept: Each activated concern has an owner, contract, dependency, and reproducible acceptance evidence.
 -> rendering/caravan/benchmarks
 -> rendering/caravan/persistence
@@ -924,8 +924,8 @@ Accept: The projection task's focused unit evidence passes, the demo snapshot re
 [transport] Canonical transport and journal layer (complete)
 Define the reusable logical layer shared by local input, replay input, and future network input. Keep source transport metadata separate from semantic observations, preserve explicit identity and order, and coordinate immutable journal/branch publication without making transport metadata authoritative game time.
 Files: transport.vine; proposals/transport-and-journal.md; proposals/input-and-interaction.md; proposals/presentation-host.md; crates/caravan-demo/src/input.rs; crates/caravan-demo/src/orchestrator.rs; crates/engine-journal/**; crates/engine-branches/**; tests/**
-Do: Settle the ordered batch, membership-view, transport-envelope, and journal-operation boundaries before extracting reusable engine APIs. Preserve the current InputPacketSet prototype as a derived specialization while recording the migration evidence required for ordered/repeated observations.
-Accept: One canonical proposal owns the reusable transport/journal semantics; source adapters, Stage/Orchestrator, JournalWriter, branches, and host byte/storage ports have disjoint responsibilities; the current prototype remains behaviorally covered; and the next implementation packet has deterministic identity/order and late-publication acceptance evidence.
+Do: Settle the ordered batch, membership-view, transport-envelope, and journal-operation boundaries before extracting reusable engine APIs. Preserve InputPacketSet as a derived compatibility view while recording the completed migration to ordered/repeated semantic observations.
+Accept: One canonical proposal owns the reusable transport/journal semantics; source adapters, Stage/Orchestrator, JournalWriter, branches, and host byte/storage ports have disjoint responsibilities; the canonical semantic batch and its compatibility view remain behaviorally covered; and deterministic identity/order and late-publication evidence pass.
 -> transport/batch-model
 -> transport/journal-operations
 -> transport/transport-contract
@@ -939,11 +939,11 @@ Accept: One canonical proposal owns the reusable transport/journal semantics; so
 [transport/transport-contract] Transport and journal ownership contract (complete)
 Files: proposals/transport-and-journal.md; proposals/input-and-interaction.md; proposals/presentation-host.md
 Do: Record the single vocabulary and ownership boundary for transport envelopes, ordered semantic batches, membership views, source adapters, Stage/Orchestrator admission, JournalWriter timestamps, and immutable branches. Remove competing candidate contracts from adjacent documents.
-Accept: The proposal is the only normative design record for reusable transport/journal semantics; current InputPacketSet behavior is labeled as a prototype specialization; host and input documents link to it without redefining it.
+Accept: The proposal is the only normative design record for reusable transport/journal semantics; InputPacketSet is labeled as a derived compatibility specialization; host and input documents link to it without redefining it.
 ---
 [transport/batch-model] Ordered semantic batch model (complete)
 Files: crates/caravan-demo/src/input.rs; crates/caravan-demo/src/orchestrator.rs; proposals/transport-and-journal.md; tests/**
-Do: Design the smallest identity-bearing ordered batch and derived membership view that can represent repeated observations, press/release order, replay, and network-shaped out-of-order delivery without exposing transport objects to InteractionDefinition. Preserve the current set prototype until migration evidence exists.
+Do: Design the smallest identity-bearing ordered batch and derived membership view that can represent repeated observations, press/release order, replay, and network-shaped out-of-order delivery without exposing transport objects to InteractionDefinition. Preserve InputPacketSet as a compatibility view while the ordered semantic batch remains canonical.
 Accept: Identity, duplicate, order, source-merge, retention, and view semantics are executable and deterministic; current state-aware interaction behavior remains covered; no host timestamp or mutable authoritative state is introduced.
 -> transport/transport-contract
 ---

@@ -72,8 +72,10 @@ worldline, journal, and game-state values. Its input, transformation,
 publication, Stage, persistence, and presentation evidence is in
 [orchestrator.vine](orchestrator.vine).
 
-The concrete Caravan rendering-object projection and target presentation-host
-composition remain planned layers on top of that completed boundary.
+The concrete Caravan rendering-object projection, target presentation-host
+ports, and selected Windows `winit`/`wgpu` entrypoint are implemented and
+manually verified. This is a local proof-of-life slice, not yet a production
+host or distribution platform.
 
 ## Remaining Work
 
@@ -82,11 +84,12 @@ composition remain planned layers on top of that completed boundary.
 Extend the domain only when a concrete requirement identifies the additional
 definitions, composition rules, and evidence needed beyond the current anchor.
 
-The reusable transport and journal layer is planned in
+The reusable transport and journal layer is implemented in
 [proposals/transport-and-journal.md](proposals/transport-and-journal.md) and
-[transport.vine](transport.vine). The current `InputPacketSet` remains the
-small application prototype until ordered-batch and cross-source evidence
-binds a migration.
+[transport.vine](transport.vine). `OrderedInputBatch`, `InputBuffer`,
+`InputWindow`, and `SemanticInputBatch` are the canonical transport-to-game
+crossing; `InputPacketSet` remains only as a compatibility membership view
+until deliberate cleanup.
 
 Reusable DSL extraction and generic compact journal-entry expansion are
 deferred until Orchestrator prototypes reveal repeated patterns worth making
@@ -97,8 +100,9 @@ canonical. They are not current implementation obligations.
 - Networking and synchronization
 - Branch merging
 - Looping and bounds
-- Final graphics/GPU architecture
-- Packaging, release targets, content tooling, audio, and device input
+- Production host hardening beyond the first local Windows `winit`/`wgpu` slice
+- Final graphics/GPU architecture beyond the selected first target
+- Packaging, release targets, content tooling, and audio
 
 Activate one of these only when a concrete requirement supplies its target
 regime, owner, contract, dependency, and reproducible acceptance evidence.

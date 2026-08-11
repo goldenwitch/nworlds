@@ -218,7 +218,7 @@ platform event
     -> platform input adapter
     -> InputIngress
     -> Orchestrator drains packets
-    -> InputPacketSet
+    -> SemanticInputBatch
 ```
 
 The ingress transports packets. `Tau`, `LogicalTime`, packet-set meaning, and
@@ -325,20 +325,24 @@ contract.
 
 ## Current Scope
 
-The current host packet leaves these selections for later packets or their
-owning proposals:
+The selected first target is Windows (`x86_64-pc-windows-msvc`) with `winit`
+and `wgpu`, as recorded in the platform matrix and completed host graph. The
+current host packet leaves these selections for later packets or their owning
+proposals:
 
-- operating-system and windowing API;
-- native Windows entrypoint, `winit` lifecycle/input integration, and `wgpu`
-    device/render execution;
+- file-backed storage and a shipped persistence workflow;
+- host scheduling and frame-pacing policy beyond the current redraw loop;
+- device-loss recovery and automated GPU/device acceptance;
 - raw input packet variants;
 - camera, HUD, widgets, and interactable objects;
 - render scene and coordinate projection;
-- runtime plugin/object-typing model.
+- runtime plugin/object-typing model; and
+- additional target profiles.
 
 ## Open Questions
 
-1. What is the narrowest input-ingress interface for the first target?
-2. What is the narrowest byte-storage transport interface for the first target?
-3. Which lifecycle/resource conditions must the first target entrypoint report?
+1. What storage transport should follow `MemoryStorage` for the Windows target?
+2. Which host scheduling and frame-pacing requirements bind beyond the current
+   redraw loop without making host time authoritative?
+3. Which device-loss and GPU acceptance observations should become automated?
 4. Which host/Stage patterns repeat enough to extract into reusable engine APIs?

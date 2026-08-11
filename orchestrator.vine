@@ -6,7 +6,7 @@ title: Caravan Orchestrator anchor
 Remap the completed Caravan anchor onto a developer-authored Stage and Orchestrator without changing the immutable engine semantics. Build one small working slice in ordinary Rust, then use its traces to learn which orchestration patterns are worth extracting later.
 Files: orchestrator.vine; proposals/caravan-orchestrator-anchor.md; proposals/presentation-host.md; spec/initial.md; spec/cellular-automata-anchor.md; spec/discontinuity-projection.md; proposals/stage-layer.md; proposals/input-and-interaction.md; crates/caravan-demo/**
 Do: Dispatch the stages only after their dependencies are reviewed. Keep each packet's file ownership disjoint, keep the Orchestrator as mutable control code rather than authoritative game state, and preserve the three immutable seams.
-Accept: A concrete Caravan Orchestrator can interpret one input packet set, produce one closed transformation, publish an immutable journal/worldline update, query arbitrary times, select a branch, and present a deterministic frame while all existing anchor evidence remains green.
+Accept: A concrete Caravan Orchestrator can interpret one semantic input batch, produce one closed transformation, publish an immutable journal/worldline update, query arbitrary times, select a branch, and present a deterministic frame while all existing anchor evidence remains green.
 -> anchor
 -> demo-wiring
 -> input-model
@@ -23,7 +23,7 @@ Accept: A concrete Caravan Orchestrator can interpret one input packet set, prod
 > Journal heterogeneity uses one closed game-owned enum/DU payload type; no runtime object collection, Any, or untyped journal bag.
 > JournalWriter is the game-facing timestamp authority. No InputTime or packet timestamp is added.
 > Camera, HUD, backend, device, host clock, and reusable DSL extraction are outside this slice.
-> Input ingress is the conceptual transport boundary. Target-specific presentation-host ports and entrypoint composition are future host design work; this slice has no clock port or broad capabilities object.
+> Input ingress is the conceptual transport boundary. Target-specific presentation-host ports and entrypoint composition are owned by the completed host graph in host.vine; this slice has no clock port or broad capabilities object.
 ---
 ref [anchor] Completed indexed anchor (build.vine)
 The completed anchor supplies ReferenceWorldline, JournalWriter, immutable branches, direct state queries, presentation, persistence, and the existing evidence required by this slice.
@@ -84,7 +84,7 @@ Accept: The Orchestrator can choose LogicalTime and Tau explicitly, query arbitr
 ---
 [stage-composition] Caravan Stage composition (complete)
 Files: crates/caravan-demo/src/stage.rs
-Do: Compose the Orchestrator with the concrete CaravanStage presentation path. Keep this slice's host-facing surface limited to application methods; InputIngress, render sink, ApplicationHost, and storage ports remain presentation-host design work, while Stage owns the selected worldline, temporal orchestration, interaction, and rendering composition.
+Do: Compose the Orchestrator with the concrete CaravanStage presentation path. Keep this slice's host-facing surface limited to application methods; InputIngress, render sink, ApplicationHost, and storage ports are composed by the completed host graph, while Stage owns the selected worldline, temporal orchestration, interaction, and rendering composition.
 Accept: Stage owns its Orchestrator transitively, the host does not select logical time or branch semantics, explicit LogicalTime/Tau sampling remains available for replay/tests, and rendering receives only the selected GameState and Tau.
 -> anchor
 -> orchestrator-core

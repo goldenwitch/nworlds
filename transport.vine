@@ -5,8 +5,8 @@ title: Transport and journal layer
 [root] Canonical transport and journal layer (complete)
 Define the reusable logical layer shared by local input, replay input, and future network input. Keep source transport metadata separate from semantic observations, preserve explicit identity and order, and coordinate immutable journal/branch publication without making transport metadata authoritative game time.
 Files: transport.vine; proposals/transport-and-journal.md; proposals/input-and-interaction.md; proposals/presentation-host.md; crates/caravan-demo/src/input.rs; crates/caravan-demo/src/orchestrator.rs; crates/engine-journal/**; crates/engine-branches/**; tests/**
-Do: Settle the ordered batch, membership-view, transport-envelope, and journal-operation boundaries before extracting reusable engine APIs. Preserve the current InputPacketSet prototype as a derived specialization while recording the migration evidence required for ordered/repeated observations.
-Accept: One canonical proposal owns the reusable transport/journal semantics; source adapters, Stage/Orchestrator, JournalWriter, branches, and host byte/storage ports have disjoint responsibilities; the current prototype remains behaviorally covered; and the next implementation packet has deterministic identity/order and late-publication acceptance evidence.
+Do: Settle the ordered batch, membership-view, transport-envelope, and journal-operation boundaries before extracting reusable engine APIs. Preserve InputPacketSet as a derived compatibility view while recording the completed migration to ordered/repeated semantic observations.
+Accept: One canonical proposal owns the reusable transport/journal semantics; source adapters, Stage/Orchestrator, JournalWriter, branches, and host byte/storage ports have disjoint responsibilities; the canonical semantic batch and its compatibility view remain behaviorally covered; and deterministic identity/order and late-publication evidence pass.
 -> batch-model
 -> buffer-lifecycle
 -> journal-operations
@@ -21,11 +21,11 @@ Accept: One canonical proposal owns the reusable transport/journal semantics; so
 [transport-contract] Transport and journal ownership contract (complete)
 Files: proposals/transport-and-journal.md; proposals/input-and-interaction.md; proposals/presentation-host.md
 Do: Record the single vocabulary and ownership boundary for transport envelopes, ordered semantic batches, membership views, source adapters, Stage/Orchestrator admission, JournalWriter timestamps, and immutable branches. Remove competing candidate contracts from adjacent documents.
-Accept: The proposal is the only normative design record for reusable transport/journal semantics; current InputPacketSet behavior is labeled as a prototype specialization; host and input documents link to it without redefining it.
+Accept: The proposal is the only normative design record for reusable transport/journal semantics; InputPacketSet is labeled as a derived compatibility specialization; host and input documents link to it without redefining it.
 ---
 [batch-model] Ordered semantic batch model (complete)
 Files: crates/caravan-demo/src/input.rs; crates/caravan-demo/src/orchestrator.rs; proposals/transport-and-journal.md; tests/**
-Do: Design the smallest identity-bearing ordered batch and derived membership view that can represent repeated observations, press/release order, replay, and network-shaped out-of-order delivery without exposing transport objects to InteractionDefinition. Preserve the current set prototype until migration evidence exists.
+Do: Design the smallest identity-bearing ordered batch and derived membership view that can represent repeated observations, press/release order, replay, and network-shaped out-of-order delivery without exposing transport objects to InteractionDefinition. Preserve InputPacketSet as a compatibility view while the ordered semantic batch remains canonical.
 Accept: Identity, duplicate, order, source-merge, retention, and view semantics are executable and deterministic; current state-aware interaction behavior remains covered; no host timestamp or mutable authoritative state is introduced.
 -> transport-contract
 ---

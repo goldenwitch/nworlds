@@ -90,7 +90,7 @@ An interaction that only needs membership may derive a set view. An interaction
 that needs press/release order, repeated actions, or deterministic event
 replay consumes the ordered batch instead.
 
-The current prototype remains valid as a narrow specialization:
+The derived compatibility view remains valid as a narrow specialization:
 
 ```text
 InputPacket

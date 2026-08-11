@@ -204,11 +204,11 @@ proposal:
 
 The Orchestrator requests abstract `InputPacket` values from the input ingress
 port.
-The Stage's Orchestrator owns the `InteractionDefinition` that reasons over an
-`InputPacketSet`, as well as
-the input orchestration that constructs that set. Packets may be delivered
-directly or retained across calls. The canonical query takes the selected
-read-only `GameState`, packet set, and `Tau`; its boundary is recorded in
+The Stage's Orchestrator owns the `InteractionDefinition` that reasons over a
+`SemanticInputBatch`, as well as the input orchestration that constructs that
+batch. `InputPacketSet` remains only a derived membership compatibility view.
+Packets may be delivered directly or retained across calls. The canonical
+query takes the selected read-only `GameState`, semantic batch, and `Tau`; its boundary is recorded in
 [input-and-interaction.md](input-and-interaction.md).
 
 ### Camera and HUD

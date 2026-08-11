@@ -220,7 +220,7 @@ Accept: Conditions and results are reproducible; any proposed cache or index has
 ---
 [productization] Conditional productization (complete)
 Files: proposals/productization-review.md
-Do: Add only platform, packaging, content, audio/input, or tooling work shown to bind after the anchor evidence. Keep networking, merge, and final GPU choices deferred unless activated.
+Do: Add only platform, packaging, content, audio/input, or tooling work shown to bind after the anchor evidence. The first Windows wgpu host slice is activated and owned by host.vine; keep networking, merge, additional target profiles, and production GPU architecture deferred unless activated.
 Accept: Each activated concern has an owner, contract, dependency, and reproducible acceptance evidence.
 -> benchmarks
 -> persistence

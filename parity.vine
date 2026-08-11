@@ -4,7 +4,7 @@ title: Caravan mechanical parity reconciliation
 ---
 [root] Reconcile mechanical design and implementation parity (complete)
 Files: parity.vine; crates/caravan-demo/**; proposals/**; spec/initial.md; orchestrator.vine; tests/**
-Do: Reconcile the current repository to the explicit desired state recorded by this graph. Treat every task as an idempotent desired-state operation: inspect first, apply only missing changes, preserve unrelated work, and make a second execution a no-op. Keep rendering backends, DrawCommand design, RenderSink implementation, wgpu, and the platform support matrix outside this mechanical checkpoint.
+Do: Reconcile the current repository to the explicit desired state recorded by this graph. Treat every task as an idempotent desired-state operation: inspect first, apply only missing changes, preserve unrelated work, and make a second execution a no-op. Keep rendering backends, DrawCommand design, RenderSink implementation, and platform target composition outside this mechanical checkpoint; the completed Windows wgpu host slice is owned by host.vine and is not duplicated here.
 Accept: The selected Caravan logical state is available to interaction reasoning at the selected LogicalTime; Tau remains an independent presentation sample; no input path receives Frame, Renderer, or backend state; the completed Orchestrator graph and proposals describe the actual implementation; focused evidence proves state-aware input and journal-only mutation; the full workspace and conformance suites pass; and rerunning each task creates no additional diff or duplicate API.
 -> state-render-boundary
 -> parity-evidence
@@ -18,7 +18,7 @@ Accept: The selected Caravan logical state is available to interaction reasoning
 ---
 [state-contract] State-aware interaction contract (complete)
 Files: proposals/input-and-interaction.md
-Do: Reconcile the input contract to one concrete rule: interaction logic receives a read-only selected Caravan GameState together with InputPacketSet and Tau. The state is the result of querying the selected immutable worldline at the selected LogicalTime, and carries that exact logical time itself. Keep Frame, Renderer, DrawCommand, backend state, host time, and journal mutation outside the seam. Record error and ownership expectations without introducing a second authoritative state model or an alternative candidate contract.
+Do: Reconcile the input contract to one concrete rule: interaction logic receives a read-only selected Caravan GameState together with SemanticInputBatch and Tau. InputPacketSet remains only a derived membership compatibility view. The state is the result of querying the selected immutable worldline at the selected LogicalTime, and carries that exact logical time itself. Keep Frame, Renderer, DrawCommand, backend state, host time, and journal mutation outside the seam. Record error and ownership expectations without introducing a second authoritative state model or an alternative candidate contract.
 Accept: The proposal names the exact state-aware interaction boundary, says that Tau does not select logical state, says that input queries never inspect rendered output, and agrees with the current immutable worldline and journal-only publication rules. If the target wording is already present, the task is complete without churn.
 > Decision: The interaction seam is state-aware; it does not receive rendered output.
 ---
@@ -33,7 +33,7 @@ Accept: A state-dependent InteractionDefinition can inspect the exact selected G
 ---
 [plan-reconciliation] Reconcile design records with the implemented boundary (complete)
 Files: proposals/caravan-orchestrator-anchor.md; proposals/stage-layer.md; proposals/presentation-host.md; spec/initial.md; orchestrator.vine
-Do: Make the design records idempotently describe the actual explicit-time and state-aware interaction boundary. Correct stale present_at examples, Tau wording, malformed ownership-list indentation, and any acceptance text that claims an InputIngress, RenderSink, ApplicationHost, or storage port already exists. Keep the rendering graph notstarted and record the wgpu/support-matrix decision as an external future design gate rather than inventing a platform choice here.
+Do: Make the design records idempotently describe the actual explicit-time and state-aware interaction boundary. Correct stale present_at examples, Tau wording, malformed ownership-list indentation, and any acceptance text that claims an InputIngress, RenderSink, ApplicationHost, or storage port already exists. Keep target-specific rendering and host composition outside this mechanical checkpoint; the selected Windows wgpu profile and support-matrix decision are recorded in host.vine and should not be duplicated here.
 Accept: No edited proposal contradicts the source signatures; orchestrator.vine no longer marks unimplemented host-port behavior as complete acceptance; the generic specification says LogicalTime selects GameState and Tau selects presentation sampling; the host proposal remains explicit about what is deferred; and a second execution produces no documentation churn.
 -> state-input
 @guidance text/markdown proposals/presentation-host.md

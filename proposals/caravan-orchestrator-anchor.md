@@ -56,14 +56,15 @@ CaravanOrchestrator
     selected ReferenceWorldline
     JournalWriter / immutable publication path
     selected LogicalTime and Tau
-    InputPacketSet orchestration
+    SemanticInputBatch orchestration
     Caravan InteractionDefinition
     query, branch, save, and presentation decisions
 ```
 
 The initial Rust structs live in `caravan-demo`; their shape is intentionally
-still application-owned. A target-specific entrypoint and independent
-presentation-host ports are future composition work. No engine-wide
+still application-owned. The first target-specific entrypoint and independent
+presentation-host ports are implemented in the Windows `winit`/`wgpu`
+composition recorded by [host.vine](../host.vine). No engine-wide
 `Orchestrator` trait is required until multiple concrete orchestrators reveal a
 stable variation boundary.
 
@@ -205,7 +206,7 @@ An interaction result changes authoritative game state only through journal or
 branch publication:
 
 ```text
-GameState + InputPacketSet + Tau
+GameState + SemanticInputBatch + Tau
     -> InteractionDefinition
     -> Transformation
     -> Orchestrator accepts or rejects
@@ -245,7 +246,7 @@ A first implementation may follow this developer-authored control flow:
 ```text
 Orchestrator control-flow iteration
   -> receive abstract input packets through the Stage boundary
-  -> construct the InputPacketSet
+  -> normalize transport observations into a SemanticInputBatch
     -> choose LogicalTime, Tau, and the viewed ReferenceWorldline
     -> query ReferenceWorldline -> GameState<Snapshot>
     -> run InteractionDefinition
@@ -272,7 +273,7 @@ The remapping is successful when a concrete Caravan Orchestrator demonstrates:
   direct reference oracle;
 - the application `InteractionDefinition` seam returns closed
   `Transformation` data from the selected read-only `GameState`,
-  `InputPacketSet`, and `Tau`;
+  `SemanticInputBatch`, and `Tau`;
 - accepted authoritative transformations publish new immutable journal or
   branch values;
 - rejected transformations do not alter the selected worldline;
