@@ -42,3 +42,32 @@ jobs:
           toolchain: 1.94.1
       - name: Compile the native host
         run: cargo check --manifest-path crates/caravan-demo/Cargo.toml --bin caravan-windows --locked
+
+  arch-linux-host:
+    name: Arch Linux host build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+      - name: Compile in Arch Linux
+        shell: bash
+        run: |
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/workspace" \
+            --workdir /workspace \
+            archlinux:base-devel \
+            bash -euo pipefail -c '
+              pacman -Sy --noconfirm --needed \
+                ca-certificates curl git rustup pkgconf clang \
+                vulkan-headers libx11 libxcursor libxi libxrandr \
+                libxinerama libxkbcommon wayland
+              export RUSTUP_HOME=/opt/rustup
+              export CARGO_HOME=/opt/cargo
+              curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | \
+                sh -s -- -y --default-toolchain none --profile minimal
+              . "$CARGO_HOME/env"
+              rustup toolchain install 1.94.1 --profile minimal
+              cargo +1.94.1 check \
+                --manifest-path crates/caravan-demo/Cargo.toml \
+                --bin caravan-windows --locked
+            '
