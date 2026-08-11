@@ -1,3 +1,9 @@
 # Rust build output
 target/
 *.rs.bk
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/

@@ -1,0 +1,39 @@
+name: Bug report
+description: Report a reproducible problem in the repository or native host.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include credentials, tokens, private data, or exploit details.
+        Use the private security process for vulnerabilities.
+  - type: input
+    id: commit
+    attributes:
+      label: Commit
+      description: Which commit did you test?
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Observed behavior
+      description: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Include the smallest command or steps that reproduce it.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Rust version, GPU/backend, and relevant target details.
+    validations:
+      required: true

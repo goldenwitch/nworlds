@@ -23,29 +23,30 @@ it does not advance or mutate a hidden current state.
   immutable breakpoint, piece-selection, and projection contract.
 - [Build graph](build.vine) - the dependency-ordered implementation packets
   and their acceptance criteria.
-- [Rendering plan](rendering.vine) - the focused backend-neutral rendering
-  slice planned on top of the completed anchor.
+- [Rendering plan](rendering.vine) - the completed backend-neutral rendering
+  projection and its target-facing host boundary.
 - [Stage layer proposal](proposals/stage-layer.md) - the boundary between the
   canonical logical game experience and platform presentation plumbing.
 - [Presentation host proposal](proposals/presentation-host.md) - the platform
   and execution responsibilities surrounding Stage.
 - [Platform support matrix](proposals/platform-support-matrix.md) - adapter
   axes, target cells, and activation gates for host composition.
-- [Host adapter wiring graph](host.vine) - the dependency-ordered plan for
-  the in-memory host proof and later platform adapters.
+- [Host adapter wiring graph](host.vine) - the completed in-memory and Windows
+  `winit`/`wgpu` host composition.
 - [Input and interaction boundary](proposals/input-and-interaction.md) - the
-  abstract packet set, interaction-definition, and buffering boundary.
+  semantic batch, interaction-definition, and buffering boundary.
 - [Transport and journal layer](proposals/transport-and-journal.md) - the
   reusable identity, ordering, transport-envelope, membership-view, and
   immutable journal-operation pattern for local, replay, and future network
   input.
-- [Transport and journal graph](transport.vine) - the planned contract,
+- [Transport and journal graph](transport.vine) - the completed contract,
   ordered-batch, journal-bridge, and cross-source evidence packets.
 - [Caravan Orchestrator anchor](proposals/caravan-orchestrator-anchor.md) -
   the completed application checkpoint for exercising Stage and Orchestrator
   around the existing immutable engine seams.
-- [Orchestrator build graph](orchestrator.vine) - the completed vertical slice
-  and its acceptance evidence; future extraction remains conditional.
+- [Orchestrator build graph](orchestrator.vine) - the completed vertical slice,
+  host-facing composition, and acceptance evidence; future extraction remains
+  conditional.
 
 ## Workspace Components
 
@@ -112,6 +113,9 @@ cargo test --workspace
 
 # Run the terminal anchor demo
 cargo run --manifest-path crates/caravan-demo/Cargo.toml
+
+# Run the Windows wgpu host (Windows)
+cargo run --manifest-path crates/caravan-demo/Cargo.toml --bin caravan-windows
 
 # Run the independent conformance workspace
 cargo test --manifest-path tests/conformance/Cargo.toml
