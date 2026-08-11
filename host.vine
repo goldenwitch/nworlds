@@ -6,6 +6,7 @@ title: Target entrypoint and presentation-host adapter wiring
 Files: host.vine; proposals/presentation-host.md; proposals/platform-support-matrix.md; crates/caravan-demo/**; tests/**
 Do: Build the first target composition around independent translation, transport, storage, render-execution, and lifecycle/resource ports. The in-memory proof is complete. Execute the selected Windows desktop composition with winit lifecycle/input plumbing and wgpu render execution; the Orchestrator pulls the ports and the target entrypoint supplies their concrete adapters.
 Accept: The host proposal names distinct adapter roles; the support matrix records the completed in-memory proof and selected Windows target; the native composition launches locally, accepts native input, submits owned render output through wgpu, and preserves Stage/Orchestrator ownership; and all existing anchor/conformance evidence remains green.
+> This graph records the first target-local host proof, not the public game-package workflow. The target-factory proposal owns target-neutral commands, target resolution, host capability delivery, and artifact minting; do not extend this graph as a per-game target-selection contract.
 -> host-composition
 -> host-contract
 -> host-evidence
@@ -19,6 +20,7 @@ Accept: The host proposal names distinct adapter roles; the support matrix recor
 -> windows-evidence
 @guidance text/markdown proposals/presentation-host.md
 @guidance text/markdown proposals/platform-support-matrix.md
+@guidance text/markdown proposals/target-factory.md
 @guidance text/markdown proposals/input-and-interaction.md
 @guidance text/markdown proposals/stage-layer.md
 @guidance text/plain orchestrator.vine
@@ -264,7 +266,7 @@ Accept: Conditions and results are reproducible; any proposed cache or index has
 ---
 [caravan/productization] Conditional productization (complete)
 Files: proposals/productization-review.md
-Do: Add only platform, packaging, content, audio/input, or tooling work shown to bind after the anchor evidence. The first Windows wgpu host slice is activated and owned by host.vine; keep networking, merge, additional target profiles, and production GPU architecture deferred unless activated.
+Do: Add only platform, packaging, content, audio/input, or tooling work shown to bind after the anchor evidence. The first Windows wgpu host slice is historical host proof; the target-factory proposal owns the target-neutral developer workflow, target resolution, and artifact minting. Keep networking, merge, additional target profiles, and production GPU architecture deferred unless activated.
 Accept: Each activated concern has an owner, contract, dependency, and reproducible acceptance evidence.
 -> caravan/benchmarks
 -> caravan/persistence
@@ -727,7 +729,7 @@ Accept: Conditions and results are reproducible; any proposed cache or index has
 ---
 [rendering/caravan/productization] Conditional productization (complete)
 Files: proposals/productization-review.md
-Do: Add only platform, packaging, content, audio/input, or tooling work shown to bind after the anchor evidence. The first Windows wgpu host slice is activated and owned by host.vine; keep networking, merge, additional target profiles, and production GPU architecture deferred unless activated.
+Do: Add only platform, packaging, content, audio/input, or tooling work shown to bind after the anchor evidence. The first Windows wgpu host slice is historical host proof; the target-factory proposal owns the target-neutral developer workflow, target resolution, and artifact minting. Keep networking, merge, additional target profiles, and production GPU architecture deferred unless activated.
 Accept: Each activated concern has an owner, contract, dependency, and reproducible acceptance evidence.
 -> rendering/caravan/benchmarks
 -> rendering/caravan/persistence

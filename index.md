@@ -33,10 +33,12 @@ it does not advance or mutate a hidden current state.
   canonical logical game experience and platform presentation plumbing.
 - [Presentation host proposal](proposals/presentation-host.md) - the platform
   and execution responsibilities surrounding Stage.
+- [Target factory proposal](proposals/target-factory.md) - the target-neutral
+  developer path and host-owned artifact minting contract.
 - [Platform support matrix](proposals/platform-support-matrix.md) - adapter
   axes, target cells, and activation gates for host composition.
-- [Host adapter wiring graph](host.vine) - the completed in-memory and Windows
-  `winit`/`wgpu` host composition.
+- [Host adapter wiring graph](host.vine) - the first host proof composition;
+  target minting is owned by the target factory proposal.
 - [Target support graph](support.vine) - the closed desktop target universe,
   explicit gaps, and native or appropriate CI plan.
 - [Demo gameplay plan](gameplay.vine) - the design-derived inventory and
@@ -113,17 +115,11 @@ These crates define the concrete game fixture and its indexed rules.
 
 ## Common Commands
 
-Run these from the repository root:
+Repository-maintenance commands, not the public game-development interface:
 
 ```text
 # Build and test the main workspace
 cargo test --workspace
-
-# Run the terminal anchor demo
-cargo run --manifest-path crates/caravan-demo/Cargo.toml
-
-# Run the Windows wgpu host (Windows)
-cargo run --manifest-path crates/caravan-demo/Cargo.toml --bin caravan-windows
 
 # Run the independent conformance workspace
 cargo test --manifest-path tests/conformance/Cargo.toml

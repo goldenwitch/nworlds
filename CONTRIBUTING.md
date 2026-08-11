@@ -28,7 +28,7 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
 cargo test --manifest-path tests/conformance/Cargo.toml --locked
-cargo check --manifest-path crates/caravan-demo/Cargo.toml --bin caravan-windows --locked
+cargo check --workspace --all-targets --locked
 ```
 
 Pull requests pass the required GitHub Actions checks: `Rust checks`,

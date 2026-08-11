@@ -73,16 +73,28 @@ worldline, journal, and game-state values. Its input, transformation,
 publication, Stage, persistence, and presentation evidence is in
 [orchestrator.vine](orchestrator.vine).
 
-The concrete Caravan rendering-object projection, target presentation-host
-ports, and selected Windows `winit`/`wgpu` entrypoint are implemented and
-manually verified. This is a local proof-of-life slice, not yet a production
-host or distribution platform.
+The concrete Caravan rendering-object projection, first presentation-host proof,
+and Windows `winit`/`wgpu` runtime evidence are implemented and manually
+verified. That proof is host-internal evidence, not the public developer
+workflow or a production distribution platform.
 
 Target breadth is now canonized in
 [proposals/platform-support-matrix.md](proposals/platform-support-matrix.md).
 The committed desktop support gaps and their native or appropriate CI plan are
 owned by [support.vine](support.vine); runtime/device evidence is required
 before a target becomes supported.
+
+The desired public developer path is defined by
+[proposals/target-factory.md](proposals/target-factory.md):
+
+```text
+nworlds test
+nworlds run
+nworlds package
+```
+
+Target resolution, host capabilities, artifact minting, and unsupported-
+environment reporting belong to nworlds, not to each game package.
 
 ## Remaining Work
 

@@ -62,9 +62,10 @@ CaravanOrchestrator
 ```
 
 The initial Rust structs live in `caravan-demo`; their shape is intentionally
-still application-owned. The first target-specific entrypoint and independent
-presentation-host ports are implemented in the Windows `winit`/`wgpu`
-composition recorded by [host.vine](../host.vine). No engine-wide
+still application-owned. The first target-local host proof is recorded in the
+Windows `winit`/`wgpu` composition in [host.vine](../host.vine). The desired
+target-neutral developer workflow and target minting are owned by
+[target-factory.md](target-factory.md). No engine-wide
 `Orchestrator` trait is required until multiple concrete orchestrators reveal a
 stable variation boundary.
 

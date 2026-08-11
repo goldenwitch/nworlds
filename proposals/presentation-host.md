@@ -5,11 +5,13 @@ canonical Stage. It is intentionally agnostic about operating systems,
 windowing libraries, devices, render backends, and host clock types.
 
 A **target-specific entrypoint** is the OS- or runtime-specific executable
-composition root. It constructs a Stage and a selected set of independent
-presentation-host ports. A target may group those ports in a local
-`ApplicationHost` convenience value, but that bundle is not a generic engine
-layer. Neither the entrypoint nor the presentation host defines the game, owns
-game time, interprets input, or becomes a second source of authoritative state.
+composition root minted or selected by the nworlds target factory. It
+constructs a Stage and a selected set of independent presentation-host ports.
+A target may group those ports in a local `ApplicationHost` convenience value,
+but that bundle is not a generic engine layer. Game packages do not construct
+or select this entrypoint. Neither the entrypoint nor the presentation host
+defines the game, owns game time, interprets input, or becomes a second source
+of authoritative state.
 
 ## Vocabulary
 
@@ -145,15 +147,16 @@ RenderSinkAdapter           Frame<RenderOutput> -> backend execution
 LifecycleResourceAdapter   platform lifecycle/resources -> host conditions
 ```
 
-The support-matrix axes and target cells are recorded separately in the
+The target-factory ownership and target-neutral developer workflow are recorded
+in [target-factory.md](target-factory.md). The support-matrix axes and target cells are recorded separately in the
 [platform support matrix](platform-support-matrix.md). This proposal defines
 where adaptation lives. The first native row is Windows
 (`x86_64-pc-windows-msvc`) with `winit` lifecycle/input plumbing and a `wgpu`
 render sink; additional platform rows remain pending in that matrix.
 
-The dependency-ordered implementation plan is recorded in
-[host.vine](../host.vine). Its in-memory host proof is complete; the selected
-Windows/`wgpu` row is the next implementation slice.
+The dependency-ordered first-proof plan is recorded in
+[host.vine](../host.vine). The public target-minting workflow is owned by the
+target-factory proposal; this host proposal owns the runtime port boundary.
 
 ## Host Responsibilities
 

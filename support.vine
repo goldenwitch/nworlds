@@ -18,6 +18,7 @@ Accept: The support matrix is the authoritative closed target universe; Windows 
 @guidance text/markdown proposals/platform-support-matrix.md
 @guidance text/markdown proposals/presentation-host.md
 @guidance text/markdown proposals/productization-review.md
+@guidance text/markdown proposals/target-factory.md
 ---
 [matrix] Canonical matrix and gap register (complete)
 Files: proposals/platform-support-matrix.md; support.vine

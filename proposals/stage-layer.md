@@ -48,9 +48,10 @@ Rust/API spellings. The owning concepts are:
 >
 
 The target-specific entrypoint is an OS- or runtime-specific executable
-composition root. `ApplicationHost` may name a target-local bundle of concrete
-ports, but it is not a generic engine layer or a required abstraction. The
-presentation-host vocabulary and port roles are owned by
+composition root minted by the nworlds target factory. `ApplicationHost` may
+name a target-local bundle of concrete ports, but it is not a generic engine
+layer or a required abstraction. Game packages do not construct or select the
+entrypoint. The presentation-host vocabulary and port roles are owned by
 [presentation-host.md](presentation-host.md).
 ports, but it is not a generic engine layer or a required abstraction.
 
@@ -101,10 +102,10 @@ authoritative game state. The only authoritative ingress remains publication of
 new immutable journal/worldline values.
 
 In the current Caravan prototype, these decisions are exercised through
-application methods on `CaravanStage` and `CaravanOrchestrator`. In a future
-target composition, the Orchestrator remains the caller: it pulls from the
-independent presentation-host ports when it needs input, render submission,
-storage transport, or lifecycle/resource information.
+application methods on `CaravanStage` and `CaravanOrchestrator`. The target
+factory composes the target entrypoint around that Stage; the Orchestrator
+pulls from the independent presentation-host ports when it needs input, render
+submission, storage transport, or lifecycle/resource information.
 
 The pure interaction query and journal-publication path are owned by
 [input-and-interaction.md](input-and-interaction.md). Stage composes that path
@@ -148,9 +149,9 @@ The host must not decide which worldline or branch is canonical for a Stage,
 which independent `LogicalTime` and `Tau` samples the Stage selects, or what a
 Caravan domain value means.
 
-The target-specific entrypoint composes concrete Stage dependencies and narrow
-host ports at compile time. It remains plumbing around Stage rather than the
-owner of the game experience.
+The target factory composes the target-specific entrypoint with concrete Stage
+dependencies and narrow host ports at compile time. The entrypoint remains
+plumbing around Stage rather than the owner of the game experience.
 
 ## Static Composition
 

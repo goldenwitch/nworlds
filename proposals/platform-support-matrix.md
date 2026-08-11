@@ -1,14 +1,15 @@
 # Platform Support Matrix
 
-This document records platform adaptation as a composition matrix. Each target
-row records its target-specific entrypoint, independent adapter choices, owner,
-evidence, build/run condition, and explicit support gap.
+This document records host-owned platform adaptation as a composition matrix.
+Each target row records the target profile that the nworlds target factory may
+resolve, its host adapters, owner, evidence, build/run condition, and explicit
+support gap. It is not a game-package developer interface.
 
 ## Ownership
 
-The target-specific entrypoint selects one bundle of independent ports at
-composition time. The game and generic engine do not branch on operating
-system, windowing library, device, or render backend. A local
+The target factory selects or mints one target-specific entrypoint and bundle
+of independent ports at composition time. The game and generic engine do not
+branch on operating system, windowing library, device, or render backend. A local
 `ApplicationHost` value may group the selected ports for convenience; it is not
 the support-matrix abstraction.
 
