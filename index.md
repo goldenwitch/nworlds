@@ -37,6 +37,8 @@ it does not advance or mutate a hidden current state.
   axes, target cells, and activation gates for host composition.
 - [Host adapter wiring graph](host.vine) - the completed in-memory and Windows
   `winit`/`wgpu` host composition.
+- [Target support graph](support.vine) - the closed desktop target universe,
+  explicit gaps, and native or appropriate CI plan.
 - [Input and interaction boundary](proposals/input-and-interaction.md) - the
   semantic batch, interaction-definition, and buffering boundary.
 - [Transport and journal layer](proposals/transport-and-journal.md) - the

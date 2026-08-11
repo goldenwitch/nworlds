@@ -78,6 +78,12 @@ ports, and selected Windows `winit`/`wgpu` entrypoint are implemented and
 manually verified. This is a local proof-of-life slice, not yet a production
 host or distribution platform.
 
+Target breadth is now canonized in
+[proposals/platform-support-matrix.md](proposals/platform-support-matrix.md).
+The committed desktop support gaps and their native or appropriate CI plan are
+owned by [support.vine](support.vine); runtime/device evidence is required
+before a target becomes supported.
+
 ## Remaining Work
 
 ### Broader domain composition
@@ -95,6 +101,13 @@ until deliberate cleanup.
 Reusable DSL extraction and generic compact journal-entry expansion are
 deferred until Orchestrator prototypes reveal repeated patterns worth making
 canonical. They are not current implementation obligations.
+
+### Target support
+
+Close the committed Linux, SteamOS/Steam Deck, and macOS gaps through the
+target-specific host and CI tasks in [support.vine](support.vine). Keep Web,
+mobile, other architectures, and consoles explicitly out of scope until a
+concrete requirement activates them.
 
 ## Deferred Until Activated
 

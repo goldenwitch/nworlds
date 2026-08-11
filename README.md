@@ -57,6 +57,8 @@ host; Space sends the first semantic interaction and changes the center tile.
 - [Evidence matrix](evidence/clause-to-test.md) - executable and manual acceptance evidence.
 - [Build graph](build.vine) - dependency-ordered anchor work.
 - [Host graph](host.vine) - completed host and Windows `wgpu` composition.
+- [Support graph](support.vine) - committed desktop targets, explicit gaps, and
+	native or appropriate CI work.
 
 ## Development Checks
 
