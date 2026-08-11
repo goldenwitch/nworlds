@@ -2,10 +2,11 @@
 
 ## Decision
 
-Productization remains conditional. The current packet supports a deterministic,
-terminal-oriented developer/demo artifact, an inspectable evidence bundle, and
-one manually verified Windows desktop target using `winit` and `wgpu`. It does
-not yet justify release packaging, scale claims, or production abstractions.
+Productization remains conditional. This repository is a pure demo/toy for the
+engine: it supports a deterministic, terminal-oriented developer/demo artifact,
+an inspectable evidence bundle, and one manually verified Windows desktop
+target using `winit` and `wgpu`. It does not yet justify release packaging,
+scale claims, or production abstractions.
 
 The only product concern that binds now is reproducibility of that reference
 packet: the demo trace, conformance run/report, and benchmark conditions must

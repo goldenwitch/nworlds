@@ -49,8 +49,9 @@ oracle selects immutable discontinuity pieces before doing query-local rule
 calculation. The first application-level Caravan Orchestrator slice is also
 implemented and tested; it does not add a generic engine Orchestrator API.
 
-This is a deterministic reference/demo/evidence package, not yet a finished
-game or distribution platform.
+This repository is a deterministic reference/demo/evidence package and a pure
+demo/toy for the engine. It is not a finished game, production host, or
+distribution platform.
 
 ## Completed Anchor
 

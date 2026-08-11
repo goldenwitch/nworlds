@@ -1,9 +1,11 @@
 # nworlds
 
-Caravan of Seasons is the first implemented world in this workspace.
+nworlds is a Rust research/toy workspace for a deterministic, directly
+indexed temporal game engine. Caravan of Seasons is the contained demo world
+used to make the engine model and evidence concrete. This repository is a
+pure demo/toy for the engine, not a production game or released engine SDK.
 
-Caravan of Seasons is a Rust workspace for a deterministic, directly indexed
-temporal game engine. Its reference query is:
+Its reference query is:
 
 ```text
 state(worldline, t_) -> game_state

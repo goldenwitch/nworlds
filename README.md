@@ -1,12 +1,13 @@
 # nworlds
 
-nworlds is a Rust workspace for deterministic, directly indexed temporal game
-worlds. The first implemented world is **Caravan of Seasons**, a reference
-composition used to test immutable worldlines, indexed state queries, semantic
-input, presentation, persistence, and a native Windows `wgpu` host.
+nworlds is a Rust research/toy workspace for deterministic, directly indexed
+temporal game worlds. **Caravan of Seasons** is the contained demo world used
+to exercise immutable worldlines, indexed state queries, semantic input,
+presentation, persistence, and a native Windows `wgpu` host.
 
-This repository is an active proof-of-life and research implementation. It is
-not yet a production game, a stable engine SDK, or a release distribution.
+This repository is deliberately a pure demo/toy for the engine. It is an
+active proof-of-life and research implementation, not a production game, a
+stable engine SDK, or a release distribution.
 
 ## Core Model
 
@@ -43,8 +44,8 @@ On Windows, the first native host slice uses `winit` and `wgpu`:
 cargo run --manifest-path crates/caravan-demo/Cargo.toml --bin caravan-windows
 ```
 
-The native window renders the Caravan scene. Resize is handled by the host;
-Space sends the first semantic interaction and changes the center tile.
+The native window renders the Caravan demo scene. Resize is handled by the
+host; Space sends the first semantic interaction and changes the center tile.
 
 ## Repository Map
 
