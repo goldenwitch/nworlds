@@ -42,7 +42,7 @@ player-facing feature set.
 | Persistence | Worldline/save encoding and deterministic replay exist below host byte transport | The native demo has no user-facing save/load/replay workflow |
 | Seeded worlds | Fixed-seed journal generation is deterministic and reproducible | Seed selection and world setup are not part of the demo experience |
 | Input | Transport identity/order becomes a payload-only semantic batch | Only the first primary-button action is mapped in the native host |
-| Rendering | Owned output preserves tiles, actors, effects, resources, logical time, and `Tau` | The native sink currently renders a minimal colored tile field without readable world/status presentation |
+| Rendering | `GameState + Tau` produces minimal fire-and-forget owned output | The native sink currently renders a minimal colored tile field without readable world/status presentation; every future visible value must already be available in `GameState` |
 
 The source commitments for this inventory are
 [spec/initial.md](../spec/initial.md),
@@ -73,7 +73,10 @@ After that ruling, the work proceeds in this order:
 The demo remains a toy and evidence vehicle. A feature is complete when its
 player-facing behavior is observable and its authoritative consequences remain
 represented by immutable journal/worldline values; a lower-level API existing
-in isolation is not enough.
+in isolation is not enough. Render production remains exactly
+`GameState + Tau -> minimal fire-and-forget RenderOutput`; a feature does not
+introduce an auxiliary renderer input for selection, focus, pending work,
+branch identity, or presentation mode.
 
 ## Reserved Design Questions
 
@@ -89,6 +92,10 @@ These questions require a design ruling before implementation begins:
   effects, resources, logical time, branch identity, or save status?
 - What constitutes a complete demo interaction cycle from input to visible
   consequence?
+
+For each selected visible value, the plan must identify its `GameState` source.
+If no such source exists, the state-production gap must be resolved before
+rendering work is planned.
 
 Camera, HUD, coordinate projection, richer input devices, networking, merge
 semantics, packaging, and final graphics architecture remain separate decisions

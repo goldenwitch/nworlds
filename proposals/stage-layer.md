@@ -223,8 +223,9 @@ Stage owns the logical renderer abstraction and composition. The current
 generic boundary is `Renderer<S>::render(GameState<S>, Tau) -> Output` followed
 by `Frame<Output>`. The completed rendering contract defines the concrete
 owned rendering-object output and its division from host-owned device
-execution; gameplay-specific presentation may extend that output without
-moving rendering into authoritative game reasoning.
+execution. Gameplay-specific presentation may add only minimal fire-and-forget
+render data projected from `GameState`; it does not add a renderer input or
+move rendering into authoritative game reasoning.
 
 ### Host time
 

@@ -20,14 +20,17 @@ The selected `GameState` is authoritative input. `Tau` is the independent
 presentation sample. The renderer returns owned `RenderOutput` data inside the
 existing SDK `Frame` envelope.
 
-The output is downstream rendering data. Interaction logic, hit testing,
-collision reasoning, and game rules never consume `RenderOutput`; they query
-the selected authoritative `GameState` instead.
+The output is downstream, fire-and-forget rendering data. A render sink may
+copy, queue, submit, or discard it, but no later game decision or frame
+production may depend on it. Interaction logic, hit testing, collision
+reasoning, and game rules never consume `RenderOutput`; they query the selected
+authoritative `GameState` instead.
 
 ## RenderOutput
 
-The first Caravan `RenderOutput` is an owned, backend-neutral composition of
-rendering objects sufficient to inspect one frame. It preserves:
+The first Caravan `RenderOutput` is a minimal, owned, backend-neutral packet
+of values sufficient to draw one frame. It preserves only the current frame's
+draw data:
 
 - the exact sampled `LogicalTime` from `GameState`;
 - the enclosing `Tau` through `Frame`;
@@ -37,19 +40,20 @@ rendering objects sufficient to inspect one frame. It preserves:
 - global wheat and wood resources; and
 - deterministic equality for equal `GameState` and `Tau` inputs.
 
-The output may contain rendering-oriented values derived from the snapshot. It
-must not contain a mutable authoritative board, a hidden continuation state,
-frame history, a device handle, or an implicit host clock.
+The output contains no authoritative state, interaction state, view-selection
+state, continuation state, frame history, device handle, host clock, journal,
+or worldline. It is not a cache or a second game-state representation.
 
-The first output shape should stay small and value-oriented. It may be composed
-into richer target-local objects later; that is not a reason to make the game
-engine know about coordinates, cameras, widgets, assets, GPU resources, or
-backend commands now.
+The output vocabulary stays deliberately small. Add a render field only when a
+selected gameplay loop requires a value already present in `GameState` and the
+field is needed to draw that frame. Do not add a second renderer input to carry
+missing facts.
 
 ## Ownership
 
 - `GameState<Snapshot>` owns the authoritative Caravan values being projected.
 - `Tau` selects presentation sampling and remains visible on `Frame`.
+- `GameState<Snapshot> + Tau` are the only inputs to render production.
 - `Renderer<Snapshot>` owns the pure projection from immutable state to owned
   rendering data.
 - `Frame<RenderOutput>` owns the presentation envelope and output value.
@@ -57,6 +61,11 @@ backend commands now.
 - The presentation host owns render-sink transport and target/backend
   execution after the frame crosses the host boundary.
 - Interaction and transport/journal logic remain independent of render output.
+
+If a player-visible fact is absent from `GameState`, the missing work belongs
+in state production or the authoritative domain model. The renderer does not
+receive the journal, worldline, Orchestrator, input buffer, branch selector, or
+an auxiliary view context to recover it.
 
 A renderer implementation is a trusted extension boundary: the trait receives
 immutable values and returns an owned value, while arbitrary implementation
@@ -115,7 +124,9 @@ The first implementation is sufficient when focused evidence proves:
 - equal inputs produce equal output across repeated samples;
 - actual, counterfactual, and corrected states use one rendering path; and
 - no render output is supplied to interaction reasoning or authoritative state
-  evaluation.
+  evaluation; and
+- render production receives no input besides the selected `GameState` and
+  `Tau`.
 
 The contract does not require a particular Rust struct layout beyond the
 existing `Renderer<Snapshot>` and `Frame` boundaries.

@@ -240,8 +240,8 @@ packet meaning or retain semantic input state.
 
 The Stage-side `GameState + Tau -> Frame<RenderOutput>` composition is owned by
 the completed rendering contract on top of the current generic renderer/frame
-boundary. Gameplay-specific presentation remains a Stage/render-model concern;
-the host owns device execution:
+boundary. Gameplay-specific presentation may change only the minimal packet
+projected from `GameState`; the host owns device execution:
 
 ```text
 Frame<RenderOutput>

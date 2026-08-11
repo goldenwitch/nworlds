@@ -55,8 +55,8 @@ Accept: One complete player action cycle crosses input, interaction, authoritati
 ---
 [demo-presentation] Make the selected consequence legible (notstarted)
 Files: crates/caravan-demo/src/render.rs; crates/caravan-demo/src/host/**; crates/caravan-demo/src/bin/**; proposals/rendering-contract.md
-Do: Present the selected loop's relevant actors, terrain, effects, resources, logical time, branch identity, or persistence status through owned render output and target-local presentation. Keep render output downstream of GameState.
-Accept: A user can observe the selected action and its consequence in the native demo; equal worldline/time inputs remain deterministic; rendering does not become an interaction authority.
+Do: Present the selected loop's relevant values through minimal fire-and-forget render output and target-local presentation. Every visible value must be sourced by the selected GameState; keep render production as GameState + Tau -> RenderOutput and keep the output downstream of authoritative state.
+Accept: A user can observe the selected action and its consequence in the native demo; equal GameState/Tau inputs remain deterministic; no auxiliary renderer input or view context is introduced; rendering does not become an interaction authority; and each visible value has a named GameState source.
 -> demo-composition
 ---
 [gameplay-evidence] Add gameplay acceptance evidence (notstarted)
