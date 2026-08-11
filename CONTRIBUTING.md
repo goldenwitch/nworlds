@@ -18,9 +18,6 @@ matters as much as code volume.
 - Keep commits small enough to review and describe the evidence they add.
 - Update the owning proposal or VINE task when behavior or ownership changes.
 - Open a pull request against `main`.
-- Maintainers may perform an administrative merge while the project has a small
-  contributor base; normal changes still go through the same review and CI
-  requirements.
 
 ## Required Checks
 
@@ -34,6 +31,9 @@ cargo test --manifest-path tests/conformance/Cargo.toml --locked
 cargo check --manifest-path crates/caravan-demo/Cargo.toml --bin caravan-windows --locked
 ```
 
+Pull requests pass the required GitHub Actions checks: `Rust checks`,
+`Windows host build`, and `Analyze Rust`.
+
 Also run `git diff --check` and validate any edited VINE graph. Keep manual
 Windows observations separate from automated test claims.
 
@@ -46,5 +46,5 @@ A pull request should explain:
 - tests, measurements, or manual observations performed; and
 - any remaining limitation or deferred decision.
 
-Avoid unrelated formatting churn and do not introduce a generic abstraction
-until a concrete repeated boundary requires it.
+Keep changes focused and let reusable abstractions emerge from repeated
+concrete boundaries.
