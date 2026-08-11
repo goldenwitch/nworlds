@@ -8,3 +8,4 @@ engine-api = { path = "../engine-api" }
 
 [dev-dependencies]
 trybuild = "1"
+engine-presentation = { path = "../engine-presentation" }

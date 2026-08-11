@@ -177,7 +177,7 @@ pub struct TraceRenderer;
 impl Renderer<Snapshot> for TraceRenderer {
     type Output = TraceRenderValue;
 
-    fn render(&self, state: &GameState<Snapshot>, tau: Tau) -> Self::Output {
+    fn render(state: &GameState<Snapshot>, tau: Tau) -> Self::Output {
         TraceRenderValue {
             sampled_time: state.logical_time().ticks(),
             tau: tau.ticks(),
@@ -228,16 +228,10 @@ pub fn run(config: BenchmarkConfig) -> BenchmarkReport {
         }),
     );
 
-    let renderer = TraceRenderer;
     let frame_production = vec![
-        named_frames("actual", &traces.branches.actual, &renderer, config),
-        named_frames(
-            "counterfactual",
-            &traces.branches.counterfactual,
-            &renderer,
-            config,
-        ),
-        named_frames("corrected", &traces.branches.corrected, &renderer, config),
+        named_frames("actual", &traces.branches.actual, config),
+        named_frames("counterfactual", &traces.branches.counterfactual, config),
+        named_frames("corrected", &traces.branches.corrected, config),
     ];
 
     BenchmarkReport {
@@ -355,7 +349,6 @@ fn named_query(
 fn named_frames(
     name: &'static str,
     worldline: &ReferenceWorldline,
-    renderer: &TraceRenderer,
     config: BenchmarkConfig,
 ) -> NamedTiming {
     NamedTiming::new(
@@ -365,7 +358,7 @@ fn named_frames(
             for ticks in FRAME_TAU_TICKS {
                 let state = try_state(worldline, time(ticks))
                     .expect("fixed benchmark sample should project");
-                std::hint::black_box(present(&state, renderer, tau(ticks)));
+                std::hint::black_box(present::<Snapshot, TraceRenderer>(&state, tau(ticks)));
             }
         }),
     )
@@ -507,6 +500,7 @@ mod tests {
         LONG_HORIZON_GAME_TICKS, SEEDED_TRACE_HORIZON, SEEDED_TRACE_SEED,
     };
     use caravan_domain::ActorKind;
+    use caravan_reference::Snapshot;
     use engine_branches::BranchKind;
 
     #[test]
@@ -551,10 +545,9 @@ mod tests {
     #[test]
     fn renderer_output_remains_an_owned_frame_payload() {
         let traces = FixedTraces::new();
-        let renderer = super::TraceRenderer;
         let state = super::try_state(&traces.branches.actual, super::time(10))
             .expect("benchmark renderer sample should project");
-        let frame = super::present(&state, &renderer, super::tau(10));
+        let frame = super::present::<Snapshot, super::TraceRenderer>(&state, super::tau(10));
         let expected = TraceRenderValue {
             sampled_time: 10,
             tau: 10,

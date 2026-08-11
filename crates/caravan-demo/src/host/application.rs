@@ -122,7 +122,7 @@ mod tests {
     use crate::host::input::{InputIngress, MemoryInputIngress};
     use crate::host::render::CollectingRenderSink;
     use crate::host::storage::{MemoryStorage, StorageTransport};
-    use crate::{CaravanInteraction, CaravanRenderer, CaravanStage};
+    use crate::{CaravanInteraction, CaravanStage};
     use caravan_domain::{GameJournalEntry, Terrain, TileId};
     use caravan_reference::actual;
     use engine_journal::JournalWriter;
@@ -139,7 +139,7 @@ mod tests {
         )
         .expect("host stage should initialize");
         ApplicationHost::new(
-            CaravanStage::new(orchestrator, CaravanRenderer),
+            CaravanStage::new(orchestrator),
             MemoryInputIngress::new(),
             MemoryStorage::new(),
             CollectingRenderSink::new(),

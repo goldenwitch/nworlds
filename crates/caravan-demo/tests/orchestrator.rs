@@ -19,7 +19,7 @@ struct ProbeRenderer;
 impl Renderer<Snapshot> for ProbeRenderer {
     type Output = ProbeFrame;
 
-    fn render(&self, state: &GameState<Snapshot>, tau: Tau) -> Self::Output {
+    fn render(state: &GameState<Snapshot>, tau: Tau) -> Self::Output {
         ProbeFrame {
             logical_time: state.logical_time(),
             tau,
@@ -48,7 +48,7 @@ fn malformed_stage() -> CaravanStage<CaravanInteraction, ProbeRenderer> {
         CaravanInteraction,
     )
     .expect("authoring cursor should accept malformed payloads");
-    CaravanStage::new(orchestrator, ProbeRenderer)
+    CaravanStage::new(orchestrator)
 }
 
 fn stage() -> CaravanStage<CaravanInteraction, ProbeRenderer> {
@@ -59,7 +59,7 @@ fn stage() -> CaravanStage<CaravanInteraction, ProbeRenderer> {
         CaravanInteraction,
     )
     .expect("test orchestrator should initialize");
-    CaravanStage::new(orchestrator, ProbeRenderer)
+    CaravanStage::new(orchestrator)
 }
 
 #[test]

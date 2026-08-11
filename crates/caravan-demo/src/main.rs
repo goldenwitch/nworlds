@@ -240,7 +240,7 @@ fn stage(
 ) -> CaravanStage<CaravanInteraction, CaravanRenderer> {
     let orchestrator = CaravanOrchestrator::new(worldline, logical_time, tau, CaravanInteraction)
         .expect("demo orchestrator should initialize");
-    CaravanStage::new(orchestrator, CaravanRenderer)
+    CaravanStage::new(orchestrator)
 }
 
 fn journal(entries: impl IntoIterator<Item = (i64, GameJournalEntry)>) -> Journal {

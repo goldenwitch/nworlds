@@ -6,7 +6,7 @@ use caravan_demo::host::application::ApplicationHost;
 use caravan_demo::host::input::{InputIngress, MemoryInputIngress};
 use caravan_demo::host::storage::MemoryStorage;
 use caravan_demo::host::wgpu::WgpuRenderSink;
-use caravan_demo::{CaravanInteraction, CaravanOrchestrator, CaravanRenderer, CaravanStage};
+use caravan_demo::{CaravanInteraction, CaravanOrchestrator, CaravanStage};
 use caravan_domain::GameJournalEntry;
 use caravan_reference::actual;
 use engine_journal::JournalWriter;
@@ -114,7 +114,7 @@ fn initial_host(sink: WgpuRenderSink) -> NativeHost {
     )
     .expect("the initial Caravan worldline should be valid");
     ApplicationHost::new(
-        CaravanStage::new(orchestrator, CaravanRenderer),
+        CaravanStage::new(orchestrator),
         MemoryInputIngress::new(),
         MemoryStorage::new(),
         sink,

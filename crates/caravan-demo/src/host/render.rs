@@ -41,7 +41,7 @@ mod tests {
     use super::{CollectingRenderSink, RenderSinkAdapter};
     use crate::render::CaravanRenderer;
     use caravan_domain::GameJournalEntry;
-    use caravan_reference::{actual, state};
+    use caravan_reference::{actual, state, Snapshot};
     use engine_journal::JournalWriter;
     use engine_presentation::present;
     use engine_time::{LogicalTime, Tau};
@@ -52,8 +52,8 @@ mod tests {
         writer.record(GameJournalEntry::create_saucer());
         let worldline = actual(writer.finish());
         let state = state(&worldline, LogicalTime::zero());
-        let first = present(&state, &CaravanRenderer, Tau::from_ticks(1));
-        let second = present(&state, &CaravanRenderer, Tau::from_ticks(2));
+        let first = present::<Snapshot, CaravanRenderer>(&state, Tau::from_ticks(1));
+        let second = present::<Snapshot, CaravanRenderer>(&state, Tau::from_ticks(2));
         let mut sink = CollectingRenderSink::new();
 
         sink.submit(first.clone());

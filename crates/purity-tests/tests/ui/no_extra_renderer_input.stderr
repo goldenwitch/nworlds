@@ -1,0 +1,7 @@
+error[E0050]: method `render` has 3 parameters but the declaration in trait `render` has 2
+ --> tests/ui/no_extra_renderer_input.rs:8:22
+  |
+8 |     fn render(state: &(), tau: (), journal: &()) -> Self::Output {
+  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^ expected 2 parameters, found 3
+  |
+  = note: `render` from trait: `fn(&engine_sdk::game_state::GameState<S>, engine_time::tau::Tau) -> <Self as Renderer<S>>::Output`

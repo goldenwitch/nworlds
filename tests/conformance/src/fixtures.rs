@@ -85,7 +85,7 @@ pub struct TraceRenderer;
 impl Renderer<Snapshot> for TraceRenderer {
     type Output = RenderValue;
 
-    fn render(&self, state: &GameState<Snapshot>, tau: Tau) -> Self::Output {
+    fn render(state: &GameState<Snapshot>, tau: Tau) -> Self::Output {
         RenderValue {
             sampled_time: state.logical_time().ticks(),
             tau: tau.ticks(),

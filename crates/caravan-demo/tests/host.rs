@@ -3,7 +3,7 @@ use caravan_demo::host::input::{InputIngress, MemoryInputIngress};
 use caravan_demo::host::render::CollectingRenderSink;
 use caravan_demo::host::storage::{MemoryStorage, StorageTransport};
 use caravan_demo::input::{Button, InputPacket};
-use caravan_demo::{CaravanInteraction, CaravanOrchestrator, CaravanRenderer, CaravanStage};
+use caravan_demo::{CaravanInteraction, CaravanOrchestrator, CaravanStage};
 use caravan_domain::GameJournalEntry;
 use caravan_reference::actual;
 use engine_journal::JournalWriter;
@@ -20,7 +20,7 @@ fn application() -> ApplicationHost {
     )
     .expect("host fixture should initialize");
     ApplicationHost::new(
-        CaravanStage::new(orchestrator, CaravanRenderer),
+        CaravanStage::new(orchestrator),
         MemoryInputIngress::new(),
         MemoryStorage::new(),
         CollectingRenderSink::new(),

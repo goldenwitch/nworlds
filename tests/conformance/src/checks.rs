@@ -1,7 +1,7 @@
 use std::{fs, path::PathBuf};
 
 use caravan_domain::{ActorKind, Effect, GameJournalEntry, Saucer, Terrain, TileId};
-use caravan_reference::actual;
+use caravan_reference::{actual, Snapshot};
 use caravan_seeded::generate_spawn_journal;
 use engine_branches::BranchKind;
 use engine_index::game_tick_index;
@@ -370,15 +370,14 @@ pub fn presentation_supports_scrubbing_branches_and_repeatable_rendering() {
         (3, spawn(1, ActorKind::Forester, TileId::origin())),
     ]);
     let original_parent = parent.clone();
-    let renderer = TraceRenderer;
     let forward_state = state(&parent, 5);
     let reverse_state = state(&parent, 3);
     let scrubbed_state = state(&parent, 2);
 
-    let forward_frame = present(&forward_state, &renderer, tau(5));
-    let reverse_frame = present(&reverse_state, &renderer, tau(2));
-    let scrubbed_frame = present(&scrubbed_state, &renderer, tau(2));
-    let repeated_frame = present(&forward_state, &renderer, tau(5));
+    let forward_frame = present::<Snapshot, TraceRenderer>(&forward_state, tau(5));
+    let reverse_frame = present::<Snapshot, TraceRenderer>(&reverse_state, tau(2));
+    let scrubbed_frame = present::<Snapshot, TraceRenderer>(&scrubbed_state, tau(2));
+    let repeated_frame = present::<Snapshot, TraceRenderer>(&forward_state, tau(5));
 
     assert_eq!(forward_frame.tau(), tau(5));
     assert_eq!(forward_frame.payload().sampled_time, time(5).ticks());
@@ -391,9 +390,9 @@ pub fn presentation_supports_scrubbing_branches_and_repeatable_rendering() {
     let fixed_state = caravan_reference::state(&parent, LogicalTime::from_ticks(2));
     let tau_two = Tau::from_ticks(2);
     let tau_three = Tau::from_ticks(3);
-    let repeated_frame = present(&fixed_state, &renderer, tau_two);
-    let repeated_frame_again = present(&fixed_state, &renderer, tau_two);
-    let different_tau_frame = present(&fixed_state, &renderer, tau_three);
+    let repeated_frame = present::<Snapshot, TraceRenderer>(&fixed_state, tau_two);
+    let repeated_frame_again = present::<Snapshot, TraceRenderer>(&fixed_state, tau_two);
+    let different_tau_frame = present::<Snapshot, TraceRenderer>(&fixed_state, tau_three);
     assert_eq!(repeated_frame, repeated_frame_again);
     assert_ne!(repeated_frame, different_tau_frame);
 
@@ -412,9 +411,10 @@ pub fn presentation_supports_scrubbing_branches_and_repeatable_rendering() {
     let actual_state = state(&parent, 4);
     let counterfactual_state = state(&counterfactual, 4);
     let corrected_state = state(&corrected, 4);
-    let actual_frame = present(&actual_state, &renderer, tau(4));
-    let counterfactual_frame = present(&counterfactual_state, &renderer, tau(4));
-    let corrected_frame = present(&corrected_state, &renderer, tau(4));
+    let actual_frame = present::<Snapshot, TraceRenderer>(&actual_state, tau(4));
+    let counterfactual_frame =
+        present::<Snapshot, TraceRenderer>(&counterfactual_state, tau(4));
+    let corrected_frame = present::<Snapshot, TraceRenderer>(&corrected_state, tau(4));
     assert_eq!(actual_frame.payload().actor_ids, vec![1]);
     assert_eq!(counterfactual_frame.payload().actor_ids, vec![2]);
     assert_eq!(corrected_frame.payload().actor_ids, vec![3]);

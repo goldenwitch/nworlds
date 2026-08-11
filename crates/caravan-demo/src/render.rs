@@ -105,7 +105,7 @@ impl RenderActor {
 impl Renderer<Snapshot> for CaravanRenderer {
     type Output = RenderOutput;
 
-    fn render(&self, state: &GameState<Snapshot>, _tau: Tau) -> Self::Output {
+    fn render(state: &GameState<Snapshot>, _tau: Tau) -> Self::Output {
         let snapshot = state.payload();
         let tiles = snapshot
             .tiles()
@@ -143,7 +143,7 @@ impl Renderer<Snapshot> for CaravanRenderer {
 mod tests {
     use super::{CaravanRenderer, RenderOutput};
     use caravan_domain::{ActorId, ActorKind, Effect, GameJournalEntry, Terrain, TileId};
-    use caravan_reference::{actual, state};
+    use caravan_reference::{actual, state, Snapshot};
     use caravan_seeded::hand_authored_behavior_fixture;
     use engine_journal::{Journal, JournalWriter};
     use engine_presentation::{present, Renderer};
@@ -156,7 +156,7 @@ mod tests {
         tau: Tau,
     ) -> Frame<RenderOutput> {
         let state = state(worldline, time);
-        present(&state, &CaravanRenderer, tau)
+        present::<Snapshot, CaravanRenderer>(&state, tau)
     }
 
     fn saucer_worldline() -> caravan_reference::ReferenceWorldline {
@@ -183,7 +183,7 @@ mod tests {
     fn saucer_projection_preserves_stable_tile_order() {
         let worldline = saucer_worldline();
         let state = state(&worldline, LogicalTime::zero());
-        let output = CaravanRenderer.render(&state, Tau::zero());
+        let output = CaravanRenderer::render(&state, Tau::zero());
 
         assert_eq!(output.tiles().len(), 91);
         assert_eq!(
@@ -231,5 +231,14 @@ mod tests {
         let second = frame(&worldline, LogicalTime::zero(), Tau::from_ticks(3));
 
         assert_eq!(first, second);
+    }
+
+    fn assert_fire_and_forget_data<T: Send + Sync + 'static>() {}
+
+    #[test]
+    fn render_packets_are_owned_static_send_and_sync_data() {
+        assert_fire_and_forget_data::<RenderOutput>();
+        assert_fire_and_forget_data::<super::RenderTile>();
+        assert_fire_and_forget_data::<super::RenderActor>();
     }
 }

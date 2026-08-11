@@ -1,3 +1,5 @@
+use core::marker::PhantomData;
+
 use caravan_reference::Snapshot;
 use engine_presentation::{present, Renderer};
 use engine_sdk::{Frame, GameState};
@@ -10,7 +12,7 @@ use crate::transformation::Transformation;
 /// The first concrete Stage composition for the Caravan anchor.
 pub struct CaravanStage<I = CaravanInteraction, R = NoopRenderer> {
     orchestrator: CaravanOrchestrator<I>,
-    renderer: R,
+    _renderer: PhantomData<fn() -> R>,
 }
 
 impl<I, R> CaravanStage<I, R>
@@ -19,10 +21,10 @@ where
     R: Renderer<Snapshot>,
 {
     /// Composes one Orchestrator and one renderer into a Stage.
-    pub fn new(orchestrator: CaravanOrchestrator<I>, renderer: R) -> Self {
+    pub fn new(orchestrator: CaravanOrchestrator<I>) -> Self {
         Self {
             orchestrator,
-            renderer,
+            _renderer: PhantomData,
         }
     }
 
@@ -103,7 +105,7 @@ where
         tau: Tau,
     ) -> Result<Frame<R::Output>, OrchestratorError> {
         let state = self.orchestrator.lookahead_at(logical_time)?;
-        Ok(present(&state, &self.renderer, tau))
+        Ok(present::<Snapshot, R>(&state, tau))
     }
 }
 
@@ -114,14 +116,14 @@ pub struct NoopRenderer;
 impl Renderer<Snapshot> for NoopRenderer {
     type Output = (LogicalTime, Tau);
 
-    fn render(&self, state: &GameState<Snapshot>, tau: Tau) -> Self::Output {
+    fn render(state: &GameState<Snapshot>, tau: Tau) -> Self::Output {
         (state.logical_time(), tau)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{CaravanStage, NoopRenderer};
+    use super::CaravanStage;
     use crate::orchestrator::{CaravanInteraction, CaravanOrchestrator, OrchestratorError};
     use caravan_domain::GameJournalEntry;
     use caravan_reference::actual;
@@ -142,7 +144,7 @@ mod tests {
             CaravanInteraction,
         )
         .expect("stage orchestrator should initialize");
-        CaravanStage::new(orchestrator, NoopRenderer)
+        CaravanStage::new(orchestrator)
     }
 
     #[test]

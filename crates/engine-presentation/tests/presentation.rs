@@ -17,7 +17,7 @@ struct SnapshotRenderer;
 impl Renderer<Snapshot> for SnapshotRenderer {
     type Output = RenderValue;
 
-    fn render(&self, state: &GameState<Snapshot>, tau: Tau) -> Self::Output {
+    fn render(state: &GameState<Snapshot>, tau: Tau) -> Self::Output {
         RenderValue {
             logical_time: state.logical_time(),
             tau,
@@ -71,14 +71,13 @@ fn present_accepts_explicit_logical_and_presentation_times() {
         (0, create_saucer()),
         (3, spawn(1, ActorKind::Forester, TileId::origin())),
     ]));
-    let renderer = SnapshotRenderer;
     let forward_state = reference_state(&worldline, time(5));
     let reverse_state = reference_state(&worldline, time(3));
     let scrubbed_state = reference_state(&worldline, time(2));
 
-    let forward_frame = present(&forward_state, &renderer, Tau::from_ticks(5));
-    let reverse_frame = present(&reverse_state, &renderer, Tau::from_ticks(2));
-    let scrubbed_frame = present(&scrubbed_state, &renderer, Tau::from_ticks(2));
+    let forward_frame = present::<Snapshot, SnapshotRenderer>(&forward_state, Tau::from_ticks(5));
+    let reverse_frame = present::<Snapshot, SnapshotRenderer>(&reverse_state, Tau::from_ticks(2));
+    let scrubbed_frame = present::<Snapshot, SnapshotRenderer>(&scrubbed_state, Tau::from_ticks(2));
 
     assert_eq!(forward_frame.tau(), Tau::from_ticks(5));
     assert_eq!(forward_frame.payload().logical_time, time(5));
@@ -93,13 +92,12 @@ fn repeated_samples_are_equal_and_do_not_depend_on_query_order() {
         (0, create_saucer()),
         (3, spawn(1, ActorKind::Forester, TileId::origin())),
     ]));
-    let renderer = SnapshotRenderer;
     let later_state = reference_state(&worldline, time(5));
     let earlier_state = reference_state(&worldline, time(2));
 
-    let later_first = present(&later_state, &renderer, Tau::from_ticks(5));
-    let _earlier = present(&earlier_state, &renderer, Tau::from_ticks(2));
-    let later_again = present(&later_state, &renderer, Tau::from_ticks(5));
+    let later_first = present::<Snapshot, SnapshotRenderer>(&later_state, Tau::from_ticks(5));
+    let _earlier = present::<Snapshot, SnapshotRenderer>(&earlier_state, Tau::from_ticks(2));
+    let later_again = present::<Snapshot, SnapshotRenderer>(&later_state, Tau::from_ticks(5));
 
     assert_eq!(later_first, later_again);
 }
@@ -122,14 +120,15 @@ fn actual_counterfactual_and_corrected_branches_use_one_presentation_path() {
             &journal([(6, spawn(3, ActorKind::Arborist, TileId::origin()))]),
         )
         .expect("corrected suffix is after its boundary");
-    let renderer = SnapshotRenderer;
     let actual_state = reference_state(&parent, time(10));
     let counterfactual_state = reference_state(&counterfactual, time(10));
     let corrected_state = reference_state(&corrected, time(10));
 
-    let actual_frame = present(&actual_state, &renderer, Tau::from_ticks(10));
-    let counterfactual_frame = present(&counterfactual_state, &renderer, Tau::from_ticks(10));
-    let corrected_frame = present(&corrected_state, &renderer, Tau::from_ticks(10));
+    let actual_frame = present::<Snapshot, SnapshotRenderer>(&actual_state, Tau::from_ticks(10));
+    let counterfactual_frame =
+        present::<Snapshot, SnapshotRenderer>(&counterfactual_state, Tau::from_ticks(10));
+    let corrected_frame =
+        present::<Snapshot, SnapshotRenderer>(&corrected_state, Tau::from_ticks(10));
 
     assert_eq!(actual_frame.payload().actor_ids, vec![1]);
     assert_eq!(counterfactual_frame.payload().actor_ids, vec![2]);
@@ -149,14 +148,14 @@ fn state_and_renderer_remain_generic_over_opaque_payloads() {
     impl Renderer<u32> for OpaqueRenderer {
         type Output = (u32, Tau);
 
-        fn render(&self, state: &GameState<u32>, tau: Tau) -> Self::Output {
+        fn render(state: &GameState<u32>, tau: Tau) -> Self::Output {
             (*state.payload(), tau)
         }
     }
 
     let worldline = OpaqueWorldline { marker: 17 };
     let state = GameState::new(LogicalTime::from_ticks(4), worldline.marker);
-    let frame = present(&state, &OpaqueRenderer, Tau::from_ticks(4));
+    let frame = present::<u32, OpaqueRenderer>(&state, Tau::from_ticks(4));
 
     assert_eq!(frame.payload(), &(17, Tau::from_ticks(4)));
     assert_eq!(frame.tau(), Tau::from_ticks(4));
