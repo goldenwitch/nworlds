@@ -66,8 +66,14 @@ factory, not to the game package's public workflow.
 - [Build graph](build.vine) - dependency-ordered anchor work.
 - [Host graph](host.vine) - first host proof composition; target minting is
   owned by the target factory.
+- [Desktop host client](crates/nworlds-desktop/Cargo.toml) - target-local
+  `winit`/`wgpu` composition mapped over the target-neutral host contract.
+- [Host runtime](crates/nworlds-host) - target-neutral package contract and
+  independent host-port composition.
 - [Target factory proposal](proposals/target-factory.md) - the desired
   target-neutral developer path and host-owned artifact minting.
+- [Target factory plan](target-factory.vine) - the dependency-ordered contract
+  and migration decisions for host-owned target minting.
 - [Support graph](support.vine) - committed desktop targets, explicit gaps, and
   native or appropriate CI work.
 - [Demo gameplay plan](gameplay.vine) - the design-derived inventory and

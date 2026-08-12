@@ -95,6 +95,8 @@ nworlds package
 
 Target resolution, host capabilities, artifact minting, and unsupported-
 environment reporting belong to nworlds, not to each game package.
+The design work is ordered in [target-factory.vine](target-factory.vine); the
+desktop proof client is not the target-factory implementation.
 
 ## Remaining Work
 

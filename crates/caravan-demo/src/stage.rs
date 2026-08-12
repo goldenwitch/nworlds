@@ -4,6 +4,7 @@ use caravan_reference::Snapshot;
 use engine_presentation::{present, Renderer};
 use engine_sdk::{Frame, GameState};
 use engine_time::{LogicalTime, Tau};
+use nworlds_host::GamePackage;
 
 use crate::input::{InputPacket, InteractionDefinition, OrderedInputBatch};
 use crate::orchestrator::{CaravanInteraction, CaravanOrchestrator, OrchestratorError};
@@ -106,6 +107,36 @@ where
     ) -> Result<Frame<R::Output>, OrchestratorError> {
         let state = self.orchestrator.lookahead_at(logical_time)?;
         Ok(present::<Snapshot, R>(&state, tau))
+    }
+}
+
+impl<I, R> GamePackage for CaravanStage<I, R>
+where
+    I: InteractionDefinition<Transformation = Transformation>,
+    R: Renderer<Snapshot>,
+{
+    type InputBatch = OrderedInputBatch;
+    type Frame = Frame<R::Output>;
+    type Error = OrchestratorError;
+    type SaveError = engine_persistence::PersistenceError;
+    type LoadError = engine_persistence::PersistenceError;
+
+    fn ingest_batch(&mut self, batch: Self::InputBatch) -> Result<(), Self::Error> {
+        CaravanStage::ingest_batch(self, batch)
+    }
+
+    fn step(&mut self) -> Result<(bool, Self::Frame), Self::Error> {
+        let applied = self.interact_and_apply()?;
+        let frame = self.present()?;
+        Ok((applied, frame))
+    }
+
+    fn save_selected(&self) -> Result<Vec<u8>, Self::SaveError> {
+        self.orchestrator.save_selected()
+    }
+
+    fn load_selected(&mut self, bytes: &[u8]) -> Result<(), Self::LoadError> {
+        CaravanStage::load_selected(self, bytes)
     }
 }
 

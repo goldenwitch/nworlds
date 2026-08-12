@@ -217,7 +217,6 @@ dependencies = [
 name = "caravan-demo"
 version = "0.1.0"
 dependencies = [
- "bytemuck",
  "caravan-domain",
  "caravan-reference",
  "caravan-seeded",
@@ -228,9 +227,7 @@ dependencies = [
  "engine-presentation",
  "engine-sdk",
  "engine-time",
- "pollster",
- "wgpu",
- "winit",
+ "nworlds-host",
 ]
 
 [[package]]
@@ -1031,6 +1028,24 @@ dependencies = [
  "quote",
  "syn 2.0.119",
 ]
+
+[[package]]
+name = "nworlds-desktop"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "caravan-demo",
+ "caravan-domain",
+ "engine-sdk",
+ "nworlds-host",
+ "pollster",
+ "wgpu",
+ "winit",
+]
+
+[[package]]
+name = "nworlds-host"
+version = "0.1.0"
 
 [[package]]
 name = "objc-sys"

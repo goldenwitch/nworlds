@@ -1,40 +1,8 @@
 use crate::render::RenderOutput;
 use engine_sdk::Frame;
 
-/// A target-facing execution port for owned Caravan render frames.
-pub trait RenderSinkAdapter {
-    /// Submits one owned frame for target execution or collection.
-    fn submit(&mut self, frame: Frame<RenderOutput>);
-}
-
-/// In-memory render sink for tests and the first target composition.
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct CollectingRenderSink {
-    frames: Vec<Frame<RenderOutput>>,
-}
-
-impl CollectingRenderSink {
-    /// Creates an empty collecting sink.
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Returns submitted frames in submission order.
-    pub fn frames(&self) -> &[Frame<RenderOutput>] {
-        &self.frames
-    }
-
-    /// Returns the most recently submitted frame, if any.
-    pub fn last(&self) -> Option<&Frame<RenderOutput>> {
-        self.frames.last()
-    }
-}
-
-impl RenderSinkAdapter for CollectingRenderSink {
-    fn submit(&mut self, frame: Frame<RenderOutput>) {
-        self.frames.push(frame);
-    }
-}
+pub use nworlds_host::RenderSink as RenderSinkAdapter;
+pub type CollectingRenderSink = nworlds_host::CollectingRenderSink<Frame<RenderOutput>>;
 
 #[cfg(test)]
 mod tests {

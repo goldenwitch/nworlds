@@ -12,7 +12,7 @@
 - [ ] `cargo clippy --workspace --all-targets --locked -- -D warnings`
 - [ ] `cargo test --workspace --locked`
 - [ ] `cargo test --manifest-path tests/conformance/Cargo.toml --locked`
-- [ ] `cargo check --manifest-path crates/caravan-demo/Cargo.toml --bin caravan-windows --locked`
+- [ ] `cargo check --manifest-path crates/nworlds-desktop/Cargo.toml --bin nworlds-desktop --locked`
 - [ ] `git diff --check`
 - [ ] Edited VINE graphs validate
 

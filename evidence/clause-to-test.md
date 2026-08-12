@@ -66,7 +66,7 @@ separate conformance catalog:
 
 | Clause | Evidence | Coverage |
 | --- | --- | --- |
-| Windows `winit`/`wgpu` target launches and presents the owned render output | `cargo run --manifest-path crates/caravan-demo/Cargo.toml --bin caravan-windows` | Manual local acceptance: the window opened and rendered the Caravan scene on `x86_64-pc-windows-msvc` |
+| Desktop `winit`/`wgpu` host launches and presents the owned render output | `cargo run --manifest-path crates/nworlds-desktop/Cargo.toml --bin nworlds-desktop` | Manual local acceptance: the window opened and rendered the Caravan scene on `x86_64-pc-windows-msvc` |
 | Native resize remains below the game layer | Local window resize observation | Manual local acceptance: resizing stretched the presentation without changing the game-facing path |
 | Native input reaches the unchanged semantic interaction path | Space key through `winit` keyboard input | Manual local acceptance: Space changed the center tile color |
 | Native shutdown is owned by the target event loop | Close request through the Windows window | Manual local acceptance: the target exited cleanly |

@@ -3,7 +3,7 @@ prefix: host
 title: Target entrypoint and presentation-host adapter wiring
 ---
 [root] Wire the target entrypoint and presentation-host ports (complete)
-Files: host.vine; proposals/presentation-host.md; proposals/platform-support-matrix.md; crates/caravan-demo/**; tests/**
+Files: host.vine; proposals/presentation-host.md; proposals/platform-support-matrix.md; crates/caravan-demo/**; crates/nworlds-desktop/**; crates/nworlds-host/**; tests/**
 Do: Build the first target composition around independent translation, transport, storage, render-execution, and lifecycle/resource ports. The in-memory proof is complete. Execute the selected Windows desktop composition with winit lifecycle/input plumbing and wgpu render execution; the Orchestrator pulls the ports and the target entrypoint supplies their concrete adapters.
 Accept: The host proposal names distinct adapter roles; the support matrix records the completed in-memory proof and selected Windows target; the native composition launches locally, accepts native input, submits owned render output through wgpu, and preserves Stage/Orchestrator ownership; and all existing anchor/conformance evidence remains green.
 > This graph records the first target-local host proof, not the public game-package workflow. The target-factory proposal owns target-neutral commands, target resolution, host capability delivery, and artifact minting; do not extend this graph as a per-game target-selection contract.
@@ -963,7 +963,7 @@ Accept: The cross-source semantic batch produces deterministic interaction/publi
 -> transport/journal-operations
 ---
 [host-contract] Settle independent adapter ports and ownership (complete)
-Files: proposals/presentation-host.md
+Files: proposals/presentation-host.md; crates/nworlds-host/src/lib.rs
 Do: Define the conceptual and first concrete port responsibilities for PlatformInputAdapter, InputIngress, storage transport, RenderSinkAdapter, and LifecycleResourceAdapter. Keep method shapes minimal and leave render output typing to the rendering contract. State which values each adapter may translate, transport, store, or execute, and which authoritative decisions remain Stage/Orchestrator-owned.
 Accept: The proposal names distinct translation, transport, byte-storage, render-execution, and lifecycle/resource roles; the rendering path is state-first; and the proposal can be executed idempotently.
 ---
@@ -974,18 +974,20 @@ Accept: Every target row names lifecycle, input translation, ingress, render/wgp
 -> host-contract
 ---
 [input-adapter] Implement the in-memory input adapter path (complete)
-Files: crates/caravan-demo/src/host/input.rs; crates/caravan-demo/src/input.rs; crates/caravan-demo/src/stage.rs; crates/caravan-demo/src/orchestrator.rs\nDo: Add the smallest in-memory InputIngress and packet-delivery adapter behind the host contract. It emits normalized OrderedInputBatch values with source-local identity while Orchestrator InputBuffer owns semantic retention, windows, and resolution. Keep abstract InputPacket values free of native event types and preserve transport delivery as distinct from Stage packet-set behavior.\nAccept: Integration tests deliver button press/release permutations through the ingress; host transport emits ordered batches; Orchestrator captures and resolves windows explicitly; publication/projection failures retain input; accepted/no-op attempts resolve input; and the adapter remains replaceable without changing InteractionDefinition.
+Files: crates/nworlds-host/src/lib.rs; crates/caravan-demo/src/host/input.rs; crates/caravan-demo/src/input.rs; crates/caravan-demo/src/stage.rs; crates/caravan-demo/src/orchestrator.rs
+Do: Add the smallest in-memory InputIngress and packet-delivery adapter behind the host contract. It emits normalized OrderedInputBatch values with source-local identity while Orchestrator InputBuffer owns semantic retention, windows, and resolution. Keep abstract InputPacket values free of native event types and preserve transport delivery as distinct from Stage packet-set behavior.
+Accept: Integration tests deliver button press/release permutations through the ingress; host transport emits ordered batches; Orchestrator captures and resolves windows explicitly; publication/projection failures retain input; accepted/no-op attempts resolve input; and the adapter remains replaceable without changing InteractionDefinition.
 -> host-contract
 -> transport
 ---
 [storage-adapter] Implement the in-memory storage transport path (complete)
-Files: crates/caravan-demo/src/host/storage.rs
+Files: crates/nworlds-host/src/lib.rs; crates/caravan-demo/src/host/storage.rs
 Do: Add the smallest bytes-only in-memory storage transport needed to exercise Orchestrator save/load choices. Keep semantic persistence, encoding/decoding, and worldline construction outside the adapter; storage only retains or returns byte values.
 Accept: Round-trip tests prove selected immutable worldlines survive save/load; the adapter stores and returns encoded values; and the in-memory implementation has a clear replacement boundary for a platform file adapter.
 -> host-contract
 ---
 [render-adapter] Implement the collecting render sink path (complete)
-Files: crates/caravan-demo/src/host/render.rs
+Files: crates/nworlds-host/src/lib.rs; crates/caravan-demo/src/host/render.rs
 Do: Add the smallest collecting RenderSinkAdapter after the rendering contract supplies the render-output shape. Consume owned Frame/render output as the render execution step. Keep wgpu and surface/device execution out of this task.
 Accept: Tests prove selected GameState and Tau reach the sink as owned output, repeated submissions are observable, and the task follows the rendering contract's selected output shape.
 -> host-contract
@@ -993,7 +995,9 @@ Accept: Tests prove selected GameState and Tau reach the sink as owned output, r
 -> support-matrix
 ---
 [host-composition] Compose the in-memory target bundle (complete)
-Files: crates/caravan-demo/src/host/application.rs; crates/caravan-demo/src/lib.rs; crates/caravan-demo/src/orchestrator.rs; crates/caravan-demo/src/stage.rs\nDo: Compose CaravanStage with the in-memory input, storage, and render ports in a target-local ApplicationHost convenience bundle. Keep Orchestrator control flow and explicit time selection in the application composition; the target bundle supplies capabilities around that control flow. Leave the existing terminal entrypoint owned by the rendering/demo path.\nAccept: One integration path demonstrates packet delivery, interaction/publication, state-first rendering, and save/load without changing the existing terminal anchor observables or adding a broad capabilities object.
+Files: crates/nworlds-host/src/lib.rs; crates/caravan-demo/src/host/application.rs; crates/caravan-demo/src/lib.rs; crates/caravan-demo/src/orchestrator.rs; crates/caravan-demo/src/stage.rs
+Do: Compose a target-neutral GamePackage with independent input, storage, and render ports through the generic nworlds-host ApplicationHost. Keep package semantic control and explicit time selection in the package composition; the host bundle supplies capabilities around that control flow. Leave the existing terminal entrypoint owned by the rendering/demo path.
+Accept: One integration path demonstrates packet delivery, interaction/publication, state-first rendering, and save/load without changing the existing terminal anchor observables or adding a broad capabilities object.
 -> input-adapter
 -> render-adapter
 -> storage-adapter
@@ -1015,14 +1019,14 @@ Accept: The target is x86_64-pc-windows-msvc; winit owns window and native input
 > The first executable slice reuses Stage, Orchestrator, SemanticInputBatch, CaravanRenderer, MemoryInputIngress, and MemoryStorage without game-layer changes.
 ---
 [windows-lifecycle] Windows lifecycle and wgpu resources (complete)
-Files: crates/caravan-demo/**; Cargo.toml
+Files: crates/nworlds-desktop/**; Cargo.toml
 Do: Implement the target-local winit window/event-loop boundary and wgpu instance, surface, adapter, device, queue, resize, and shutdown ownership. Keep lifecycle and device values below the existing render sink boundary.
 Accept: A local debug executable creates and owns a window and wgpu resources, handles resize and shutdown conditions, and exposes no window or device types to Stage, GameState, InputPacket, or CaravanRenderer.
 -> host-contract
 -> windows-wgpu-profile
 ---
 [windows-input] Windows native input adapter (complete)
-Files: crates/caravan-demo/**; Cargo.toml
+Files: crates/nworlds-desktop/**; crates/caravan-demo/src/host/input.rs; Cargo.toml
 Do: Translate winit native input events into the closed InputPacket vocabulary and deliver them through the existing InputIngress. Preserve OrderedInputBatch normalization and InputBuffer/InputWindow semantic lifecycle.
 Accept: Keyboard/button input reaches the existing interaction and publication path through the native adapter; transport identity and ordering remain below SemanticInputBatch; no game rule or interaction API changes are required.
 -> input-adapter
@@ -1030,7 +1034,7 @@ Accept: Keyboard/button input reaches the existing interaction and publication p
 -> windows-wgpu-profile
 ---
 [windows-render] Windows wgpu render sink (complete)
-Files: crates/caravan-demo/**; Cargo.toml
+Files: crates/nworlds-desktop/**; crates/caravan-demo/src/host/render.rs; Cargo.toml
 Do: Implement the native RenderSinkAdapter that consumes Frame<RenderOutput> and owns wgpu surface configuration, buffers, pipelines, and submission. Keep RenderOutput as the only render-model input and keep GPU state out of authoritative game state.
 Accept: CaravanRenderer output reaches a wgpu surface on the local Windows target as a visible frame; resize and surface-loss handling remain render-host concerns; GameState, Tau, and interaction semantics are unchanged.
 -> render-adapter
@@ -1038,7 +1042,7 @@ Accept: CaravanRenderer output reaches a wgpu surface on the local Windows targe
 -> windows-wgpu-profile
 ---
 [windows-entrypoint] Windows target entrypoint composition (complete)
-Files: crates/caravan-demo/**; Cargo.toml
+Files: crates/nworlds-desktop/**; crates/caravan-demo/src/host/application.rs; Cargo.toml
 Do: Compose the selected lifecycle, native input, ingress, existing Stage/Orchestrator, MemoryStorage, and wgpu render sink in a target-specific executable entrypoint. Use an explicit presentation-sampling policy without making host time authoritative.
 Accept: A local cargo run launches the Windows target, presents the existing Caravan scene, routes native input through the unchanged game-facing path, and keeps storage, rendering, and lifecycle ownership in their selected adapters.
 -> host-composition

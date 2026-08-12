@@ -17,127 +17,13 @@ pub enum Button {
     Secondary,
 }
 
-/// Stable identity for one observation within one source stream.
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct ObservationId {
-    stream_id: u64,
-    sequence: u64,
-}
+pub use nworlds_host::{InputBatchError, ObservationId};
 
-impl ObservationId {
-    /// Creates an observation identity from a source stream and sequence.
-    pub const fn new(stream_id: u64, sequence: u64) -> Self {
-        Self {
-            stream_id,
-            sequence,
-        }
-    }
+/// One Caravan packet carried by the reusable host transport layer.
+pub type InputObservation = nworlds_host::InputObservation<InputPacket>;
 
-    /// Returns the source stream identity.
-    pub const fn stream_id(self) -> u64 {
-        self.stream_id
-    }
-
-    /// Returns the source-local observation sequence.
-    pub const fn sequence(self) -> u64 {
-        self.sequence
-    }
-}
-
-/// One identity-bearing platform-neutral input observation.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct InputObservation {
-    id: ObservationId,
-    packet: InputPacket,
-}
-
-impl InputObservation {
-    /// Creates one observation without assigning game time.
-    pub const fn new(id: ObservationId, packet: InputPacket) -> Self {
-        Self { id, packet }
-    }
-
-    /// Returns the stable observation identity.
-    pub const fn id(self) -> ObservationId {
-        self.id
-    }
-
-    /// Returns the semantic packet payload.
-    pub const fn packet(self) -> InputPacket {
-        self.packet
-    }
-}
-
-/// An error raised while normalizing an ordered input batch.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub enum InputBatchError {
-    /// Two observations carried the same source-stream identity.
-    DuplicateObservation(ObservationId),
-}
-
-/// An identity-bearing, deterministically ordered semantic input batch.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct OrderedInputBatch {
-    observations: Vec<InputObservation>,
-}
-
-impl OrderedInputBatch {
-    /// Normalizes observations by stream identity and source-local sequence.
-    pub fn from_observations(
-        observations: impl IntoIterator<Item = InputObservation>,
-    ) -> Result<Self, InputBatchError> {
-        let mut observations = observations.into_iter().collect::<Vec<_>>();
-        observations.sort_by_key(|observation| observation.id());
-
-        if let Some(duplicate) = observations
-            .windows(2)
-            .find(|pair| pair[0].id() == pair[1].id())
-        {
-            return Err(InputBatchError::DuplicateObservation(duplicate[0].id()));
-        }
-
-        Ok(Self { observations })
-    }
-
-    /// Returns observations in deterministic semantic order.
-    pub fn observations(&self) -> &[InputObservation] {
-        &self.observations
-    }
-
-    /// Returns the number of observations in the batch.
-    pub fn len(&self) -> usize {
-        self.observations.len()
-    }
-
-    /// Reports whether the batch contains no observations.
-    pub fn is_empty(&self) -> bool {
-        self.observations.is_empty()
-    }
-
-    /// Iterates over observations in deterministic semantic order.
-    pub fn iter(&self) -> impl Iterator<Item = &InputObservation> {
-        self.observations.iter()
-    }
-
-    /// Returns semantic payloads in deterministic batch order.
-    pub fn packets(&self) -> impl Iterator<Item = InputPacket> + '_ {
-        self.observations
-            .iter()
-            .map(|observation| observation.packet())
-    }
-
-    /// Projects the transport-normalized batch into a payload-only game view.
-    pub fn semantic_batch(&self) -> SemanticInputBatch {
-        SemanticInputBatch {
-            packets: self.packets().collect(),
-        }
-    }
-
-    /// Derives the current membership-only interaction view.
-    pub fn membership_view(&self) -> InputPacketSet {
-        self.semantic_batch().membership_view()
-    }
-}
+/// The Caravan specialization of the reusable ordered input batch.
+pub type OrderedInputBatch = nworlds_host::OrderedInputBatch<InputPacket>;
 
 /// The resolution applied after an interaction has inspected one input window.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -176,7 +62,7 @@ impl InputWindow {
     pub fn packets(&self) -> impl Iterator<Item = InputPacket> + '_ {
         self.observations
             .iter()
-            .map(|observation| observation.packet())
+            .map(|observation| *observation.packet())
     }
 
     /// Projects the captured window into a payload-only game view.
@@ -254,7 +140,8 @@ impl InputBuffer {
 
     /// Appends one normalized batch, rejecting identities already pending.
     pub fn ingest(&mut self, batch: OrderedInputBatch) -> Result<(), InputBatchError> {
-        if let Some(duplicate) = batch.observations.iter().find(|incoming| {
+        let observations = batch.into_observations();
+        if let Some(duplicate) = observations.iter().find(|incoming| {
             self.observations
                 .iter()
                 .any(|pending| pending.id() == incoming.id())
@@ -262,7 +149,7 @@ impl InputBuffer {
             return Err(InputBatchError::DuplicateObservation(duplicate.id()));
         }
 
-        self.observations.extend(batch.observations);
+        self.observations.extend(observations);
         self.observations
             .sort_by_key(|observation| observation.id());
         Ok(())
@@ -338,7 +225,7 @@ impl InputPacketSet {
 
     /// Derives the prototype membership view from an ordered transport batch.
     pub fn from_batch(batch: &OrderedInputBatch) -> Self {
-        batch.semantic_batch().membership_view()
+        Self::from_packets(batch.packets())
     }
 
     /// Derives the prototype membership view from a semantic payload batch.
@@ -518,10 +405,10 @@ mod tests {
         ])
         .expect("distinct identities should remain distinct");
         assert_eq!(batch.len(), 2);
-        assert_eq!(batch.membership_view().len(), 1);
+        assert_eq!(InputPacketSet::from_batch(&batch).len(), 1);
         assert_eq!(
-            batch.semantic_batch().packets(),
-            &[
+            batch.packets().collect::<Vec<_>>(),
+            vec![
                 InputPacket::ButtonPressed(Button::Primary),
                 InputPacket::ButtonPressed(Button::Primary),
             ]

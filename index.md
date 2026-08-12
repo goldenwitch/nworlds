@@ -35,6 +35,8 @@ it does not advance or mutate a hidden current state.
   and execution responsibilities surrounding Stage.
 - [Target factory proposal](proposals/target-factory.md) - the target-neutral
   developer path and host-owned artifact minting contract.
+- [Target factory plan](target-factory.vine) - the ordered design work for
+  HostContract, RenderBatch, resolution, CLI, and artifact minting.
 - [Platform support matrix](proposals/platform-support-matrix.md) - adapter
   axes, target cells, and activation gates for host composition.
 - [Host adapter wiring graph](host.vine) - the first host proof composition;
@@ -75,6 +77,7 @@ These crates provide the generic temporal engine and its public boundaries.
 | [`engine-presentation`](crates/engine-presentation) | State-plus-`Tau` render composition and frame values. |
 | [`engine-persistence`](crates/engine-persistence) | Game-facing versioned worldline encoding, branch lineage, save/load, and deterministic replay; host byte transport remains separate. |
 | [`engine-api`](crates/engine-api) | Game-facing facade that exposes the supported query, journal, branch, time, and domain APIs. |
+| [`nworlds-host`](crates/nworlds-host) | Target-neutral `GamePackage` contract, independent host ports, and generic package/port composition. |
 
 ### Caravan Domain
 
@@ -93,6 +96,7 @@ These crates define the concrete game fixture and its indexed rules.
 | Component | Description |
 | --- | --- |
 | [`caravan-demo`](crates/caravan-demo) | Runnable terminal demonstration of the anchor, arbitrary sampling, lookahead, branches, and presentation. |
+| [`nworlds-desktop`](crates/nworlds-desktop/Cargo.toml) | Target-local desktop adapter mapped over `nworlds-host`; it contains no package-owned state construction. |
 | [`engine-benchmarks`](crates/engine-benchmarks) | Non-published release-build measurements for direct queries, scrubbing, branches, and frame production. |
 | [`purity-tests`](crates/purity-tests) | Runtime and `trybuild` compiler-boundary tests for immutable, data-only authoritative APIs. |
 | [`tests/conformance`](tests/conformance) | Separate workspace containing the executable conformance catalog and report generator. |

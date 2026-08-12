@@ -1,14 +1,15 @@
-# Demo Gameplay Plan
+# Anchor Demonstration Plan
 
-This proposal turns the existing design corpus into a plan for the remaining
-player-facing Caravan demo. It is a planning boundary, not a claim that the
-engine should become a finished game or that the current demo needs a generic
-engine abstraction.
+This proposal turns the existing Caravan anchor specification into a plan for
+the remaining demo experience. The anchor is the design source for this work:
+we are exposing and composing its specified behavior, not inventing a separate
+player game or promoting fixture rules into new gameplay semantics.
 
 The repository currently proves the temporal engine and one native host slice.
-The next gap is experiential: the underlying world already has actors, terrain,
-effects, resources, time, branches, persistence, and deterministic fixtures, but
-the player-facing demo exposes only a small `Noop`/`SetTerrain` interaction.
+The next gap is demonstrative: the anchor already specifies actors, terrain,
+effects, resources, time, branches, seeded journals, and persistence, but the
+native demo exposes only a small `Noop`/`SetTerrain` interaction and does not
+walk through the rest of the anchor behavior.
 
 ## Current Baseline
 
@@ -24,25 +25,23 @@ The implemented demo currently provides:
 - ordered transport observations, input windows, and `SemanticInputBatch`; and
 - a native Space input that publishes `SetTerrain` at the center tile.
 
-These are engine and world substrates. They are not, by themselves, a complete
-player-facing feature set.
+These are engine and world substrates. The remaining work is to make the
+anchor's required queries and acceptance cases understandable and observable in
+the demo without changing their semantics.
 
-## Design-Derived Feature Inventory
+## Anchor-Derived Demonstration Inventory
 
 | Area | Existing design commitment | Current player-facing gap |
 | --- | --- | --- |
-| World creation | `CreateSaucer { radius: 5 }` creates the 91-tile world | The demo has one fixed initial world and no user-facing world setup flow |
-| Terrain | `Void`, `Wheat`, and `Forest` are authoritative terrain values | Only one center-tile terrain action is exposed |
-| Actors | Farmer, Forester, Arsonist, Fighter, and Arborist have indexed rules | The demo does not let a player author, select, or observe an actor-driven situation deliberately |
-| Effects | Fire is an independent effect with age, spread, and destruction behavior | Fire is present in fixtures and output but has no player-facing trigger or readable progression |
-| Resources | Wheat and wood are indexed totals derived from state | Resources are not presented as a useful player-facing readout |
-| Logical time | Queries may sample arbitrary past, present, and future logical times | The native demo does not expose a time-selection or progression control |
-| Presentation time | `Tau` is independent of logical time and supports deterministic presentation | The native demo does not expose scrubbing or an explicit presentation policy |
-| Branches | Actual, counterfactual, and corrected branches are immutable values | The demo does not expose branch creation, selection, comparison, or return to parent |
-| Persistence | Worldline/save encoding and deterministic replay exist below host byte transport | The native demo has no user-facing save/load/replay workflow |
-| Seeded worlds | Fixed-seed journal generation is deterministic and reproducible | Seed selection and world setup are not part of the demo experience |
+| Empty and created worlds | Empty journal is valid; `CreateSaucer { radius: 5 }` creates 91 tiles | The native demo does not walk through both states as an anchor case |
+| Journal visibility and time boundaries | Spawn visibility, inside-tick stability, exact journal discontinuities, and tick-boundary changes are specified | The native demo does not expose these anchor queries as a deliberate walkthrough |
+| Terrain and vegetation | Farmer movement, wheat placement, wheat totals, forester movement, forest, and wood totals are specified | The native demo does not expose the hand-authored vegetation trace as an interaction sequence |
+| Hazards and conflicts | Arsonist ignition, fire aging/spread/destruction, fighter pursuit/collision, and arborist conversion are specified | The native demo does not expose the hand-authored hazard traces as a deliberate walkthrough |
+| Lookahead and branches | Future queries, counterfactual branches, corrected branches, and parent isolation are specified | The native demo prints branch evidence but does not let a user inspect the branch relationship interactively |
+| Seeded determinism | Fixed-seed journal construction and repeatability are specified | Seeded construction is test/demo infrastructure, not a player world-creation feature yet |
+| Persistence and replay | Journals and branches round-trip without changing query semantics | Persistence exists below the host, but the demo has no guided save/load/replay walkthrough |
 | Input | Transport identity/order becomes a payload-only semantic batch | Only the first primary-button action is mapped in the native host |
-| Rendering | `GameState + Tau` produces minimal fire-and-forget owned output | The native sink currently renders a minimal colored tile field without readable world/status presentation; every future visible value must already be available in `GameState` |
+| Rendering | `GameState + Tau` produces minimal fire-and-forget owned output | The native sink renders a minimal colored tile field; the remaining work is to make the selected anchor case legible without adding render inputs |
 
 The source commitments for this inventory are
 [spec/initial.md](../spec/initial.md),
@@ -54,24 +53,30 @@ The source commitments for this inventory are
 
 ## Planning Boundary
 
-The first implementation task is to select one coherent player-facing loop
-from this inventory. The selected loop must use existing indexed world behavior
-and make at least one of its temporal, actor, effect, resource, branch, or
-persistence properties observable. It must not be a second authoritative state
-model hidden inside the demo.
+The first implementation task is to select the next coherent anchor walkthrough
+slice from the required queries in
+[cellular-automata-anchor.md](../spec/cellular-automata-anchor.md). The slice
+must expose existing indexed behavior and its acceptance evidence; it must not
+invent a new gameplay loop or create a second authoritative state model inside
+the demo.
 
-After that ruling, the work proceeds in this order:
+The anchor-derived order is:
 
-1. Define the closed input commands and transformations required by the loop.
-2. Define the logical-time, branch, replay, or persistence controls the loop
-   actually needs.
-3. Compose the loop through the existing Stage, Orchestrator, journal, query,
-   renderer, and host boundaries.
-4. Add deterministic and manual evidence for the player-facing behavior.
-5. Polish only the engine boundary that the selected loop makes concrete.
+1. Empty journal and saucer creation.
+2. Journal visibility, sub-tick sampling, tick boundaries, and discontinuities.
+3. Farmer, wheat, forester, forest, and resource traces.
+4. Arsonist, fire, fighter, and arborist traces.
+5. Lookahead, counterfactual/corrected branches, seeded determinism, and
+  persistence/replay.
+6. Native presentation of the selected anchor observations.
 
-The demo remains a toy and evidence vehicle. A feature is complete when its
-player-facing behavior is observable and its authoritative consequences remain
+After the next slice is selected, define only the controls needed to navigate
+that slice, compose them through the existing Stage/Orchestrator/journal/query/
+renderer/host boundaries, add deterministic and manual evidence, and polish
+only the boundary that the evidence makes concrete.
+
+The demo remains a toy and evidence vehicle. An anchor slice is complete when
+its specified behavior is observable and its authoritative consequences remain
 represented by immutable journal/worldline values; a lower-level API existing
 in isolation is not enough. Render production remains exactly
 `GameState + Tau -> minimal fire-and-forget RenderOutput`; a feature does not
@@ -82,7 +87,7 @@ branch identity, or presentation mode.
 
 These questions require a design ruling before implementation begins:
 
-- Which existing world behavior is the first player-facing loop?
+- Which anchor-required query slice should be made navigable first?
 - Which actions are authored journal facts, and which are view or control
   operations?
 - Which time controls belong in the first experience: progression, explicit

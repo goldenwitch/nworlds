@@ -38,7 +38,7 @@ fn host_crossing_delivers_input_publishes_immutable_state_and_collects_frame() {
     assert_eq!(application.render().frames().len(), 1);
     assert_eq!(
         application
-            .stage()
+            .package()
             .orchestrator()
             .worldline()
             .journal()
@@ -94,19 +94,19 @@ fn host_storage_round_trip_preserves_selected_worldline_and_scrubbing() {
         .expect("host load should decode the selected worldline");
 
     assert_eq!(
-        restored.stage().orchestrator().worldline(),
-        original.stage().orchestrator().worldline()
+        restored.package().orchestrator().worldline(),
+        original.package().orchestrator().worldline()
     );
     let later = restored
-        .stage()
+        .package()
         .present_at(LogicalTime::from_game_ticks(3).unwrap(), Tau::from_ticks(3))
         .expect("later sample should render");
     let earlier = restored
-        .stage()
+        .package()
         .present_at(LogicalTime::zero(), Tau::zero())
         .expect("earlier sample should render");
     let later_again = restored
-        .stage()
+        .package()
         .present_at(LogicalTime::from_game_ticks(3).unwrap(), Tau::from_ticks(3))
         .expect("repeated later sample should render");
 

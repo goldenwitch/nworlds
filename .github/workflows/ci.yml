@@ -41,7 +41,7 @@ jobs:
         with:
           toolchain: 1.94.1
       - name: Compile the native host
-        run: cargo check --manifest-path crates/caravan-demo/Cargo.toml --bin caravan-windows --locked
+        run: cargo check --manifest-path crates/nworlds-desktop/Cargo.toml --bin nworlds-desktop --locked
 
   arch-linux-host:
     name: Arch Linux host build
@@ -68,6 +68,6 @@ jobs:
               . "$CARGO_HOME/env"
               rustup toolchain install 1.94.1 --profile minimal
               cargo +1.94.1 check \
-                --manifest-path crates/caravan-demo/Cargo.toml \
-                --bin caravan-windows --locked
+                --manifest-path crates/nworlds-desktop/Cargo.toml \
+                --bin nworlds-desktop --locked
             '

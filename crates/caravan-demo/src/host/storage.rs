@@ -1,39 +1,5 @@
-/// A target-facing transport port for already encoded persistence bytes.
-pub trait StorageTransport {
-    /// Replaces the stored encoded record.
-    fn store(&mut self, bytes: Vec<u8>);
-
-    /// Returns an owned copy of the stored encoded record, if present.
-    fn load(&self) -> Option<Vec<u8>>;
-}
-
-/// In-memory byte storage for tests and the first target composition.
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct MemoryStorage {
-    bytes: Option<Vec<u8>>,
-}
-
-impl MemoryStorage {
-    /// Creates empty in-memory storage.
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Reports whether one encoded record is stored.
-    pub fn is_empty(&self) -> bool {
-        self.bytes.is_none()
-    }
-}
-
-impl StorageTransport for MemoryStorage {
-    fn store(&mut self, bytes: Vec<u8>) {
-        self.bytes = Some(bytes);
-    }
-
-    fn load(&self) -> Option<Vec<u8>> {
-        self.bytes.clone()
-    }
-}
+pub use nworlds_host::StorageTransport;
+pub type MemoryStorage = nworlds_host::MemoryStorage;
 
 #[cfg(test)]
 mod tests {

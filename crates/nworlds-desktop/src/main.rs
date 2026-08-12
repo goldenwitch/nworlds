@@ -2,27 +2,28 @@
 
 use std::sync::Arc;
 
-use caravan_demo::host::application::ApplicationHost;
-use caravan_demo::host::input::{InputIngress, MemoryInputIngress};
-use caravan_demo::host::storage::MemoryStorage;
-use caravan_demo::host::wgpu::WgpuRenderSink;
-use caravan_demo::{CaravanInteraction, CaravanOrchestrator, CaravanStage};
-use caravan_domain::GameJournalEntry;
-use caravan_reference::actual;
-use engine_journal::JournalWriter;
-use engine_time::{LogicalTime, Tau};
+use caravan_demo::input::InputPacket;
+use caravan_demo::CaravanPackage;
+use input::DesktopInputAdapter;
+use nworlds_host::{ApplicationHost, MemoryInputIngress, MemoryStorage, PlatformInputAdapter};
+use wgpu::WgpuRenderSink;
 use winit::application::ApplicationHandler;
 use winit::event::{ElementState, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::{Window, WindowId};
 
-type NativeHost = ApplicationHost<MemoryInputIngress, MemoryStorage, WgpuRenderSink>;
+mod input;
+mod wgpu;
+
+type NativeHost =
+    ApplicationHost<CaravanPackage, MemoryInputIngress<InputPacket>, MemoryStorage, WgpuRenderSink>;
 
 #[derive(Default)]
 struct NativeApplication {
     window: Option<Arc<Window>>,
     host: Option<NativeHost>,
+    input: DesktopInputAdapter,
 }
 
 impl ApplicationHandler for NativeApplication {
@@ -38,7 +39,7 @@ impl ApplicationHandler for NativeApplication {
         ) {
             Ok(window) => Arc::new(window),
             Err(error) => {
-                eprintln!("could not create the Caravan window: {error}");
+                eprintln!("could not create the desktop window: {error}");
                 event_loop.exit();
                 return;
             }
@@ -46,7 +47,7 @@ impl ApplicationHandler for NativeApplication {
         let sink = match pollster::block_on(WgpuRenderSink::new(window.clone())) {
             Ok(sink) => sink,
             Err(error) => {
-                eprintln!("could not initialize Caravan wgpu rendering: {error}");
+                eprintln!("could not initialize desktop wgpu rendering: {error}");
                 event_loop.exit();
                 return;
             }
@@ -75,10 +76,7 @@ impl ApplicationHandler for NativeApplication {
                     && event.physical_key == PhysicalKey::Code(KeyCode::Space) =>
             {
                 if let Some(host) = &mut self.host {
-                    host.input_mut()
-                        .push(caravan_demo::input::InputPacket::ButtonPressed(
-                            caravan_demo::input::Button::Primary,
-                        ));
+                    self.input.translate(event, host.input_mut());
                 }
                 if let Some(window) = &self.window {
                     window.request_redraw();
@@ -87,7 +85,7 @@ impl ApplicationHandler for NativeApplication {
             WindowEvent::RedrawRequested => {
                 if let Some(host) = &mut self.host {
                     if let Err(error) = host.step() {
-                        eprintln!("Caravan host step failed: {error:?}");
+                        eprintln!("desktop host step failed: {error:?}");
                         event_loop.exit();
                     }
                 }
@@ -104,26 +102,17 @@ impl ApplicationHandler for NativeApplication {
 }
 
 fn initial_host(sink: WgpuRenderSink) -> NativeHost {
-    let mut writer = JournalWriter::new();
-    writer.record(GameJournalEntry::create_saucer());
-    let orchestrator = CaravanOrchestrator::new(
-        actual(writer.finish()),
-        LogicalTime::zero(),
-        Tau::zero(),
-        CaravanInteraction,
-    )
-    .expect("the initial Caravan worldline should be valid");
     ApplicationHost::new(
-        CaravanStage::new(orchestrator),
-        MemoryInputIngress::new(),
+        caravan_demo::demo_package().expect("the initial Caravan package should be valid"),
+        MemoryInputIngress::<InputPacket>::new(),
         MemoryStorage::new(),
         sink,
     )
 }
 
 fn main() {
-    let event_loop = EventLoop::new().expect("the Windows event loop should initialize");
+    let event_loop = EventLoop::new().expect("the desktop event loop should initialize");
     event_loop
         .run_app(&mut NativeApplication::default())
-        .expect("the Windows event loop should run");
+        .expect("the desktop event loop should run");
 }

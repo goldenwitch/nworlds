@@ -57,7 +57,7 @@ not a new distribution or runtime layer.
 Activate a deferred concern only when a concrete requirement supplies its target
 regime. The resulting packet should name its owner and contract, depend on the
 relevant anchor/persistence/proof evidence, and add a reproducible acceptance
-test or report. Until then, keep the terminal demo, local Windows proof,
+test or report. Until then, keep the terminal demo, local desktop proof,
 evidence reports, and reference measurements as the productization boundary.
 
 This review does not change source, manifests, specifications, the semantic

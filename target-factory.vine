@@ -1,0 +1,83 @@
+vine 1.2.0
+prefix: factory
+title: Target-neutral game packaging and host minting
+---
+[root] Settle target-neutral game packaging and host minting (planning)
+Files: target-factory.vine; proposals/target-factory.md; proposals/presentation-host.md; proposals/platform-support-matrix.md; README.md; index.md; roadmap.md; crates/**; .github/**
+Do: Define the host-owned contract that lets a game developer use nworlds test, nworlds run, and nworlds package without selecting targets. Keep game meaning, immutable state, and GameState + Tau render production separate from target resolution, capability delivery, artifact minting, and backend execution.
+Accept: HostContract, minimal host-defined renderer-agnostic RenderBatch, GamePackage declaration, TargetProfile, RuntimeCapabilities, TargetResolution, TargetArtifact, unsupported-environment behavior, and CI/artifact evidence each have one owner; the existing Caravan desktop proof is classified as a client/prototype; no target-factory implementation is resumed before the contract is settled; and prior workspace/conformance/purity/CodeQL evidence remains green.
+-> artifact-ci
+-> cli
+-> composition
+-> game-contract
+-> migration-gate
+-> package-declaration
+-> render-batch
+-> resolution
+@guidance text/markdown proposals/target-factory.md
+@guidance text/markdown proposals/presentation-host.md
+@guidance text/markdown proposals/platform-support-matrix.md
+@guidance text/markdown proposals/rendering-contract.md
+---
+[game-contract] Define the target-neutral GamePackage and HostContract (complete)
+Files: proposals/target-factory.md; proposals/presentation-host.md; crates/engine-api/**; crates/caravan-demo/**; crates/nworlds-desktop/**; crates/nworlds-host/**
+Do: Inventory the concrete consumers that require host capabilities before naming any HostContract API. Separate game meaning, immutable state/query production, input interpretation, byte storage, lifecycle/resource access, and renderer-agnostic draw intent. Treat the current Caravan host ports and desktop wgpu proof as clients/evidence, not as the contract. Draft only the smallest consumer-shaped abstractions needed by the named consumers.
+Accept: A consumer matrix names each required host capability, its consumer, its data direction, ownership, lifetime, and target-neutrality requirement; Worldline + LogicalTime -> GameState remains unchanged; GameState + Tau -> host-defined minimal RenderBatch remains the only render-production path; target metadata/device handles are absent from the game contract; and every unresolved API choice is recorded as a decision rather than silently selected.
+> nworlds-host owns the target-neutral GamePackage runtime contract and independent InputIngress, RenderSink, StorageTransport, and PlatformInputAdapter ports; it has no Caravan or target dependency.
+> GamePackage owns semantic control order: it ingests its package-defined input batch, performs interaction/publication/state selection/presentation, and returns one owned frame; the host only transports input, bytes, and frames.
+> caravan-demo::CaravanPackage maps its existing Stage/Orchestrator/CaravanRenderer composition onto GamePackage; the desktop proof requests demo_package() and retains only native event and wgpu execution code.
+@artifact text/plain crates/nworlds-host/src/lib.rs
+@artifact text/markdown proposals/target-factory.md
+---
+[package-declaration] Define platform-free package declaration (planning)
+Files: proposals/target-factory.md; Cargo.toml; crates/**
+Do: Specify package identity/version, assets, persistence/schema requirements, host-version compatibility, and render-vocabulary capability requirements without target declarations.
+Accept: A package declares what it needs semantically; no package field names an OS, architecture, window system, GPU backend, or target triple; and the declaration can be consumed by nworlds test/run/package.
+-> game-contract
+---
+[render-batch] Define minimal host-owned renderer-agnostic RenderBatch (planning)
+Files: proposals/target-factory.md; proposals/rendering-contract.md; crates/engine-presentation/**; crates/engine-api/**
+Do: Specify the smallest host-owned draw vocabulary consumed by game render production from GameState + Tau. Define ownership, lifetime, Send/'static requirements where needed, fire-and-forget submission, and target RenderSink translation without importing wgpu or platform commands.
+Accept: GameState + Tau is the only render-production input; RenderBatch is owned and disposable; no journal, worldline, Orchestrator, input, branch selector, device, or host-clock value can enter the batch; and a target sink can translate the batch to backend instructions.
+-> game-contract
+---
+[composition] Define generated static target composition (planning)
+Files: proposals/target-factory.md; proposals/presentation-host.md; .github/**; crates/**
+Do: Specify whether nworlds generates a small static composition crate or selects a generic host executable, while keeping generated target details outside the game package and avoiding a plugin ABI in the first contract.
+Accept: One composition mechanism is selected; the game package has no target entrypoint; generated composition owns target adapters; and the mechanism supports nworlds run and nworlds package.
+-> game-contract
+-> package-declaration
+-> render-batch
+---
+[resolution] Define profile and runtime resolution (planning)
+Files: proposals/target-factory.md; proposals/platform-support-matrix.md; support.vine
+Do: Separate static TargetProfile recipes from actual RuntimeCapabilities and define TargetResolution as adapter selection or an explicit unsupported result.
+Accept: Build-time selection, distribution-time artifact selection, and runtime capability detection are distinct; unsupported environments report required/available capabilities and remediation at the host boundary; and games do not branch on target identity.
+-> composition
+-> package-declaration
+---
+[cli] Define target-neutral nworlds commands (planning)
+Files: proposals/target-factory.md; README.md; CONTRIBUTING.md
+Do: Specify the user-visible behavior of nworlds test, nworlds run, and nworlds package, including package discovery, local artifact caching, failures, logs, and target transparency.
+Accept: Normal game development requires no target flag or platform knowledge; commands map to the factory contract; and raw target commands remain internal maintenance/debug interfaces rather than public game workflow.
+-> composition
+-> package-declaration
+-> resolution
+---
+[artifact-ci] Define TargetArtifact and CI evidence (planning)
+Files: proposals/target-factory.md; proposals/platform-support-matrix.md; support.vine; .github/**; evidence/**
+Do: Specify artifact identity, naming, metadata, checksums, retention, build checks, runtime evidence, device evidence, and publication behavior for supported profiles.
+Accept: Each artifact maps to one resolved profile; compile, runtime, and device evidence are distinct; CI can mint supported artifacts without game-specific target code; and the support matrix remains host-owned.
+-> cli
+-> resolution
+---
+[migration-gate] Classify and gate existing proof code (planning)
+Files: proposals/target-factory.md; host.vine; crates/caravan-demo/**; crates/nworlds-desktop/**
+Do: Classify the existing Caravan desktop wgpu implementation as historical proof/client code and define the migration sequence after the contract tasks complete. Keep the target-local proof client outside the game package and target-factory contract; do not promote it into the factory before GamePackage, HostContract, RenderBatch, composition, and resolution decisions are settled.
+Accept: No current proof detail is silently promoted to the target-factory contract; no game package contains target selection; the migration has one owner and acceptance path; and the target-local proof client remains independently buildable while the factory boundary is settled.
+-> artifact-ci
+-> cli
+-> composition
+-> game-contract
+-> render-batch
+-> resolution

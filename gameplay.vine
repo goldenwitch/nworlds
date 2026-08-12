@@ -1,11 +1,11 @@
 vine 1.2.0
 prefix: gameplay
-title: Remaining Caravan demo gameplay
+title: Remaining Caravan anchor demonstration
 ---
-[root] Plan remaining demo gameplay from canonical design (planning)
+[root] Plan remaining Caravan anchor demonstration (planning)
 Files: gameplay.vine; proposals/demo-gameplay.md; spec/**; proposals/**; crates/caravan-demo/**; evidence/**
-Do: Turn the existing Caravan domain, temporal, branch, persistence, input, and rendering commitments into one ordered player-facing demo plan. Keep the game-facing meaning above host and transport plumbing, and keep implementation downstream of an explicit gameplay ruling.
-Accept: The design inventory distinguishes existing substrate from player-facing gaps; one first demo loop is selected from the old design commitments; its commands, temporal controls, composition, and evidence have disjoint owners; the full demo remains an immutable-worldline toy; and no generic engine extraction is introduced without a concrete repeated boundary.
+Do: Turn the existing Caravan anchor's required queries and acceptance cases into an ordered demo walkthrough. Preserve the specified world behavior, keep game-facing meaning above host and transport plumbing, and keep implementation downstream of an explicit anchor-slice selection.
+Accept: The inventory distinguishes implemented substrate from demonstrative gaps; one next anchor query slice is selected from the specification; its controls, composition, and evidence have disjoint owners; the demo remains an immutable-worldline toy; and no new gameplay semantics or generic engine extraction is introduced without a concrete requirement.
 -> design-inventory
 -> first-loop
 -> interaction-surface
@@ -28,41 +28,41 @@ Do: Record the player-facing feature commitments already present in the design c
 Accept: The inventory names world creation, terrain, actors, effects, resources, logical time, presentation time, branches, persistence, seeded worlds, input, and rendering gaps without claiming unimplemented gameplay exists.
 @artifact text/markdown proposals/demo-gameplay.md
 ---
-[first-loop] Select the first player-facing demo loop (planning)
+[first-loop] Select the next anchor walkthrough slice (planning)
 Files: proposals/demo-gameplay.md; gameplay.vine
-Do: Use the design inventory to select one coherent player-facing loop. State its player action, temporal consequence, visible result, authoritative journal/branch consequence, and completion evidence. Keep the ruling at the demo/world layer.
-Accept: One loop is selected with one concrete acceptance trace; the first implementation does not begin with an unbounded feature list or an engine abstraction request.
+Do: Use the anchor-derived inventory and required-query order to select one coherent next walkthrough slice. State the anchor query cases, available demo controls, visible result, authoritative journal/worldline consequence where applicable, and completion evidence. Keep the ruling at the demo/world layer without inventing new gameplay semantics.
+Accept: One anchor slice is selected with one concrete acceptance trace; implementation starts from the specification's existing behavior rather than an unbounded feature list or an engine abstraction request.
 -> design-inventory
 ---
 [interaction-surface] Define the selected interaction surface (notstarted)
 Files: crates/caravan-demo/src/input.rs; crates/caravan-demo/src/transformation.rs; crates/caravan-demo/src/orchestrator.rs; proposals/input-and-interaction.md
-Do: Define the closed input packets and transformations needed by the selected loop. Preserve SemanticInputBatch as the game-facing input value and JournalWriter as timestamp authority.
+Do: Define the closed input packets and transformations needed to navigate the selected anchor slice. Preserve SemanticInputBatch as the game-facing input value and JournalWriter as timestamp authority.
 Accept: Every selected command has a closed transformation or explicit no-op/rejection path; transport identity remains below interaction logic; authoritative changes still require immutable journal or branch publication.
 -> first-loop
 ---
 [temporal-surface] Define selected time, branch, and replay controls (notstarted)
 Files: crates/caravan-demo/src/orchestrator.rs; crates/caravan-demo/src/stage.rs; proposals/caravan-orchestrator-anchor.md; spec/initial.md
-Do: Define only the LogicalTime, Tau, branch, lookahead, persistence, or replay controls required by the selected loop. Keep host execution time non-authoritative and preserve arbitrary direct queries.
+Do: Define only the LogicalTime, Tau, branch, lookahead, persistence, or replay controls required to navigate the selected anchor slice. Keep host execution time non-authoritative and preserve arbitrary direct queries.
 Accept: The selected controls have explicit ownership and deterministic behavior in past, present, future, branch, and replay cases where applicable; no mutable current-game-state shadow is introduced.
 -> first-loop
 ---
 [demo-composition] Compose the selected loop through the game seams (notstarted)
 Files: crates/caravan-demo/src/orchestrator.rs; crates/caravan-demo/src/stage.rs; crates/caravan-demo/src/publication.rs; crates/caravan-demo/src/host/**
-Do: Wire the selected input and temporal controls through Stage, Orchestrator, journal/branch publication, and the existing host ports. Reuse existing domain rules before adding new world behavior.
-Accept: One complete player action cycle crosses input, interaction, authoritative publication or explicit view operation, direct state query, and presentation without introducing a parallel authoritative state model.
+Do: Wire the selected anchor walkthrough controls through Stage, Orchestrator, journal/branch publication, and the existing host ports. Reuse existing domain rules and query behavior without adding new world semantics.
+Accept: One complete anchor observation cycle crosses the required input/control path, direct state query, and presentation without introducing a parallel authoritative state model.
 -> interaction-surface
 -> temporal-surface
 ---
 [demo-presentation] Make the selected consequence legible (notstarted)
 Files: crates/caravan-demo/src/render.rs; crates/caravan-demo/src/host/**; crates/caravan-demo/src/bin/**; proposals/rendering-contract.md
-Do: Present the selected loop's relevant values through minimal fire-and-forget render output and target-local presentation. Every visible value must be sourced by the selected GameState; keep render production as GameState + Tau -> RenderOutput and keep the output downstream of authoritative state.
-Accept: A user can observe the selected action and its consequence in the native demo; equal GameState/Tau inputs remain deterministic; no auxiliary renderer input or view context is introduced; rendering does not become an interaction authority; and each visible value has a named GameState source.
+Do: Present the selected anchor observations through minimal fire-and-forget render output and target-local presentation. Every visible value must be sourced by the selected GameState; keep render production as GameState + Tau -> RenderOutput and keep the output downstream of authoritative state.
+Accept: A user can observe the selected anchor behavior in the native demo; equal GameState/Tau inputs remain deterministic; no auxiliary renderer input or view context is introduced; rendering does not become an interaction authority; and each visible value has a named GameState source.
 -> demo-composition
 ---
 [gameplay-evidence] Add gameplay acceptance evidence (notstarted)
 Files: crates/caravan-demo/tests/**; crates/caravan-demo/snapshots/**; evidence/clause-to-test.md; proposals/demo-gameplay.md
-Do: Add a deterministic trace and focused runtime/manual evidence for the selected loop, including parent isolation and exact temporal behavior where relevant.
-Accept: The selected loop is reproducible from a documented command or sequence; authoritative changes are visible in immutable query results; failure/no-op behavior is explicit; and existing anchor, conformance, purity, and host evidence remains green.
+Do: Add a deterministic trace and focused runtime/manual evidence for the selected anchor slice, including parent isolation and exact temporal behavior where relevant.
+Accept: The selected anchor slice is reproducible from a documented command or sequence; authoritative changes are visible in immutable query results; failure/no-op behavior is explicit; and existing anchor, conformance, purity, and host evidence remains green.
 -> demo-presentation
 ---
 [boundary-polish] Polish only concrete exposed boundaries (notstarted)

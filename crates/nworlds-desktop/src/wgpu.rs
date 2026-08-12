@@ -1,12 +1,11 @@
 use std::sync::Arc;
 
 use bytemuck::{Pod, Zeroable};
+use caravan_demo::{RenderOutput, RenderTile};
 use caravan_domain::Terrain;
 use engine_sdk::Frame;
+use nworlds_host::RenderSink;
 use winit::window::Window;
-
-use super::render::RenderSinkAdapter;
-use crate::render::{RenderOutput, RenderTile};
 
 const SHADER: &str = r#"
 struct VertexInput {
@@ -220,7 +219,7 @@ impl WgpuRenderSink {
     }
 }
 
-impl RenderSinkAdapter for WgpuRenderSink {
+impl RenderSink<Frame<RenderOutput>> for WgpuRenderSink {
     fn submit(&mut self, frame: Frame<RenderOutput>) {
         if !self.configure_for_current_window_size() {
             return;
