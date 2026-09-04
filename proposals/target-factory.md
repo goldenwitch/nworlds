@@ -113,27 +113,30 @@ architecture, window-system, GPU-backend, or target-triple field.
 
 This mechanism keeps the first implementation statically typed and supports
 `nworlds run` and `nworlds package` without a plugin ABI, runtime package
-discovery, or game-name branch in target execution. A future reusable desktop
-host library may be selected by many generated compositions; the current
-`nworlds-desktop` Caravan executable remains historical proof until the
-desktop-host migration replaces its hard-coded package wiring.
+discovery, or game-name branch in target execution. The reusable
+`nworlds-desktop` host now contains the generic lifecycle and a synthetic
+package compile proof; the historical Caravan executable remains evidence
+until the Caravan client migration remaps that package through the host.
 
 ## Migration Gate for Existing Proof Code
 
-The current `nworlds-desktop` executable is a Caravan proof client, not the
+The historical `nworlds-desktop` executable was a Caravan proof client, not the
 generic target-factory composition. Its `winit`/`wgpu` lifecycle, native Space
 input path, resize/shutdown behavior, and visible `Frame<RenderBatch>` output
-are retained as evidence to preserve. Its direct `caravan-demo` dependency and
-Caravan-specific `main` wiring are not contract authority.
+remain retained evidence. The current `nworlds-desktop` target has no
+`caravan-demo` or voxel dependency and uses a synthetic package to prove the
+generic host boundary; Caravan-specific `main` wiring is not contract
+authority.
 
 The migration has one owner: the target-factory desktop-host implementation
 and its client-migration tasks. The acceptance sequence is:
 
-1. Keep the existing proof independently buildable and preserve its native
-  compile/runtime observations while the generic host is introduced.
+1. Preserve the historical proof's compile/runtime observations as named
+  evidence while the generic host is introduced.
 2. Move lifecycle, surface/device setup, resize/loss recovery, scheduling,
   native event hooks, and frame submission behind the package-neutral desktop
-  composition.
+  composition. This generic implementation is now complete for synthetic
+  package evidence.
 3. Remap Caravan's package-defined input and `RenderBatch` production through
   that composition, preserving terminal/demo, persistence, and native input
   behavior.
@@ -141,10 +144,10 @@ and its client-migration tasks. The acceptance sequence is:
   delete or relabel only target wrappers that have no distinct behavior or
   evidence and add dependency guards for reverse edges.
 
-Until the generic host implementation and both client migrations pass their
-acceptance evidence, the proof executable remains historical/client code. No
-game package gains a target entrypoint, target selection, or backend import as
-part of this migration.
+Until both client migrations pass their acceptance evidence, the historical
+Caravan proof remains evidence and the generic host's synthetic package remains
+the current target-host compile proof. No game package gains a target
+entrypoint, target selection, or backend import as part of this migration.
 
 `HostContract` is a family of narrow typed abstractions supplied by the host,
 not a broad mutable capabilities object. It covers the environmental things a
@@ -162,7 +165,7 @@ the proof uses a particular Rust type.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Semantic input delivery | `ApplicationHost::step`, `InputIngress`, and the Windows `PlatformInputAdapter` | Host -> game | Target adapter translates native events; ingress transports packets; Orchestrator normalizes and retains semantic observations | Ingress lives for one host composition; ordered batches and input windows are owned values per interaction attempt | `InputPacket`, `SemanticInputBatch`, and interaction logic contain no native event, window, device, or target identity | Package-defined neutral observations delivered through an ingress | How a package declares its input vocabulary and how a host maps native events |
 | Encoded persistence transport | `ApplicationHost::save_selected`/`load_selected`, `StorageTransport`, and `MemoryStorage` | Game <-> host | Game persistence codec owns meaning; storage adapter owns bytes | Encoded records are owned across one save/load operation; storage lifetime is host-selected | The game sees owned bytes or a typed codec result, never a file handle, path policy, or platform storage object | Owned bytes in and out | File/package lifetime and user-data location |
-| Render intent | `CaravanRenderer`, `RenderSinkAdapter`, and the desktop `WgpuRenderSink` | Game -> host | Renderer projects `GameState + Tau`; sink executes or collects the owned frame | `Frame<RenderOutput>` is owned by one submission and may be copied, queued, or discarded | Render output contains no journal, worldline, Orchestrator, input, branch selector, device, or host-clock state | Host-defined owned `RenderBatch` from `GameState + Tau` | Smallest geometry/appearance vocabulary, coordinate semantics, and whether the first batch is game-defined or host-defined |
+| Render intent | `CaravanRenderer`, `RenderSinkAdapter`, and the desktop `WgpuRenderSink` | Game -> host | Renderer projects `GameState + Tau`; sink executes or collects the owned frame | `Frame<RenderBatch>` is owned by one submission and may be copied, queued, or discarded; Caravan may retain a semantic `RenderOutput` inspection view before this crossing | Render batch contains no journal, worldline, Orchestrator, input, branch selector, device, or host-clock state | Host-defined owned `RenderBatch` from `GameState + Tau` | Smallest geometry/appearance vocabulary and coordinate semantics |
 | Lifecycle and resource execution | Windows `NativeApplication` and `WgpuRenderSink` | Host -> composition | Target entrypoint owns process/window lifecycle; target sink owns device/surface resources | Process, window, surface, device, and queue lifetimes are target-local | No lifecycle, window, device, backend, or architecture type crosses into game meaning unless a named consumer later requires it | Host-owned launch and execution flow, outside the first game contract | Which lifecycle observations, if any, a game actually consumes |
 
 There is no current game consumer for a generic asset loader, audio port,
@@ -205,11 +208,12 @@ render objects, native events, windows, devices, or backends. The package owns
 the order of interaction, publication, state selection, and presentation
 inside its `step` implementation.
 
-The Caravan mapping is `caravan-demo::CaravanPackage`, a target-neutral alias
-for its existing Stage/Orchestrator/renderer composition. The desktop proof
-now requests `caravan_demo::demo_package()` and uses the generic host; its
-remaining code is limited to native event translation and `wgpu` frame
-execution. This is a host-client mapping, not a second Caravan game model.
+The intended Caravan mapping is `caravan-demo::CaravanPackage`, a
+target-neutral alias for its existing Stage/Orchestrator/renderer composition.
+The historical desktop proof used `caravan_demo::demo_package()` with the
+generic host; the current generic target uses a synthetic package until the
+Caravan client migration remaps that package. This remains a host-client
+mapping, not a second Caravan game model.
 
 The host-owned render vocabulary is the crossing:
 

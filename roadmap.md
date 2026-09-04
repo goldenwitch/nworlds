@@ -54,9 +54,10 @@ The reusable temporal library boundary is now isolated and evidenced by
 `proposals/library-contract.md`, `library-boundary.vine`, the generic
 `engine-api` consumer proof, the dependency-direction guard, and the
 library-only build check. Caravan is the reference game/sample consumer, and
-`nworlds-desktop` is its target-local proof client. The repository remains a
-research implementation, not a finished game, production host, released SDK,
-or distribution platform.
+`nworlds-desktop` now supplies the generic target-host lifecycle with a
+synthetic package proof; the historical Caravan desktop run remains client
+evidence until migration. The repository remains a research implementation,
+not a finished game, production host, released SDK, or distribution platform.
 
 ## Completed Anchor
 

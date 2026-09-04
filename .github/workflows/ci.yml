@@ -51,7 +51,7 @@ jobs:
         with:
           toolchain: 1.94.1
       - name: Compile the native host
-        run: cargo check --manifest-path crates/nworlds-desktop/Cargo.toml --bin nworlds-desktop --locked
+        run: cargo check --manifest-path crates/nworlds-desktop/Cargo.toml --locked
 
   arch-linux-host:
     name: Arch Linux host build
@@ -79,5 +79,5 @@ jobs:
               rustup toolchain install 1.94.1 --profile minimal
               cargo +1.94.1 check \
                 --manifest-path crates/nworlds-desktop/Cargo.toml \
-                --bin nworlds-desktop --locked
+                --locked
             '

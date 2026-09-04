@@ -99,7 +99,7 @@ impl WgpuRenderSink {
             .map_err(|_| WgpuRenderError::AdapterUnavailable)?;
         let (device, queue) = adapter
             .request_device(&::wgpu::DeviceDescriptor {
-                label: Some("caravan-device"),
+                label: Some("nworlds-desktop-device"),
                 required_features: ::wgpu::Features::empty(),
                 required_limits: ::wgpu::Limits::default(),
                 experimental_features: ::wgpu::ExperimentalFeatures::disabled(),
@@ -136,16 +136,16 @@ impl WgpuRenderSink {
         surface.configure(&device, &config);
 
         let shader = device.create_shader_module(::wgpu::ShaderModuleDescriptor {
-            label: Some("caravan-shader"),
+            label: Some("nworlds-desktop-shader"),
             source: ::wgpu::ShaderSource::Wgsl(SHADER.into()),
         });
         let layout = device.create_pipeline_layout(&::wgpu::PipelineLayoutDescriptor {
-            label: Some("caravan-pipeline-layout"),
+            label: Some("nworlds-desktop-pipeline-layout"),
             bind_group_layouts: &[],
             immediate_size: 0,
         });
         let pipeline = device.create_render_pipeline(&::wgpu::RenderPipelineDescriptor {
-            label: Some("caravan-pipeline"),
+            label: Some("nworlds-desktop-pipeline"),
             layout: Some(&layout),
             vertex: ::wgpu::VertexState {
                 module: &shader,
@@ -217,7 +217,7 @@ impl RenderSink<Frame<RenderBatch>> for WgpuRenderSink {
         let vertex_buffer = ::wgpu::util::DeviceExt::create_buffer_init(
             &self.device,
             &::wgpu::util::BufferInitDescriptor {
-                label: Some("caravan-vertices"),
+                label: Some("nworlds-desktop-vertices"),
                 contents: bytemuck::cast_slice(&vertices),
                 usage: ::wgpu::BufferUsages::VERTEX,
             },
@@ -239,11 +239,11 @@ impl RenderSink<Frame<RenderBatch>> for WgpuRenderSink {
         let mut encoder = self
             .device
             .create_command_encoder(&::wgpu::CommandEncoderDescriptor {
-                label: Some("caravan-render-encoder"),
+                label: Some("nworlds-desktop-render-encoder"),
             });
         {
             let mut pass = encoder.begin_render_pass(&::wgpu::RenderPassDescriptor {
-                label: Some("caravan-render-pass"),
+                label: Some("nworlds-desktop-render-pass"),
                 color_attachments: &[Some(::wgpu::RenderPassColorAttachment {
                     view: &view,
                     depth_slice: None,

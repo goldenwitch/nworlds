@@ -8,22 +8,34 @@ platform-window contract.
 
 Cross-boundary ownership is indexed in
 [redundancy-register.md](redundancy-register.md). This proposal owns the
-current Caravan `RenderOutput` projection; the future shared target vocabulary
-is owned by [target-factory.md](target-factory.md) as `RenderBatch`.
+current Caravan `RenderOutput` semantic inspection projection; the shared
+target vocabulary is owned by [target-factory.md](target-factory.md) as
+`RenderBatch`.
 
 ## Boundary
 
-The rendering composition is:
+The semantic inspection composition is:
 
 ```text
 GameState<Snapshot> + Tau
-    -> Renderer<Snapshot>
-    -> Frame<RenderOutput>
+  -> `project_output`
+  -> RenderOutput
 ```
 
 The selected `GameState` is authoritative input. `Tau` is the independent
-presentation sample. The renderer returns owned `RenderOutput` data inside the
-existing SDK `Frame` envelope.
+presentation sample. The Caravan inspection projection returns owned
+`RenderOutput` data; the target-facing renderer separately returns the shared
+`Frame<RenderBatch>` value.
+
+The target crossing is a separate client projection:
+
+```text
+GameState<Snapshot> + Tau
+  -> Caravan semantic `RenderOutput` inspection view
+  -> `RenderBatch`
+  -> Frame<RenderBatch>
+  -> target RenderSink
+```
 
 The output is downstream, fire-and-forget rendering data. A render sink may
 copy, queue, submit, or discard it, but no later game decision or frame
@@ -61,7 +73,10 @@ missing facts.
 - `GameState<Snapshot> + Tau` are the only inputs to render production.
 - `Renderer<Snapshot>` owns the pure projection from immutable state to owned
   rendering data.
-- `Frame<RenderOutput>` owns the presentation envelope and output value.
+- `RenderOutput` is a Caravan-owned semantic inspection value; it does not
+  cross into generic target execution.
+- `Frame<RenderBatch>` owns the target-facing presentation envelope and shared
+  draw value.
 - Stage owns renderer composition and chooses the selected state and `Tau`.
 - The presentation host owns render-sink transport and target/backend
   execution after the frame crosses the host boundary.
@@ -82,21 +97,24 @@ For equal `GameState<Snapshot>` and equal `Tau`, rendering returns equal owned
 output. Output ordering is explicit and does not depend on hash-map iteration,
 query order, prior frames, device state, or host scheduling.
 
-Forward, reverse, repeated, arbitrary, and branch samples use the same path:
+Forward, reverse, repeated, arbitrary, and branch samples use the same semantic
+path:
 
 ```text
 selected Worldline + LogicalTime
     -> GameState<Snapshot>
     -> Renderer<Snapshot> + Tau
-    -> Frame<RenderOutput>
+    -> semantic `RenderOutput` inspection view
+    -> Frame<RenderBatch>
 ```
 
 ## Host Crossing
 
-The rendering contract ends at the owned frame value:
+  The semantic rendering contract hands its client projection to the shared host
+  boundary:
 
 ```text
-Frame<RenderOutput>
+  Frame<RenderBatch>
     -> RenderSink port
     -> target backend, surface, or device
 ```

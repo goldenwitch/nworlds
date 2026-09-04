@@ -90,15 +90,16 @@ than restate both. No new input abstraction is introduced.
 `engine-presentation`, Caravan `render.rs`, voxel `render.rs`, and
 `nworlds-desktop/src/wgpu.rs`.
 
-**Classification:** The engine presentation contract and two sample projections
-are distinct. The shared target vocabulary is now implemented as
-`engine-presentation::RenderBatch`; the duplicate `winit`/`wgpu` lifecycle
-execution remains a real implementation overlap behind the desktop-host task.
+**Classification:** The engine presentation contract, two sample projections,
+and the reusable desktop lifecycle are distinct. The shared target vocabulary
+is implemented as `engine-presentation::RenderBatch`; voxel's native client
+loop and the historical Caravan proof remain separate client evidence while
+their migration is pending.
 
 **Decision:** `rendering-contract.md` owns current state-first presentation;
-`target-factory.vine` owns the implemented `RenderBatch` and future generic
-desktop composition. Samples keep state-to-batch projection; one generic target
-host remains the planned eventual execution owner.
+`target-factory.vine` owns the implemented `RenderBatch` and desktop-host
+remediation. Samples keep state-to-batch projection; `nworlds-desktop` owns
+generic lifecycle execution and client migration remains downstream.
 
 ### R6: Target factory, support, and host target records
 
@@ -120,10 +121,11 @@ runtime port roles. `host.vine` remains historical proof and is not extended.
 voxel-sample's native `winit`/`wgpu` target, and `nworlds-host::ApplicationHost`.
 
 **Classification:** `nworlds-host` is reusable passive composition;
-Caravan host aliases are test convenience; `nworlds-desktop` is the Caravan
-proof client; voxel is an independent target client. The two native render
-loops are true lifecycle/execution duplication; their game-to-target render
-vocabulary is now shared through `RenderBatch`.
+Caravan host aliases are test convenience; `nworlds-desktop` now owns reusable
+generic lifecycle execution with a synthetic package proof; voxel is an
+independent target client and the historical Caravan proof remains evidence.
+The client loops are still separate until both migrations complete, while their
+game-to-target render vocabulary is shared through `RenderBatch`.
 
 **Decision:** Do not merge target code prematurely. Execute the target-factory
 remediation wave: define generic desktop composition, then migrate both

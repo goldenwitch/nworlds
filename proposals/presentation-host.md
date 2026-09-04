@@ -368,11 +368,11 @@ backend adapters. A client may add target-neutral semantic observations such
 as cursor coordinates; target execution still treats them as opaque package
 packets.
 
-`nworlds-desktop` is the current Caravan proof client and remains independently
-buildable while this contract is implemented. Its hard-coded package wiring is
-not the reusable host API. The implementation task must extract or replace
-that wiring with the generic composition before Caravan and voxel are claimed
-to share one target host.
+`nworlds-desktop` now contains the reusable generic lifecycle and a synthetic
+package compile proof without Caravan or voxel dependencies. The historical
+Caravan desktop proof remains independently preserved as client evidence. The
+Caravan and voxel client migrations still need to route both packages through
+this composition before they are claimed to share one target host.
 
 ## Time Boundary
 

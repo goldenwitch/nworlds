@@ -88,10 +88,13 @@ separate conformance catalog:
 
 | Clause | Evidence | Coverage |
 | --- | --- | --- |
-| Desktop `winit`/`wgpu` host launches and presents the owned render output | `cargo run --manifest-path crates/nworlds-desktop/Cargo.toml --bin nworlds-desktop` | Manual local acceptance: the window opened and rendered the Caravan scene on `x86_64-pc-windows-msvc` |
+| Historical desktop `winit`/`wgpu` host launched and presented the owned render output | Historical `cargo run --manifest-path crates/nworlds-desktop/Cargo.toml --bin nworlds-desktop` observation | Manual local acceptance: the window opened and rendered the Caravan scene on `x86_64-pc-windows-msvc`; retained as proof evidence while the generic host is migrated |
 | Native resize remains below the game layer | Local window resize observation | Manual local acceptance: resizing stretched the presentation without changing the game-facing path |
 | Native input reaches the unchanged semantic interaction path | Space key through `winit` keyboard input | Manual local acceptance: Space changed the center tile color |
 | Native shutdown is owned by the target event loop | Close request through the Windows window | Manual local acceptance: the target exited cleanly |
+
+| Generic desktop target has no game dependency | `cargo test -p purity-tests --test dependency_boundaries --locked` | Runtime manifest guard: `nworlds-desktop` production dependencies exclude Caravan and voxel consumers |
+| Synthetic package submits an owned desktop `Frame<RenderBatch>` | `cargo test -p nworlds-desktop --locked` | Runtime pass: target-local generic composition collects a synthetic owned batch without a game crate |
 
 ## Target Artifact and Support Evidence
 
