@@ -41,9 +41,12 @@ Caravan facts and context
   -> engine_integration::state
   -> GameState<Snapshot>
   -> engine_integration::present_state
-  -> Frame<RenderOutput>
+  -> Frame<RenderBatch>
   -> host RenderSink
 ```
+
+`RenderOutput` remains a Caravan-owned semantic inspection view produced by
+`project_output`; the target boundary carries the shared `RenderBatch`.
 
 A primary-button input follows the same shape as the voxel sample:
 
