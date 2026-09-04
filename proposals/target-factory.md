@@ -264,6 +264,11 @@ The generated static composition is the factory's target-specific product. It
 owns the target entrypoint and adapter wiring for one resolved package/profile
 pair; it is not a second game package implementation.
 
+The reusable desktop lifecycle contract for those generated compositions is
+owned by the [presentation-host proposal](presentation-host.md). This proposal
+owns when the factory selects or generates that composition; the presentation
+host owns the runtime responsibility split inside it.
+
 The target-factory concepts are distinct:
 
 ```text

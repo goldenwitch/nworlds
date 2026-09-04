@@ -326,6 +326,54 @@ these ports; a package source tree contains no target `main` or platform
 adapter. The existing native executable is historical proof of the port
 behavior, not the composition mechanism itself.
 
+## Reusable Desktop Composition
+
+The reusable desktop composition is ordinary static Rust around the
+target-neutral host contract. A generated composition supplies concrete type
+arguments and constructors for:
+
+```text
+GamePackage
+InputIngress
+PlatformInputAdapter<NativeEvent, Packet>
+StorageTransport
+RenderSink<Frame<RenderBatch>>
+```
+
+The generated composition owns the `winit` application handler and event loop,
+window creation, native event delivery to the package-defined input adapter,
+resize handling, `wgpu` surface/device/queue setup, surface-loss recovery,
+shutdown, redraw scheduling, and final frame submission. Its control order is
+target-local and mechanical:
+
+```text
+native event
+    -> PlatformInputAdapter -> InputIngress
+    -> ApplicationHost::step
+    -> GamePackage::ingest_batch / step
+    -> RenderSink<Frame<RenderBatch>>
+```
+
+The desktop host never selects a worldline, assigns logical time, interprets a
+fact, performs a game-specific pick, or inspects a package state. It does not
+import Caravan, voxel, `Snapshot`, `VoxelState`, `RenderOutput`, or any other
+game-domain type. Host time may drive redraw scheduling, but it never enters
+the package's authoritative time path.
+
+Package clients supply the `GamePackage` implementation, semantic packet and
+batch types, the native-event-to-packet adapter used by their generated
+composition, and the `GameState + Tau -> Frame<RenderBatch>` projection. The
+selected target composition supplies the concrete lifecycle, storage, and
+backend adapters. A client may add target-neutral semantic observations such
+as cursor coordinates; target execution still treats them as opaque package
+packets.
+
+`nworlds-desktop` is the current Caravan proof client and remains independently
+buildable while this contract is implemented. Its hard-coded package wiring is
+not the reusable host API. The implementation task must extract or replace
+that wiring with the generic composition before Caravan and voxel are claimed
+to share one target host.
+
 ## Time Boundary
 
 Host time is outside this model. The current time values remain:

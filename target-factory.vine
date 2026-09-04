@@ -108,16 +108,16 @@ Accept: No current proof detail is silently promoted to the target-factory contr
 > Existing proof behavior is evidence to preserve, not API authority to promote; migration has one owner and cannot widen the game package contract.
 > The gate is closed until RenderBatch, static composition, and resolution decisions are complete.
 ---
-[desktop-host-contract] Define reusable desktop target composition (planning)
+[desktop-host-contract] Define reusable desktop target composition (complete)
 Files: proposals/target-factory.md; proposals/presentation-host.md; crates/nworlds-host/**; crates/nworlds-desktop/**; crates/engine-presentation/**; .github/**
 Do: Specify the target-neutral desktop composition around `GamePackage`, `InputIngress`, `PlatformInputAdapter`, `StorageTransport`, and `RenderSink<Frame<RenderBatch>>`. Decide which lifecycle, resize, shutdown, surface/device, and frame scheduling responsibilities belong to the reusable desktop host and which values are supplied by a package client.
 Accept: The contract can host both Caravan and voxel packages; the desktop composition owns native lifecycle and backend execution; package clients supply semantic input vocabulary and `RenderBatch` production; no target entrypoint imports Caravan, voxel, or a game-domain type; and the first composition remains ordinary static Rust.
 -> composition
 -> render-batch
 -> resolution
-> `nworlds-desktop` becomes a generic target host/composition or is replaced by one; it is not a Caravan library.
-> The target host owns `winit`/`wgpu` lifecycle, resize, surface-loss, shutdown, and scheduling policy; it never selects worldlines, interprets facts, or assigns logical time.
-> Game packages own semantic input and state-to-RenderBatch projection; the target host receives only package-neutral ports and owned frames.
+> `nworlds-desktop` is a reusable generic target host/composition around `GamePackage` and package-neutral ports; it is not a Caravan library.
+> The target host owns `winit`/`wgpu` lifecycle, resize, surface-loss, shutdown, and redraw scheduling; it never selects worldlines, interprets facts, assigns logical time, or inspects package state.
+> Generated compositions supply package-defined input packets/adapters and `GameState + Tau -> Frame<RenderBatch>` production; the host consumes only `InputIngress`, `StorageTransport`, and `RenderSink<Frame<RenderBatch>>` ports.
 ---
 [desktop-host-implementation] Implement reusable desktop host composition (planning)
 Files: crates/nworlds-desktop/**; crates/nworlds-host/**; Cargo.toml; Cargo.lock; .github/workflows/ci.yml
