@@ -97,6 +97,8 @@ separate conformance catalog:
 | Synthetic package submits an owned desktop `Frame<RenderBatch>` | `cargo test -p nworlds-desktop --locked` | Runtime pass: target-local generic composition collects a synthetic owned batch without a game crate |
 | Caravan remaps onto the generic desktop composition | `cargo check -p caravan-demo --examples --locked` | Compile pass: the sample-owned `CaravanInputAdapter` and `CaravanPackage` compose through `nworlds-desktop::DesktopApplication`; native runtime observation remains separate |
 | Voxel remaps onto the generic desktop composition | `cargo test -p voxel-sample --locked`; `cargo check -p voxel-sample --locked` | Runtime/compile pass: package-owned click picking, wheel scale publication, and `Frame<RenderBatch>` production compose through the shared target; native launch and persistence remain separate |
+| Current Caravan client launches through the generic desktop composition | `cargo run -p caravan-demo --example desktop --locked` | Manual local runtime smoke: the generated/example composition opened without startup errors on Windows; no device-support claim |
+| Current voxel client launches through the generic desktop composition | `cargo run -p voxel-sample --locked` | Manual local runtime smoke: the shared host launched the voxel package without startup errors on Windows; click/scale behavior is covered by package tests; no device-support claim |
 
 ## Target Artifact and Support Evidence
 

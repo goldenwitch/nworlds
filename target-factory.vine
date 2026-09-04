@@ -163,13 +163,13 @@ Accept: No `caravan-windows` crate or empty target residue remains; no generic t
 > The obsolete voxel target sink and the prior Caravan-specific desktop main/dependency were removed; no `caravan-windows` crate or empty target residue remains.
 > Workspace manifests, lockfile, PR compile check, README/index/library maps, sample guides, evidence, and ownership registers now describe one generic target composition and two package clients.
 ---
-[desktop-evidence] Prove generic desktop composition and client preservation (planning)
+[desktop-evidence] Prove generic desktop composition and client preservation (complete)
 Files: crates/purity-tests/**; crates/nworlds-host/**; crates/nworlds-desktop/**; crates/caravan-demo/**; crates/voxel-sample/**; evidence/**; .github/workflows/**
 Do: Add synthetic-package host evidence, target-host dependency guards, Caravan client regression evidence, voxel client regression evidence, native compile/runtime evidence, and explicit compile/runtime/device status distinctions. Keep native visual evidence target-local and preserve workspace/conformance/purity/CodeQL checks.
 Accept: Generic desktop host tests run without Caravan or voxel packages; both clients build through the same composition; target dependency guards pass; native compile and runtime evidence are separately named; no engine or host contract gained game-specific types; and the target-factory migration gate can close.
 -> artifact-ci
 -> desktop-target-closure
 -> migration-gate
-> Synthetic package evidence proves genericity; Caravan/voxel evidence proves client preservation; neither evidence class is allowed to stand in for the other.
-> Compile success is not runtime support, and desktop runtime success is not device/profile support.
-> The host contract remains scheduler-independent and never turns host time into logical game time.
+> Synthetic `nworlds-desktop` tests prove genericity; Caravan example compile/regression tests and voxel package tests prove client preservation; these evidence classes remain named separately.
+> Current evidence commands are `cargo test -p nworlds-desktop --locked`, `cargo test -p purity-tests --test dependency_boundaries --locked`, `cargo check -p caravan-demo --examples --locked`, and `cargo test -p voxel-sample --locked`; current Caravan and voxel native launches are manual runtime smoke observations.
+> Compile checks, manual runtime smoke, and device/profile support remain separate claims; no current local observation upgrades a support matrix row to device support, and host scheduling never enters logical game time.
