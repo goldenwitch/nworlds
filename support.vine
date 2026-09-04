@@ -15,7 +15,8 @@ Accept: The support matrix is the authoritative closed target universe; Windows 
 -> out-of-scope
 -> steamdeck
 -> support-evidence
-> Support implementation and evidence tasks and matrix status remain owned here; TargetFactory owns TargetProfile, RuntimeCapabilities, TargetResolution, and unsupported-environment semantics.
+> Support implementation and evidence tasks and matrix status remain owned here; TargetFactory owns TargetProfile, RuntimeCapabilities, TargetResolution, TargetArtifact identity, and unsupported-environment semantics.
+> Compile, runtime, and device evidence are separate claims; a compile lane cannot close a matrix row that requires runtime or device evidence.
 @guidance text/markdown proposals/platform-support-matrix.md
 @guidance text/markdown proposals/presentation-host.md
 @guidance text/markdown proposals/productization-review.md

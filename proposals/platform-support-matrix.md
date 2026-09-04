@@ -81,6 +81,22 @@ The matrix does not select an artifact, inspect a device, or turn a compile
 result into runtime support. `support.vine` owns implementation and evidence
 tasks for the rows; it does not define a second profile or resolution model.
 
+## Evidence Levels
+
+Each row consumes the target-factory artifact/evidence contract. Compile,
+runtime, and device claims are recorded separately:
+
+| Level | Matrix meaning |
+| --- | --- |
+| Compile | The generated composition and target adapters build for the row's resolved profile with locked inputs. |
+| Runtime | A named artifact launches in the declared environment and exercises lifecycle, input, resize, render, storage, and shutdown. |
+| Device | The declared physical or profile-specific display/device/backend path is observed under recorded conditions. |
+
+An artifact maps to one resolved profile and carries its manifest, checksum,
+and evidence references. Compile evidence alone leaves a row as a gap when
+runtime or device evidence is required. The matrix does not infer artifact
+publication, runtime support, or device support from a successful build.
+
 ## Target Rows
 
 The Windows composition uses `winit` for window and input events and `wgpu`

@@ -330,6 +330,68 @@ different supported artifact/profile, or use a target with the required
 runtime/device conditions. It does not become a game error and it does not
 ask game code to branch on target identity.
 
+## TargetArtifact and Evidence
+
+`TargetArtifact` is the immutable host/distribution result for one package
+source and one resolved `TargetProfile`. It contains the generated static
+composition, the package linkage, and an artifact manifest; it does not alter
+the package contract or carry authoritative game state.
+
+The artifact identity is the tuple of:
+
+```text
+package identity + package version
+source/dependency digest
+PackageDeclaration digest
+resolved TargetProfile identity
+host contract and composition-generator version
+toolchain/build configuration identity
+artifact format
+```
+
+The identity is content-addressed by a manifest/checksum record. A published
+name may be derived from that identity for humans, but a cache or distribution
+consumer must verify the manifest and artifact checksum before reuse. The
+manifest records the package identity/version, declaration and source
+digests, resolved profile, composition/generator version, toolchain/build
+inputs, artifact format, checksum, creation metadata, and evidence references.
+Profile identity is artifact metadata; it is never added to package source or
+game logic.
+
+Artifact retention has two host-owned forms:
+
+- the local cache retains reusable artifacts and manifests until its
+  host/distribution retention policy evicts them; and
+- a distribution store retains immutable published artifacts by identity,
+  with metadata and checksums retained long enough to reproduce or audit the
+  publication.
+
+Neither path, policy, or retention decision crosses into `GamePackage`.
+
+### Separate evidence claims
+
+Every artifact and support row records these evidence classes independently:
+
+| Evidence class | Proves | Does not prove |
+| --- | --- | --- |
+| Compile | The generated composition and target adapter build for the resolved profile with locked inputs | A runnable window, display, GPU, input path, or physical device result |
+| Runtime | The artifact launches in a declared environment and observes lifecycle, input, resize, render, storage, and shutdown behavior | Physical-device coverage or support for another profile/environment |
+| Device | The declared physical or profile-specific device/display/backend path works under the recorded conditions | Reproducible compilation or every runtime environment |
+
+CI may mint and inspect an artifact using only the package declaration,
+generated composition, generic host/target code, and profile recipe. The mint
+job must verify the manifest/checksum and profile mapping without importing
+Caravan, voxel, or any other application type into target-host production
+code. Runtime and device jobs consume the artifact as a separate step and
+attach their observations to the manifest/evidence record; a compile-only job
+cannot upgrade a support row to `complete`.
+
+The current workflow provides reusable-library, workspace, Windows-host, and
+Arch-host compile evidence. Generic artifact mint/manifest inspection and
+profile-specific runtime/device publication are downstream implementation and
+CI work; their absence is recorded as a gap rather than inferred from the
+existing compile lanes.
+
 ## CLI Contract
 
 The public command surface is intentionally small. Commands are run from a
@@ -395,8 +457,9 @@ for the factory contract, not a second package or target API.
 ## Decisions To Settle
 
 The game contract, package declaration, first render vocabulary, generated
-composition, resolution stages, and public CLI behavior are now settled in the
-implementation and evidence above. The remaining target-factory decisions are:
+composition, resolution stages, artifact identity/evidence classes, and public
+CLI behavior are now settled in the implementation and evidence above. The
+remaining target-factory decisions are:
 
 1. **CI and artifacts**: Specify how CI mints, names, tests, publishes, and
   retains one artifact per supported profile, with device evidence separate

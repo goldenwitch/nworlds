@@ -87,14 +87,15 @@ Accept: Normal game development requires no target flag or platform knowledge; c
 > `nworlds test` validates semantic package evidence without selecting a target or minting a distributable artifact; `nworlds run` resolves local capabilities and launches a reused or minted artifact; `nworlds package` mints/reuses artifacts allowed by host/distribution policy.
 > Stable host phases are discover, validate, resolve, artifact, and launch; failures preserve discovery, validation, resolution, artifact, or launch ownership, and unsupported resolution reports required, available, and remediation data.
 ---
-[artifact-ci] Define TargetArtifact and CI evidence (planning)
+[artifact-ci] Define TargetArtifact and CI evidence (complete)
 Files: proposals/target-factory.md; proposals/platform-support-matrix.md; support.vine; .github/**; evidence/**
 Do: Specify artifact identity, naming, metadata, checksums, retention, build checks, runtime evidence, device evidence, and publication behavior for supported profiles.
 Accept: Each artifact maps to one resolved profile; compile, runtime, and device evidence are distinct; CI can mint supported artifacts without game-specific target code; and the support matrix remains host-owned.
 -> cli
 -> resolution
-> Compile, runtime, and device evidence remain separate claims; an artifact identity names its resolved profile without changing the package contract.
-> CI can mint and inspect a target artifact without importing Caravan or voxel application types into target-host production code.
+> Each TargetArtifact is immutable and maps to one package source/declaration and one resolved TargetProfile; its manifest records package/source/declaration digests, profile, generator/host contract, toolchain/build inputs, format, checksum, and evidence references.
+> Local cache reuse and distribution retention are host-owned and checksum-verified; artifact naming may expose profile metadata to host/distribution tooling but never changes the package contract.
+> Compile, runtime, and device evidence are separate claims; CI may mint and inspect artifacts without importing Caravan, voxel, or other application types into target-host production code, and compile-only evidence cannot close a runtime/device support row.
 ---
 [migration-gate] Classify and gate existing proof code (planning)
 Files: proposals/target-factory.md; host.vine; crates/caravan-demo/**; crates/nworlds-desktop/**

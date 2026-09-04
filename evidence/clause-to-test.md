@@ -93,6 +93,21 @@ separate conformance catalog:
 | Native input reaches the unchanged semantic interaction path | Space key through `winit` keyboard input | Manual local acceptance: Space changed the center tile color |
 | Native shutdown is owned by the target event loop | Close request through the Windows window | Manual local acceptance: the target exited cleanly |
 
+## Target Artifact and Support Evidence
+
+The target-factory proposal owns artifact identity, manifest/checksum
+verification, retention, and the separation between compile, runtime, and
+device claims. The platform matrix consumes those records for each profile;
+this evidence table names the current implementation gap rather than treating
+existing compile jobs as a stronger claim.
+
+| Claim | Primary evidence | Current status |
+| --- | --- | --- |
+| A generated artifact maps to one package source and one resolved profile | Target-factory `TargetArtifact` contract and manifest/checksum design | Contract settled; generic mint/inspection implementation pending |
+| CI can mint and inspect artifacts without game-specific target dependencies | Target-neutral generated-composition CI job with manifest/checksum inspection | Gap: current CI has target compile lanes but no factory artifact job |
+| Compile, runtime, and device evidence remain distinct | Platform matrix evidence levels and target-specific records | Contract settled; profile-specific runtime/device publication remains pending |
+| A support row reaches `complete` only with its required runtime/device evidence | Platform matrix status rule and `support.vine` closure tasks | Current Windows manual/runtime record retained; other committed rows remain explicit gaps |
+
 ## Explicit Gaps
 
 - CodeQL remains a separate CI security workflow in
@@ -104,3 +119,6 @@ separate conformance catalog:
   boundary.
 - Native window, input, resize, and GPU observations are manual local evidence;
   no CI pixel or device test is claimed by this slice.
+- Generic target-artifact minting, manifest/checksum inspection, and publication
+  are not yet implemented by the target factory; existing host build jobs are
+  compile evidence only.
