@@ -51,6 +51,8 @@ it does not advance or mutate a hidden current state.
   explicit gaps, and native or appropriate CI plan.
 - [Demo gameplay plan](gameplay.vine) - the design-derived inventory and
   ordered plan for the remaining player-facing demo loop.
+- [Voxel sample case study](proposals/voxel-sample.md) - the engine features
+  used by the independent voxel sample and its ownership boundary.
 - [Input and interaction boundary](proposals/input-and-interaction.md) - the
   semantic batch, interaction-definition, and buffering boundary.
 - [Transport and journal layer](proposals/transport-and-journal.md) - the
@@ -102,6 +104,7 @@ These crates define the concrete game fixture and its indexed rules.
 | --- | --- |
 | [`caravan-demo`](crates/caravan-demo) | Runnable terminal demonstration of the anchor, arbitrary sampling, lookahead, branches, and presentation. |
 | [`nworlds-desktop`](crates/nworlds-desktop/Cargo.toml) | Target-local desktop adapter mapped over `nworlds-host`; it contains no package-owned state construction. |
+| [`voxel-sample`](crates/voxel-sample/Cargo.toml) | Independent voxel cottage consumer; its [colocated README](crates/voxel-sample/README.md) is the practical guide, and [`engine_integration.rs`](crates/voxel-sample/src/engine_integration.rs) demonstrates generic state, journal, query, branch, and presentation usage with sample-defined types. |
 | [`engine-benchmarks`](crates/engine-benchmarks) | Non-published release-build measurements for direct queries, scrubbing, branches, and frame production. |
 | [`purity-tests`](crates/purity-tests) | Runtime and `trybuild` compiler-boundary tests for immutable, data-only authoritative APIs. |
 | [`tests/conformance`](tests/conformance) | Separate workspace containing the executable conformance catalog and report generator. |
@@ -141,6 +144,9 @@ cargo test -p purity-tests
 
 # Check only the reusable temporal and host packages
 cargo check -p engine-time -p engine-sdk -p engine-journal -p engine-branches -p engine-index -p engine-presentation -p engine-api -p nworlds-host --locked
+
+# Run the independent voxel sample
+cargo run --manifest-path crates/voxel-sample/Cargo.toml
 
 # Reproduce the checked-in benchmark report
 cargo run --release --manifest-path crates/engine-benchmarks/Cargo.toml -- --iterations 10000 --warmup 1000 --report evidence/benchmarks/anchor-report.json

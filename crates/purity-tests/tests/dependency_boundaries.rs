@@ -10,9 +10,12 @@ const LIBRARY_MANIFESTS: &[&str] = &[
     "crates/engine-api/Cargo.toml",
 ];
 
+const VOXEL_SAMPLE_MANIFEST: &str = "crates/voxel-sample/Cargo.toml";
+
 const FORBIDDEN_PRODUCTION_DEPENDENCIES: &[&str] = &[
     "caravan",
     "caravan-demo",
+    "voxel-sample",
     "nworlds-host",
     "nworlds-desktop",
     "winit",
@@ -54,6 +57,39 @@ fn library_production_manifests_do_not_depend_on_consumers() {
     assert!(
         violations.is_empty(),
         "library production dependency violations:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn voxel_sample_does_not_depend_on_caravan_consumers() {
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let path = workspace_root.join(VOXEL_SAMPLE_MANIFEST);
+    let manifest = fs::read_to_string(path).expect("voxel sample manifest should be readable");
+    let mut section = String::new();
+    let mut violations = Vec::new();
+
+    for line in manifest.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with('[') && trimmed.ends_with(']') {
+            section = trimmed.to_ascii_lowercase();
+            continue;
+        }
+        if !is_production_dependency_section(&section) {
+            continue;
+        }
+        let Some((name, _)) = trimmed.split_once('=') else {
+            continue;
+        };
+        let name = name.trim().trim_matches('"').to_ascii_lowercase();
+        if name.starts_with("caravan-") || name == "nworlds-desktop" {
+            violations.push(name);
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "voxel sample must not depend on Caravan consumers:\n{}",
         violations.join("\n")
     );
 }

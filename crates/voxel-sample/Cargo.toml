@@ -1,0 +1,12 @@
+[package]
+name = "voxel-sample"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bytemuck = { version = "1", features = ["derive"] }
+engine-api = { path = "../engine-api" }
+nworlds-host = { path = "../nworlds-host" }
+pollster = "1"
+wgpu = "30"
+winit = "0.30"
