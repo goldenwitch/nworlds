@@ -66,7 +66,7 @@ Accept: One composition mechanism is selected; the game package has no target en
 > A game package contains no target entrypoint or target adapter; generated target detail remains outside the package source tree.
 > The generated composition supports Caravan and voxel clients through generic types and ports, never through a game-name branch in target execution.
 ---
-[resolution] Define profile and runtime resolution (planning)
+[resolution] Define profile and runtime resolution (complete)
 Files: proposals/target-factory.md; proposals/platform-support-matrix.md; support.vine
 Do: Separate static TargetProfile recipes from actual RuntimeCapabilities and define TargetResolution as adapter selection or an explicit unsupported result.
 Accept: Build-time selection, distribution-time artifact selection, and runtime capability detection are distinct; unsupported environments report required/available capabilities and remediation at the host boundary; and games do not branch on target identity.

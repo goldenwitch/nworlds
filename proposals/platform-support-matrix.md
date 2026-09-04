@@ -1,9 +1,10 @@
 # Platform Support Matrix
 
 This document records host-owned platform adaptation as a composition matrix.
-Each target row records the target profile that the nworlds target factory may
-resolve, its host adapters, owner, evidence, build/run condition, and explicit
-support gap. It is not a game-package developer interface.
+Each target row records the host-owned target profile regime that the nworlds
+target factory may resolve, its host adapters, owner, evidence, build/run
+condition, and explicit support gap. It is not a game-package developer
+interface.
 
 ## Ownership
 
@@ -15,9 +16,10 @@ the support-matrix abstraction.
 
 Cross-boundary ownership is indexed in
 [redundancy-register.md](redundancy-register.md). This matrix owns declared
-target regimes and support evidence; target/package/artifact resolution is
-owned by [target-factory.md](target-factory.md), while runtime port roles are
-owned by [presentation-host.md](presentation-host.md).
+target regimes and support evidence. Profile/capability resolution and
+unsupported-environment semantics are owned by
+[target-factory.md](target-factory.md), while runtime port roles are owned by
+[presentation-host.md](presentation-host.md).
 
 ```text
 target-specific entrypoint
@@ -66,6 +68,18 @@ omission.
 The planned work for every committed `gap` row is owned by
 [support.vine](../support.vine). Build-only evidence never upgrades a row to
 `complete`; runtime/device acceptance is required.
+
+## Resolution Boundary
+
+The matrix is a host-owned consumer of the target-factory resolution contract:
+
+- a row describes one static `TargetProfile` regime and its evidence;
+- a host observes `RuntimeCapabilities` for the environment where an artifact is run; and
+- the target factory produces `TargetResolution::Supported` or the structured `TargetResolution::Unsupported` result at the host boundary.
+
+The matrix does not select an artifact, inspect a device, or turn a compile
+result into runtime support. `support.vine` owns implementation and evidence
+tasks for the rows; it does not define a second profile or resolution model.
 
 ## Target Rows
 

@@ -273,21 +273,70 @@ TargetResolution     profile + capabilities -> adapters or explicit failure
 TargetArtifact       minted runnable or distributable result
 ```
 
+## Resolution Stages
+
+Resolution is host-owned and is split into three operations with different
+inputs and outputs:
+
+| Operation | Input | Output | Owner |
+| --- | --- | --- | --- |
+| Build-time profile selection | Package declaration, requested build intent, and host-owned profile recipes | Generated static composition and a candidate `TargetArtifact` for one `TargetProfile` | Target factory/build machinery |
+| Distribution-time artifact selection | Package identity/version and available artifact metadata | One compatible named `TargetArtifact` or a missing-artifact result | Target factory/distribution machinery |
+| Runtime capability resolution | Selected `TargetProfile` and observed `RuntimeCapabilities` | `TargetResolution::Supported` with host adapters, or `TargetResolution::Unsupported` | Host boundary |
+
+The stages may share identifiers and metadata, but they do not substitute for
+one another. Building an artifact does not prove that a local device can run
+it; selecting an artifact does not detect the local display or device; and
+runtime detection does not mint or mutate a package.
+
+### Host-owned resolution vocabulary
+
+`TargetProfile` is a static host recipe. It records target triple, operating
+system, architecture, runtime/entrypoint, backend choices, build conditions,
+and the host capabilities required to execute the generated composition. It is
+never passed to game logic or embedded in `PackageDeclaration`.
+
+`RuntimeCapabilities` is an observation of the environment at the host
+boundary. It may record the actual target triple, host/runtime version,
+window-system availability, display state, available render backends, device
+features, and other adapter facts. It is observed rather than selected by the
+package.
+
+`TargetResolution` is a host-owned result:
+
+```text
+Supported {
+  profile: TargetProfile,
+  adapters: selected host lifecycle/input/storage/render adapters,
+}
+
+Unsupported {
+  profile: requested TargetProfile,
+  required: host capability requirements,
+  available: observed RuntimeCapabilities,
+  remediation: host-owned next steps,
+}
+```
+
+The unsupported result is explicit and inspectable at the host boundary. Its
+required and available capability records explain the mismatch and its
+remediation tells the caller whether to install a host dependency, select a
+different supported artifact/profile, or use a target with the required
+runtime/device conditions. It does not become a game error and it does not
+ask game code to branch on target identity.
+
 ## Decisions To Settle
 
-The game contract, package declaration, and first render vocabulary are now
-settled in the implementation and evidence above. The remaining target-factory
-decisions are:
+The game contract, package declaration, first render vocabulary, generated
+composition, and resolution stages are now settled in the implementation and
+evidence above. The remaining target-factory decisions are:
 
-1. **Composition**: Specify the generated static composition and keep it out
-   of the game package source tree.
-2. **Selection**: Specify build-time profile selection, distribution-time
-   artifact selection, and runtime capability resolution as separate stages.
-3. **Unsupported environments**: Specify a stable host-owned resolution error
-   containing available/required capabilities and remediation.
-4. **CI and artifacts**: Specify how CI mints, names, tests, publishes, and
-   retains one artifact per supported profile, with device evidence separate
-   from compilation evidence.
+1. **CLI**: Specify the user-visible behavior, package discovery, caching,
+  logging, and failures for `nworlds test`, `nworlds run`, and
+  `nworlds package`.
+2. **CI and artifacts**: Specify how CI mints, names, tests, publishes, and
+  retains one artifact per supported profile, with device evidence separate
+  from compilation evidence.
 
 ## Constraints
 
