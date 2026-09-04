@@ -93,8 +93,30 @@ nworlds package
   -> mint named TargetArtifacts
 ```
 
-The factory may generate a small target composition crate internally. That
+The factory generates a small target composition crate internally. That
 generated detail is host machinery and is not part of the game package.
+
+### Selected Static Composition
+
+The selected mechanism is a generated static composition crate per resolved
+package/profile operation. The factory emits ordinary Rust source that links
+one package's `GamePackage` implementation with the reusable host ports and
+the selected target adapters, then invokes the normal Rust build/run/package
+toolchain. The generated crate owns the target `main`, lifecycle, input
+translation, storage transport, and render execution wiring.
+
+The generated crate is a build artifact, not a new source-level package
+boundary. It contains no game meaning and does not become a dependency of the
+package. The package contributes a target-neutral library composition and
+`PackageDeclaration`; it has no target entrypoint, target adapter, OS,
+architecture, window-system, GPU-backend, or target-triple field.
+
+This mechanism keeps the first implementation statically typed and supports
+`nworlds run` and `nworlds package` without a plugin ABI, runtime package
+discovery, or game-name branch in target execution. A future reusable desktop
+host library may be selected by many generated compositions; the current
+`nworlds-desktop` Caravan executable remains historical proof until the
+desktop-host migration replaces its hard-coded package wiring.
 
 `HostContract` is a family of narrow typed abstractions supplied by the host,
 not a broad mutable capabilities object. It covers the environmental things a
@@ -237,6 +259,10 @@ an explicit statement that the current proof package has no external assets.
   capabilities selected by the factory.
 - **Platform matrix** records which profiles are supported and what evidence
   exists; it does not require each game to assemble those profiles.
+
+The generated static composition is the factory's target-specific product. It
+owns the target entrypoint and adapter wiring for one resolved package/profile
+pair; it is not a second game package implementation.
 
 The target-factory concepts are distinct:
 

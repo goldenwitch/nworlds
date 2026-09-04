@@ -55,16 +55,16 @@ Accept: GameState + Tau is the only render-production input; RenderBatch is owne
 @artifact text/plain crates/voxel-sample/src/engine_integration.rs
 @artifact text/plain crates/caravan-demo/src/engine_integration.rs
 ---
-[composition] Define generated static target composition (planning)
+[composition] Define generated static target composition (complete)
 Files: proposals/target-factory.md; proposals/presentation-host.md; .github/**; crates/**
 Do: Specify whether nworlds generates a small static composition crate or selects a generic host executable, while keeping generated target details outside the game package and avoiding a plugin ABI in the first contract.
 Accept: One composition mechanism is selected; the game package has no target entrypoint; generated composition owns target adapters; and the mechanism supports nworlds run and nworlds package.
 -> game-contract
 -> package-declaration
 -> render-batch
-> One static composition mechanism is selected: a generated or selected target composition owns lifecycle, input translation, storage transport, and render execution around a `GamePackage`.
-> A game package contains no target entrypoint and no target adapter; generated target detail remains outside the package source tree.
-> The composition must be able to host both Caravan and voxel clients without a game-name branch in the target layer.
+> nworlds generates one ordinary Rust static composition crate per resolved package/profile operation; the generated crate owns target main, lifecycle, input translation, storage transport, and render execution around a GamePackage.
+> A game package contains no target entrypoint or target adapter; generated target detail remains outside the package source tree.
+> The generated composition supports Caravan and voxel clients through generic types and ports, never through a game-name branch in target execution.
 ---
 [resolution] Define profile and runtime resolution (planning)
 Files: proposals/target-factory.md; proposals/platform-support-matrix.md; support.vine

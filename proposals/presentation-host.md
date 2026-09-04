@@ -122,17 +122,16 @@ The render execution adapter consumes Stage-produced render output and performs
 backend or surface work:
 
 ```text
-Frame<RenderOutput>
+Frame<RenderBatch>
     -> RenderSinkAdapter
     -> backend/device/surface
 ```
 
-The current proof boundary is the `Renderer<S>::render(GameState<S>, Tau) ->
-Output` result carried by `Frame<Output>`; this adapter owns only the
-backend/device/surface execution step. The future target-factory
-`RenderBatch` contract owns the shared renderer-agnostic vocabulary used by
-generic target compositions; it does not retroactively redefine this proof
-client's game-specific `RenderOutput`.
+The generic proof boundary is the `Renderer<S>::render(GameState<S>, Tau) ->
+RenderBatch` result carried by `Frame<RenderBatch>`; this adapter owns only the
+backend/device/surface execution step. A client may retain a semantic
+intermediate such as Caravan's `RenderOutput`, but it must project that value
+to the shared batch before crossing the host boundary.
 
 ### Platform lifecycle and resource adapters
 
@@ -150,7 +149,7 @@ The adapter roles are summarized here:
 PlatformInputAdapter       native events -> InputPacket
 InputIngress               InputPacket transport -> Orchestrator
 Storage transport          encoded bytes <-> host storage
-RenderSinkAdapter           Frame<RenderOutput> -> backend execution
+RenderSinkAdapter           Frame<RenderBatch> -> backend execution
 LifecycleResourceAdapter   platform lifecycle/resources -> host conditions
 ```
 
@@ -248,21 +247,22 @@ packet meaning or retain semantic input state.
 
 ## Rendering Crossing
 
-The Stage-side `GameState + Tau -> Frame<RenderOutput>` composition is owned by
-the completed rendering contract on top of the current generic renderer/frame
-boundary. Gameplay-specific presentation may change only the minimal packet
-projected from `GameState`; the host owns device execution:
+The generic Stage-side `GameState + Tau -> Frame<RenderBatch>` composition is
+owned by the completed rendering contract on top of the generic renderer/frame
+boundary. Gameplay-specific presentation may retain a semantic intermediate,
+but only the minimal batch projected from `GameState` crosses to the host; the
+host owns device execution:
 
 ```text
-Frame<RenderOutput>
+Frame<RenderBatch>
     -> RenderSink port
     -> target backend/surface
 ```
 
-The rendering contract defines the exact `RenderOutput` representation as an
-owned composition of rendering objects, opaque to game reasoning. The host
-consumes that selected output through an independent render sink; backend
-commands, device state, and surface work remain below this boundary.
+The rendering contract defines the shared `RenderBatch` representation as
+owned normalized triangle data. A client-specific semantic projection remains
+opaque to generic host reasoning; backend commands, device state, and surface
+work remain below this boundary.
 
 Frame history and persistent device simulation are outside this boundary. GPU
 or backend state is plumbing around the indexed query and Stage journal path.
@@ -319,6 +319,12 @@ This composition is test infrastructure and a wiring proof, not a product
 platform. The selected Windows composition adds native input, windowing,
 device resources, and `wgpu` behind the same ports and leaves the game-facing
 Stage and renderer unchanged.
+
+The target-factory selects a generated static composition crate as the public
+mechanism. That crate owns the target entrypoint and composes the package with
+these ports; a package source tree contains no target `main` or platform
+adapter. The existing native executable is historical proof of the port
+behavior, not the composition mechanism itself.
 
 ## Time Boundary
 
