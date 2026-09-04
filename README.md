@@ -43,6 +43,18 @@ artifact. Developers do not select operating systems, architectures, windowing
 libraries, or GPU backends. These commands are the desired public workflow;
 the target factory is the next host design surface.
 
+The independent voxel sample is a separate consumer of the generic engine:
+
+```text
+cargo run --manifest-path crates/voxel-sample/Cargo.toml
+```
+
+It owns a journal-authored cottage made from distinct block kinds. Click a
+voxel to publish its removal; use the mouse wheel to adjust the voxel scale
+continuously. The recommended engine integration example is
+[`engine_integration.rs`](crates/voxel-sample/src/engine_integration.rs); the
+game-specific voxel model lives separately in `world.rs`.
+
 ## Repository Checks
 
 The current proof repository is maintained with:
@@ -78,6 +90,12 @@ factory, not to the game package's public workflow.
   owned by the target factory.
 - [Desktop host client](crates/nworlds-desktop/Cargo.toml) - target-local
   `winit`/`wgpu` composition mapped over the target-neutral host contract.
+- [Voxel sample](crates/voxel-sample/Cargo.toml) - independent voxel cottage
+  consumer of the generic engine and target-neutral host surface.
+- [Voxel sample README](crates/voxel-sample/README.md) - colocated run guide
+  and file-by-file orientation for the sample.
+- [Voxel sample case study](proposals/voxel-sample.md) - the engine features
+  used by the sample and the recommended integration shape.
 - [Host runtime](crates/nworlds-host) - target-neutral package contract and
   independent host-port composition.
 - [Target factory proposal](proposals/target-factory.md) - the desired
