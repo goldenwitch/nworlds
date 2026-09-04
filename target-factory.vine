@@ -9,15 +9,20 @@ Accept: HostContract, minimal host-defined renderer-agnostic RenderBatch, GamePa
 -> artifact-ci
 -> cli
 -> composition
+-> desktop-evidence
 -> game-contract
 -> migration-gate
 -> package-declaration
 -> render-batch
 -> resolution
+> The existing Windows `winit`/`wgpu` proof is historical client evidence; the target-host remediation is a separate contract and implementation wave.
+> `GameState + Tau -> RenderBatch -> RenderSink` is the only game-to-target rendering path; target execution never receives a Caravan or voxel state type.
+> Static composition is the first mechanism: no plugin ABI, dynamic game loading, or target-specific library embedded in a game package.
 @guidance text/markdown proposals/target-factory.md
 @guidance text/markdown proposals/presentation-host.md
 @guidance text/markdown proposals/platform-support-matrix.md
 @guidance text/markdown proposals/rendering-contract.md
+@guidance text/markdown proposals/redundancy-register.md
 ---
 [game-contract] Define the target-neutral GamePackage and HostContract (complete)
 Files: proposals/target-factory.md; proposals/presentation-host.md; crates/engine-api/**; crates/caravan-demo/**; crates/nworlds-desktop/**; crates/nworlds-host/**
@@ -34,12 +39,21 @@ Files: proposals/target-factory.md; Cargo.toml; crates/**
 Do: Specify package identity/version, assets, persistence/schema requirements, host-version compatibility, and render-vocabulary capability requirements without target declarations.
 Accept: A package declares what it needs semantically; no package field names an OS, architecture, window system, GPU backend, or target triple; and the declaration can be consumed by nworlds test/run/package.
 -> game-contract
+> Package declarations express semantic requirements and compatibility, never OS, architecture, window-system, GPU-backend, or target-triple choices.
+> Assets, persistence/schema, host-version, and render-vocabulary requirements remain package facts; target profiles remain host facts.
 ---
-[render-batch] Define minimal host-owned renderer-agnostic RenderBatch (planning)
-Files: proposals/target-factory.md; proposals/rendering-contract.md; crates/engine-presentation/**; crates/engine-api/**
-Do: Specify the smallest host-owned draw vocabulary consumed by game render production from GameState + Tau. Define ownership, lifetime, Send/'static requirements where needed, fire-and-forget submission, and target RenderSink translation without importing wgpu or platform commands.
-Accept: GameState + Tau is the only render-production input; RenderBatch is owned and disposable; no journal, worldline, Orchestrator, input, branch selector, device, or host-clock value can enter the batch; and a target sink can translate the batch to backend instructions.
+[render-batch] Define and implement minimal host-owned renderer-agnostic RenderBatch (complete)
+Files: proposals/target-factory.md; proposals/rendering-contract.md; crates/engine-presentation/**; crates/engine-api/**; crates/caravan-demo/src/engine_integration.rs; crates/voxel-sample/src/engine_integration.rs; crates/nworlds-desktop/**
+Do: Specify and implement the smallest host-owned draw vocabulary consumed by game render production from GameState + Tau. Define ownership, lifetime, Send/'static requirements, fire-and-forget submission, normalized clip-space geometry, and target RenderSink translation without importing wgpu or platform commands. Migrate the Caravan and voxel renderers and target sinks to the shared batch.
+Accept: GameState + Tau is the only render-production input; RenderBatch is owned and disposable; no journal, worldline, Orchestrator, input, branch selector, device, or host-clock value can enter the batch; Caravan and voxel clients produce Frame<RenderBatch>; and target sinks consume the same batch without game-specific geometry types.
 -> game-contract
+> `GameState + Tau` is the complete render-production input; no journal, worldline, Orchestrator, input, branch selector, device, surface, or host-clock value enters `RenderBatch`.
+> `RenderBatch` is an owned, disposable, `Send + 'static` value when the selected target queue requires it; a sink may copy, queue, submit, or discard it.
+> The batch is an owned triangle-list of normalized clip-space positions and RGBA colors; target sinks do not interpret Caravan tiles, voxel blocks, cameras, or game state.
+> Caravan and voxel renderers are clients that project into the batch; target execution remains below the game integration seam.
+@artifact text/plain crates/engine-presentation/src/render_batch.rs
+@artifact text/plain crates/voxel-sample/src/engine_integration.rs
+@artifact text/plain crates/caravan-demo/src/engine_integration.rs
 ---
 [composition] Define generated static target composition (planning)
 Files: proposals/target-factory.md; proposals/presentation-host.md; .github/**; crates/**
@@ -48,6 +62,9 @@ Accept: One composition mechanism is selected; the game package has no target en
 -> game-contract
 -> package-declaration
 -> render-batch
+> One static composition mechanism is selected: a generated or selected target composition owns lifecycle, input translation, storage transport, and render execution around a `GamePackage`.
+> A game package contains no target entrypoint and no target adapter; generated target detail remains outside the package source tree.
+> The composition must be able to host both Caravan and voxel clients without a game-name branch in the target layer.
 ---
 [resolution] Define profile and runtime resolution (planning)
 Files: proposals/target-factory.md; proposals/platform-support-matrix.md; support.vine
@@ -55,6 +72,8 @@ Do: Separate static TargetProfile recipes from actual RuntimeCapabilities and de
 Accept: Build-time selection, distribution-time artifact selection, and runtime capability detection are distinct; unsupported environments report required/available capabilities and remediation at the host boundary; and games do not branch on target identity.
 -> composition
 -> package-declaration
+> Build-time profile recipes, distribution artifact selection, and runtime capability detection are distinct operations.
+> Unsupported environments return a host-owned structured result containing required capabilities, available capabilities, and remediation; games do not branch on target identity.
 ---
 [cli] Define target-neutral nworlds commands (planning)
 Files: proposals/target-factory.md; README.md; CONTRIBUTING.md
@@ -63,6 +82,8 @@ Accept: Normal game development requires no target flag or platform knowledge; c
 -> composition
 -> package-declaration
 -> resolution
+> `nworlds test`, `nworlds run`, and `nworlds package` are the public commands; raw target commands remain maintenance/debug interfaces.
+> Normal package development carries no target flag, platform name, windowing choice, or backend choice through game code.
 ---
 [artifact-ci] Define TargetArtifact and CI evidence (planning)
 Files: proposals/target-factory.md; proposals/platform-support-matrix.md; support.vine; .github/**; evidence/**
@@ -70,6 +91,8 @@ Do: Specify artifact identity, naming, metadata, checksums, retention, build che
 Accept: Each artifact maps to one resolved profile; compile, runtime, and device evidence are distinct; CI can mint supported artifacts without game-specific target code; and the support matrix remains host-owned.
 -> cli
 -> resolution
+> Compile, runtime, and device evidence remain separate claims; an artifact identity names its resolved profile without changing the package contract.
+> CI can mint and inspect a target artifact without importing Caravan or voxel application types into target-host production code.
 ---
 [migration-gate] Classify and gate existing proof code (planning)
 Files: proposals/target-factory.md; host.vine; crates/caravan-demo/**; crates/nworlds-desktop/**
@@ -81,3 +104,69 @@ Accept: No current proof detail is silently promoted to the target-factory contr
 -> game-contract
 -> render-batch
 -> resolution
+> `nworlds-desktop` is classified as the current Caravan desktop proof client until the generic target-host contract and implementation are complete.
+> Existing proof behavior is evidence to preserve, not API authority to promote; migration has one owner and cannot widen the game package contract.
+> The gate is closed until RenderBatch, static composition, and resolution decisions are complete.
+---
+[desktop-host-contract] Define reusable desktop target composition (planning)
+Files: proposals/target-factory.md; proposals/presentation-host.md; crates/nworlds-host/**; crates/nworlds-desktop/**; crates/engine-presentation/**; .github/**
+Do: Specify the target-neutral desktop composition around `GamePackage`, `InputIngress`, `PlatformInputAdapter`, `StorageTransport`, and `RenderSink<Frame<RenderBatch>>`. Decide which lifecycle, resize, shutdown, surface/device, and frame scheduling responsibilities belong to the reusable desktop host and which values are supplied by a package client.
+Accept: The contract can host both Caravan and voxel packages; the desktop composition owns native lifecycle and backend execution; package clients supply semantic input vocabulary and `RenderBatch` production; no target entrypoint imports Caravan, voxel, or a game-domain type; and the first composition remains ordinary static Rust.
+-> composition
+-> render-batch
+-> resolution
+> `nworlds-desktop` becomes a generic target host/composition or is replaced by one; it is not a Caravan library.
+> The target host owns `winit`/`wgpu` lifecycle, resize, surface-loss, shutdown, and scheduling policy; it never selects worldlines, interprets facts, or assigns logical time.
+> Game packages own semantic input and state-to-RenderBatch projection; the target host receives only package-neutral ports and owned frames.
+---
+[desktop-host-implementation] Implement reusable desktop host composition (planning)
+Files: crates/nworlds-desktop/**; crates/nworlds-host/**; Cargo.toml; Cargo.lock; .github/workflows/ci.yml
+Do: Implement the settled static desktop composition and its synthetic-package tests. Move native lifecycle, event translation hooks, surface/device setup, resize/loss handling, and frame submission behind the target-neutral host boundary. Keep target-specific code independent of Caravan and voxel packages.
+Accept: `nworlds-desktop` production dependencies contain no Caravan or voxel crate; a synthetic package can compile and submit an owned `Frame<RenderBatch>`; native lifecycle behavior remains target-local; the existing Windows proof can be remapped without changing engine semantics; and CI has a target-host compile check.
+-> artifact-ci
+-> desktop-host-contract
+-> game-contract
+> The implementation must use static generics/composition, not runtime package discovery or a plugin ABI.
+> Target-local errors, device handles, surfaces, and native event types terminate at the host boundary.
+> The generic host is allowed to know `RenderBatch`; it is forbidden to know `Snapshot`, `RenderOutput`, `VoxelState`, `CaravanPackage`, or any game fact type.
+---
+[caravan-client-migration] Migrate Caravan desktop proof as a host client (planning)
+Files: crates/caravan-demo/**; crates/nworlds-desktop/**; proposals/presentation-host.md; proposals/target-factory.md; tests/**
+Do: Remap `CaravanPackage`, Caravan input translation, and Caravan `RenderBatch` production onto the reusable desktop host. Preserve the existing terminal/demo semantics, native Space interaction, visible frame, resize, shutdown, persistence crossing, and evidence while deleting Caravan-specific target execution from the generic host.
+Accept: Caravan remains a package/client; the desktop host has no Caravan dependency; Caravan-specific input and render projection remain in the Caravan client; the old Windows behavior is reproducible through the new composition; and the package's engine integration example remains the recommended semantic path.
+-> desktop-host-implementation
+-> migration-gate
+> Caravan client code owns Caravan meaning and its `GameState -> RenderBatch` projection; the target host owns only translation/execution.
+> No `caravan-windows` crate or other game-specific target library is introduced.
+> Existing native behavior is preserved as client evidence, not used to widen the generic host contract.
+---
+[voxel-client-migration] Migrate voxel sample as a host client (planning)
+Files: crates/voxel-sample/**; crates/nworlds-desktop/**; proposals/presentation-host.md; tests/**
+Do: Remap the independent voxel sample onto the reusable desktop host. Preserve its journal/query integration, removal publication, scale state, picking behavior, and voxel `RenderBatch` projection while using the same target composition as Caravan.
+Accept: The voxel sample remains independently game-owned; it shares target composition without sharing game state or render vocabulary; its production dependencies remain engine/host/target libraries only; its focused tests and native launch evidence remain green; and no voxel concern enters the engine or generic host contract.
+-> desktop-host-implementation
+-> render-batch
+> Voxel state, block vocabulary, picking, and scale semantics remain sample-owned.
+> The sample contributes an owned renderer-agnostic batch; the desktop host does not inspect voxel facts or block kinds.
+> One target composition serves multiple packages through types and ports, not target-layer conditionals.
+---
+[desktop-target-closure] Remove target-client duplication and forbidden edges (planning)
+Files: crates/nworlds-desktop/**; crates/caravan-demo/**; crates/voxel-sample/**; crates/purity-tests/**; Cargo.toml; Cargo.lock; README.md; index.md
+Do: Remove the Caravan-specific target assumptions from `nworlds-desktop`, delete any obsolete game-specific target residue, and add architecture guards for target-host dependency direction. Reconcile manifests, package maps, and sample documentation with the generic desktop composition.
+Accept: No `caravan-windows` crate or empty target residue remains; no generic target-host production manifest depends on Caravan or voxel; Caravan and voxel remain valid clients; no sample imports target internals; the dependency guard fails on reverse edges; and package/host/library descriptions agree.
+-> caravan-client-migration
+-> voxel-client-migration
+> Target host -> package dependency is forbidden; package -> target composition is selected by static composition/build machinery.
+> Filesystem cleanup is part of the closure: obsolete empty target directories and duplicate target clients are removed only when untracked/unowned.
+> Dependency guards enforce the direction structurally; prose records ownership but does not substitute for the guard.
+---
+[desktop-evidence] Prove generic desktop composition and client preservation (planning)
+Files: crates/purity-tests/**; crates/nworlds-host/**; crates/nworlds-desktop/**; crates/caravan-demo/**; crates/voxel-sample/**; evidence/**; .github/workflows/**
+Do: Add synthetic-package host evidence, target-host dependency guards, Caravan client regression evidence, voxel client regression evidence, native compile/runtime evidence, and explicit compile/runtime/device status distinctions. Keep native visual evidence target-local and preserve workspace/conformance/purity/CodeQL checks.
+Accept: Generic desktop host tests run without Caravan or voxel packages; both clients build through the same composition; target dependency guards pass; native compile and runtime evidence are separately named; no engine or host contract gained game-specific types; and the target-factory migration gate can close.
+-> artifact-ci
+-> desktop-target-closure
+-> migration-gate
+> Synthetic package evidence proves genericity; Caravan/voxel evidence proves client preservation; neither evidence class is allowed to stand in for the other.
+> Compile success is not runtime support, and desktop runtime success is not device/profile support.
+> The host contract remains scheduler-independent and never turns host time into logical game time.

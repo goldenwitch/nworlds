@@ -42,6 +42,26 @@ impl Camera {
         )
     }
 
+    pub(crate) fn project_point(self, point: Vec3) -> [f32; 3] {
+        let matrix = self.view_projection();
+        let vector = [point[0], point[1], point[2], 1.0];
+        let clip = [
+            (0..4)
+                .map(|index| matrix[index][0] * vector[index])
+                .sum::<f32>(),
+            (0..4)
+                .map(|index| matrix[index][1] * vector[index])
+                .sum::<f32>(),
+            (0..4)
+                .map(|index| matrix[index][2] * vector[index])
+                .sum::<f32>(),
+            (0..4)
+                .map(|index| matrix[index][3] * vector[index])
+                .sum::<f32>(),
+        ];
+        [clip[0] / clip[3], clip[1] / clip[3], clip[2] / clip[3]]
+    }
+
     pub fn ray_from_screen(self, x: f32, y: f32, width: f32, height: f32) -> Ray {
         let (eye, forward, right, up) = self.basis();
         let ndc_x = (2.0 * x / width.max(1.0)) - 1.0;

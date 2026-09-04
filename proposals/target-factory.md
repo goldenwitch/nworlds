@@ -127,6 +127,7 @@ The current proof therefore demonstrates three game-facing host crossings:
 neutral input transport, encoded byte transport, and owned render submission.
 `ApplicationHost` is a proof-local convenience bundle around those crossings;
 the generic composition now lives in `nworlds-host` and is not a Caravan-owned
+host abstraction or a public target-selection API.
 
 ## Implemented Static Composition
 
@@ -174,6 +175,25 @@ The game supplies draw intent using the host-defined vocabulary. The target
 sink translates that intent into backend instructions. The render batch is
 owned, fire-and-forget, and has no journal, worldline, Orchestrator, input,
 branch-selection, device, or host-clock state.
+
+## Initial RenderBatch Implementation
+
+The first concrete host vocabulary is implemented in
+`engine-presentation::RenderBatch` and re-exported by `engine-api`. It is an
+owned triangle list of normalized clip-space `RenderVertex` values with RGBA
+color. Three consecutive vertices form one triangle. The batch is disposable,
+`Send + Sync + 'static` data and contains no game state, logical time, journal,
+worldline, input, device, or host-clock value.
+
+Both current sample clients now produce `Frame<RenderBatch>`:
+
+- `caravan-demo::CaravanRenderer` projects Caravan tile/actor/effect values;
+- `voxel-sample::VoxelRenderer` projects voxel cubes through its sample camera.
+
+The existing Windows proof sink consumes the shared batch rather than
+`CaravanRenderOutput`. The reusable desktop lifecycle/composition remains a
+separate target-host task; this implementation settles the game-to-target
+render vocabulary without prematurely merging target lifecycle code.
 
 ## Ownership
 

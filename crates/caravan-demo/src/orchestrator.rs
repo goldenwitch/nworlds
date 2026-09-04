@@ -1,20 +1,14 @@
-use caravan_domain::GameJournalEntry;
-use caravan_domain::{Terrain, TileId};
-use caravan_reference::{
-    try_state, Journal, ProjectionError, ReferenceWorldline, State, Worldline,
+use crate::engine_integration::{
+    append_actual, decode, encode, try_state, writer_from_journal, BranchError, CaravanJournal,
+    CaravanJournalWriter, CaravanState, CaravanWorldline, JournalWriterError, LogicalTime,
+    ProjectionError, Tau,
 };
-use engine_branches::BranchError;
-use engine_journal::{JournalWriter, JournalWriterError};
-use engine_time::{LogicalTime, Tau};
-
 use crate::input::{
-    interaction_query, Button, InputBatchError, InputBuffer, InputPacket, InputPacketSet,
-    InputResolution, InputWindow, InteractionDefinition, ObservationId, OrderedInputBatch,
-    SemanticInputBatch,
+    interaction_query, InputBatchError, InputBuffer, InputPacket, InputPacketSet, InputResolution,
+    InputWindow, InteractionDefinition, ObservationId, OrderedInputBatch, SemanticInputBatch,
 };
-use crate::publication::{
-    publish_corrected, publish_counterfactual, writer_from_journal, PublicationError,
-};
+use crate::interaction::CaravanInteraction;
+use crate::publication::{publish_corrected, publish_counterfactual, PublicationError};
 use crate::transformation::Transformation;
 
 /// Errors raised while coordinating mutable Orchestrator control state.
@@ -57,29 +51,10 @@ impl From<InputBatchError> for OrchestratorError {
     }
 }
 
-/// Developer-authored interaction logic for the first Caravan event.
-#[derive(Clone, Copy, Debug, Default)]
-pub struct CaravanInteraction;
-
-impl InteractionDefinition for CaravanInteraction {
-    type Transformation = Transformation;
-
-    fn query(&self, _state: &State, input: &SemanticInputBatch, _tau: Tau) -> Self::Transformation {
-        if input.contains(&InputPacket::ButtonPressed(Button::Primary)) {
-            Transformation::SetTerrain {
-                tile: TileId::origin(),
-                terrain: Terrain::Wheat,
-            }
-        } else {
-            Transformation::Noop
-        }
-    }
-}
-
 /// The first concrete mutable game orchestrator, composed inside Stage.
 pub struct CaravanOrchestrator<I = CaravanInteraction> {
-    worldline: ReferenceWorldline,
-    writer: JournalWriter<GameJournalEntry>,
+    worldline: CaravanWorldline,
+    writer: CaravanJournalWriter,
     logical_time: LogicalTime,
     tau: Tau,
     input_buffer: InputBuffer,
@@ -93,7 +68,7 @@ where
 {
     /// Creates an Orchestrator from one immutable published worldline.
     pub fn new(
-        worldline: ReferenceWorldline,
+        worldline: CaravanWorldline,
         logical_time: LogicalTime,
         tau: Tau,
         interaction: I,
@@ -111,7 +86,7 @@ where
     }
 
     /// Borrows the currently selected immutable worldline.
-    pub fn worldline(&self) -> &ReferenceWorldline {
+    pub fn worldline(&self) -> &CaravanWorldline {
         &self.worldline
     }
 
@@ -145,12 +120,15 @@ where
     }
 
     /// Queries the selected worldline at the current Stage sample.
-    pub fn sample(&self) -> Result<State, OrchestratorError> {
+    pub fn sample(&self) -> Result<CaravanState, OrchestratorError> {
         Ok(try_state(&self.worldline, self.logical_time())?)
     }
 
     /// Performs a direct lookahead query without changing the selected sample.
-    pub fn lookahead_at(&self, logical_time: LogicalTime) -> Result<State, OrchestratorError> {
+    pub fn lookahead_at(
+        &self,
+        logical_time: LogicalTime,
+    ) -> Result<CaravanState, OrchestratorError> {
         Ok(try_state(&self.worldline, logical_time)?)
     }
 
@@ -213,7 +191,7 @@ where
         &self,
         window: &InputWindow,
     ) -> Result<Transformation, OrchestratorError> {
-        let state = self.sample()?;
+        let state: CaravanState = self.sample()?;
         let input = window.semantic_batch();
         Ok(interaction_query(
             &self.interaction,
@@ -251,8 +229,7 @@ where
             return Err(OrchestratorError::AppendRequiresActualWorldline);
         }
 
-        self.writer.record(payload);
-        self.worldline = Worldline::new(self.worldline.context().clone(), self.writer.snapshot());
+        self.worldline = append_actual(&self.worldline, &mut self.writer, payload);
         Ok(true)
     }
 
@@ -300,7 +277,7 @@ where
     pub fn select_counterfactual(
         &mut self,
         fork_boundary: LogicalTime,
-        suffix: &Journal,
+        suffix: &CaravanJournal,
     ) -> Result<(), OrchestratorError> {
         let child = self.worldline.counterfactual(fork_boundary, suffix)?;
         self.replace_worldline(child)
@@ -310,7 +287,7 @@ where
     pub fn select_corrected(
         &mut self,
         fork_boundary: LogicalTime,
-        suffix: &Journal,
+        suffix: &CaravanJournal,
     ) -> Result<(), OrchestratorError> {
         let child = self.worldline.corrected_suffix(fork_boundary, suffix)?;
         self.replace_worldline(child)
@@ -318,7 +295,7 @@ where
 
     /// Serializes the selected immutable worldline for an Orchestrator save choice.
     pub fn save_selected(&self) -> Result<Vec<u8>, caravan_persistence::PersistenceError> {
-        caravan_persistence::encode(&self.worldline)
+        encode(&self.worldline)
     }
 
     /// Loads a new immutable worldline from an encoded persistence record.
@@ -326,17 +303,14 @@ where
         &mut self,
         bytes: &[u8],
     ) -> Result<(), caravan_persistence::PersistenceError> {
-        let worldline = caravan_persistence::decode(bytes)?;
+        let worldline = decode(bytes)?;
         self.writer = writer_from_journal(worldline.journal())
             .map_err(caravan_persistence::PersistenceError::from)?;
         self.worldline = worldline;
         Ok(())
     }
 
-    fn replace_worldline(
-        &mut self,
-        worldline: ReferenceWorldline,
-    ) -> Result<(), OrchestratorError> {
+    fn replace_worldline(&mut self, worldline: CaravanWorldline) -> Result<(), OrchestratorError> {
         self.writer = writer_from_journal(worldline.journal())?;
         self.worldline = worldline;
         Ok(())
@@ -346,19 +320,18 @@ where
 #[cfg(test)]
 mod tests {
     use super::{CaravanInteraction, CaravanOrchestrator, OrchestratorError};
+    use crate::engine_integration::{BranchKind, CaravanJournalWriter, LogicalTime, Tau};
     use crate::input::{Button, InputPacket};
     use crate::transformation::Transformation;
     use caravan_domain::GameJournalEntry;
     use caravan_reference::{actual, state, ProjectionError};
-    use engine_journal::JournalWriter;
-    use engine_time::{LogicalTime, Tau};
 
     fn time(ticks: i64) -> LogicalTime {
         LogicalTime::from_game_ticks(ticks).expect("test time is representable")
     }
 
     fn orchestrator() -> CaravanOrchestrator {
-        let mut writer = JournalWriter::new();
+        let mut writer = CaravanJournalWriter::new();
         writer.record(GameJournalEntry::create_saucer());
         CaravanOrchestrator::new(
             actual(writer.finish()),
@@ -430,7 +403,7 @@ mod tests {
         assert!(!orchestrator.interact_and_apply().expect("noop is valid"));
 
         let suffix = {
-            let mut writer = JournalWriter::new();
+            let mut writer = CaravanJournalWriter::new();
             writer.advance_to(time(2)).expect("suffix time is forward");
             writer.record(GameJournalEntry::create_saucer());
             writer.finish()
@@ -455,7 +428,7 @@ mod tests {
 
     #[test]
     fn orchestrator_appends_at_writer_cursor_not_selected_tau() {
-        let mut writer = JournalWriter::new();
+        let mut writer = CaravanJournalWriter::new();
         writer.record(GameJournalEntry::create_saucer());
         writer
             .advance_to(time(7))
@@ -513,10 +486,7 @@ mod tests {
                 },
             )
             .expect("counterfactual publication succeeds"));
-        assert_eq!(
-            orchestrator.worldline().kind(),
-            engine_branches::BranchKind::Counterfactual
-        );
+        assert_eq!(orchestrator.worldline().kind(), BranchKind::Counterfactual);
         assert_eq!(parent.journal().len(), 1);
         assert_eq!(orchestrator.worldline().journal().len(), 2);
 
@@ -530,15 +500,12 @@ mod tests {
                 },
             )
             .expect("corrected publication succeeds"));
-        assert_eq!(
-            orchestrator.worldline().kind(),
-            engine_branches::BranchKind::Corrected
-        );
+        assert_eq!(orchestrator.worldline().kind(), BranchKind::Corrected);
     }
 
     #[test]
     fn malformed_radius_is_an_explicit_projection_error() {
-        let mut writer = JournalWriter::new();
+        let mut writer = CaravanJournalWriter::new();
         writer.record(GameJournalEntry::CreateSaucer { radius: 4 });
         let mut orchestrator = CaravanOrchestrator::new(
             caravan_reference::actual(writer.finish()),

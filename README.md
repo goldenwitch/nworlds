@@ -84,6 +84,8 @@ factory, not to the game package's public workflow.
 - [Build graph](build.vine) - dependency-ordered anchor work.
 - [Library boundary graph](library-boundary.vine) - the library-first contract
   and application-contamination remediation plan.
+- [Redundancy pass](redundancy.vine) - the all-up inventory, canonical-owner,
+  collapse, cleanup, and evidence-closure plan.
 - [Library contract](proposals/library-contract.md) - ownership classes,
   public temporal surface, and dependency-direction rules.
 - [Host graph](host.vine) - first host proof composition; target minting is
@@ -106,6 +108,8 @@ factory, not to the game package's public workflow.
   native or appropriate CI work.
 - [Demo gameplay plan](gameplay.vine) - the design-derived inventory and
   ordered plan for the remaining player-facing demo loop.
+- [Caravan demo README](crates/caravan-demo/README.md) - colocated guide to the
+  reference-game organization and engine integration example.
 
 ## Development Checks
 

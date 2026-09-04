@@ -1,6 +1,6 @@
 use engine_api::{
     present, state, Branch, Context, GameState, IndexedQuery, JournalWriter, LogicalTime,
-    QueryInput, Renderer, Tau, Worldline,
+    QueryInput, RenderBatch, RenderVertex, Renderer, Tau, Worldline,
 };
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -19,10 +19,15 @@ impl IndexedQuery<Definitions, u8> for CountVisibleEntries {
 struct CountRenderer;
 
 impl Renderer<usize> for CountRenderer {
-    type Output = (usize, Tau);
+    type Output = RenderBatch;
 
-    fn render(state: &GameState<usize>, tau: Tau) -> Self::Output {
-        (*state.payload(), tau)
+    fn render(state: &GameState<usize>, _tau: Tau) -> Self::Output {
+        let count = *state.payload() as f32;
+        RenderBatch::new([
+            RenderVertex::new([0.0, 0.0, 0.0], [count, 0.0, 0.0, 1.0]),
+            RenderVertex::new([1.0, 0.0, 0.0], [0.0, count, 0.0, 1.0]),
+            RenderVertex::new([0.0, 1.0, 0.0], [0.0, 0.0, count, 1.0]),
+        ])
     }
 }
 
@@ -48,7 +53,8 @@ fn external_consumer_composes_generic_query_branch_and_presentation() {
     assert_eq!(*before_second_entry.payload(), 1);
 
     let frame = present::<usize, CountRenderer>(&before_second_entry, Tau::from_ticks(3));
-    assert_eq!(frame.payload(), &(1, Tau::from_ticks(3)));
+    assert_eq!(frame.tau(), Tau::from_ticks(3));
+    assert_eq!(frame.payload().vertices().len(), 3);
 }
 
 #[test]

@@ -9,6 +9,12 @@ The reusable transport and journal semantics are owned by the
 proposal owns the current Stage interaction seam and its small prototype
 vocabulary.
 
+Cross-boundary ownership is indexed in
+[redundancy-register.md](redundancy-register.md). This proposal owns semantic
+interaction meaning; reusable identity/order transport is owned by
+`transport-and-journal.md`, and target input translation is owned by the
+presentation-host boundary.
+
 ## Vocabulary
 
 This proposal uses **bold** for conceptual vocabulary and backticks for exact

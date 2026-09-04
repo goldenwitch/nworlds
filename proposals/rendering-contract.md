@@ -6,6 +6,11 @@ the generic `Renderer<S>` and `Frame<P>` APIs.
 It is a game-facing projection contract, not a backend, scene-graph, GPU, or
 platform-window contract.
 
+Cross-boundary ownership is indexed in
+[redundancy-register.md](redundancy-register.md). This proposal owns the
+current Caravan `RenderOutput` projection; the future shared target vocabulary
+is owned by [target-factory.md](target-factory.md) as `RenderBatch`.
+
 ## Boundary
 
 The rendering composition is:

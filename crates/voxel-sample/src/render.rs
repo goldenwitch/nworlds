@@ -6,40 +6,33 @@ use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
 use crate::camera::Camera;
-use crate::engine_integration::{VoxelFrame, VoxelRenderOutput};
+use crate::engine_integration::{RenderBatch, VoxelFrame};
 use crate::world::{VoxelPosition, VoxelState};
 
 const DEPTH_FORMAT: ::wgpu::TextureFormat = ::wgpu::TextureFormat::Depth24Plus;
 
 const SHADER: &str = r#"
-struct Uniforms {
-    view_proj: mat4x4<f32>,
-};
-
-@group(0) @binding(0)
-var<uniform> uniforms: Uniforms;
-
 struct VertexInput {
     @location(0) position: vec3<f32>,
-    @location(1) color: vec3<f32>,
+    @location(1) color: vec4<f32>,
 };
 
 struct VertexOutput {
     @builtin(position) position: vec4<f32>,
-    @location(0) color: vec3<f32>,
+    @location(0) color: vec4<f32>,
 };
 
 @vertex
 fn vs_main(input: VertexInput) -> VertexOutput {
     var output: VertexOutput;
-    output.position = uniforms.view_proj * vec4<f32>(input.position, 1.0);
+    output.position = vec4<f32>(input.position, 1.0);
     output.color = input.color;
     return output;
 }
 
 @fragment
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
-    return vec4<f32>(input.color, 1.0);
+    return input.color;
 }
 "#;
 
@@ -47,12 +40,12 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
 #[derive(Clone, Copy, Pod, Zeroable)]
 struct Vertex {
     position: [f32; 3],
-    color: [f32; 3],
+    color: [f32; 4],
 }
 
 impl Vertex {
     const ATTRIBUTES: [::wgpu::VertexAttribute; 2] =
-        ::wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3];
+        ::wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x4];
 
     const fn layout() -> ::wgpu::VertexBufferLayout<'static> {
         ::wgpu::VertexBufferLayout {
@@ -61,12 +54,6 @@ impl Vertex {
             attributes: &Self::ATTRIBUTES,
         }
     }
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, Pod, Zeroable)]
-struct Uniforms {
-    view_proj: [[f32; 4]; 4],
 }
 
 #[derive(Debug)]
@@ -100,8 +87,6 @@ pub struct VoxelRenderSink {
     config: ::wgpu::SurfaceConfiguration,
     depth_view: ::wgpu::TextureView,
     pipeline: ::wgpu::RenderPipeline,
-    uniform_buffer: ::wgpu::Buffer,
-    uniform_bind_group: ::wgpu::BindGroup,
     camera: Camera,
 }
 
@@ -147,41 +132,9 @@ impl VoxelRenderSink {
             label: Some("voxel-shader"),
             source: ::wgpu::ShaderSource::Wgsl(SHADER.into()),
         });
-        let bind_group_layout =
-            device.create_bind_group_layout(&::wgpu::BindGroupLayoutDescriptor {
-                label: Some("voxel-uniform-layout"),
-                entries: &[::wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: ::wgpu::ShaderStages::VERTEX,
-                    ty: ::wgpu::BindingType::Buffer {
-                        ty: ::wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
-            });
-        let uniform_buffer = ::wgpu::util::DeviceExt::create_buffer_init(
-            &device,
-            &::wgpu::util::BufferInitDescriptor {
-                label: Some("voxel-camera-uniforms"),
-                contents: bytemuck::bytes_of(&Uniforms {
-                    view_proj: Camera::default().view_projection(),
-                }),
-                usage: ::wgpu::BufferUsages::UNIFORM | ::wgpu::BufferUsages::COPY_DST,
-            },
-        );
-        let uniform_bind_group = device.create_bind_group(&::wgpu::BindGroupDescriptor {
-            label: Some("voxel-uniform-bind-group"),
-            layout: &bind_group_layout,
-            entries: &[::wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
-            }],
-        });
         let pipeline_layout = device.create_pipeline_layout(&::wgpu::PipelineLayoutDescriptor {
             label: Some("voxel-pipeline-layout"),
-            bind_group_layouts: &[Some(&bind_group_layout)],
+            bind_group_layouts: &[],
             immediate_size: 0,
         });
         let pipeline = device.create_render_pipeline(&::wgpu::RenderPipelineDescriptor {
@@ -227,8 +180,6 @@ impl VoxelRenderSink {
             config,
             depth_view,
             pipeline,
-            uniform_buffer,
-            uniform_bind_group,
             camera,
         })
     }
@@ -267,12 +218,6 @@ impl RenderSink<VoxelFrame> for VoxelRenderSink {
             return;
         }
 
-        let view_proj = self.camera.view_projection();
-        self.queue.write_buffer(
-            &self.uniform_buffer,
-            0,
-            bytemuck::bytes_of(&Uniforms { view_proj }),
-        );
         let vertices = vertices(frame.payload());
         let vertex_buffer = ::wgpu::util::DeviceExt::create_buffer_init(
             &self.device,
@@ -331,7 +276,6 @@ impl RenderSink<VoxelFrame> for VoxelRenderSink {
                 multiview_mask: None,
             });
             pass.set_pipeline(&self.pipeline);
-            pass.set_bind_group(0, &self.uniform_bind_group, &[]);
             pass.set_vertex_buffer(0, vertex_buffer.slice(..));
             pass.draw(0..vertices.len() as u32, 0..1);
         }
@@ -385,121 +329,13 @@ fn depth_view(
         .create_view(&::wgpu::TextureViewDescriptor::default())
 }
 
-fn vertices(output: &VoxelRenderOutput) -> Vec<Vertex> {
-    let mut vertices = Vec::with_capacity(output.voxels().len() * 36);
-    for voxel in output.voxels() {
-        let position = voxel.position();
-        let scale = output.scale();
-        let min = [
-            position.x() as f32 * scale,
-            position.y() as f32 * scale,
-            position.z() as f32 * scale,
-        ];
-        let max = [min[0] + scale, min[1] + scale, min[2] + scale];
-        let [min_x, min_y, min_z] = min;
-        let [max_x, max_y, max_z] = max;
-        let color = voxel.color();
-
-        face(
-            &mut vertices,
-            [
-                [min_x, min_y, min_z],
-                [max_x, min_y, min_z],
-                [max_x, min_y, max_z],
-                [min_x, min_y, max_z],
-            ],
-            color,
-            0.62,
-        );
-        face(
-            &mut vertices,
-            [
-                [min_x, max_y, min_z],
-                [min_x, max_y, max_z],
-                [max_x, max_y, max_z],
-                [max_x, max_y, min_z],
-            ],
-            color,
-            1.12,
-        );
-        face(
-            &mut vertices,
-            [
-                [min_x, min_y, min_z],
-                [min_x, max_y, min_z],
-                [max_x, max_y, min_z],
-                [max_x, min_y, min_z],
-            ],
-            color,
-            0.84,
-        );
-        face(
-            &mut vertices,
-            [
-                [max_x, min_y, max_z],
-                [max_x, max_y, max_z],
-                [min_x, max_y, max_z],
-                [min_x, min_y, max_z],
-            ],
-            color,
-            0.93,
-        );
-        face(
-            &mut vertices,
-            [
-                [min_x, min_y, max_z],
-                [min_x, max_y, max_z],
-                [min_x, max_y, min_z],
-                [min_x, min_y, min_z],
-            ],
-            color,
-            0.74,
-        );
-        face(
-            &mut vertices,
-            [
-                [max_x, min_y, min_z],
-                [max_x, max_y, min_z],
-                [max_x, max_y, max_z],
-                [max_x, min_y, max_z],
-            ],
-            color,
-            1.0,
-        );
-    }
-    vertices
-}
-
-fn face(vertices: &mut Vec<Vertex>, corners: [[f32; 3]; 4], color: [f32; 3], shade: f32) {
-    let color = [
-        (color[0] * shade).min(1.0),
-        (color[1] * shade).min(1.0),
-        (color[2] * shade).min(1.0),
-    ];
-    vertices.extend([
-        Vertex {
-            position: corners[0],
-            color,
-        },
-        Vertex {
-            position: corners[1],
-            color,
-        },
-        Vertex {
-            position: corners[2],
-            color,
-        },
-        Vertex {
-            position: corners[0],
-            color,
-        },
-        Vertex {
-            position: corners[2],
-            color,
-        },
-        Vertex {
-            position: corners[3],
-            color,
-        },
-    ]);
+fn vertices(batch: &RenderBatch) -> Vec<Vertex> {
+    batch
+        .vertices()
+        .iter()
+        .map(|vertex| Vertex {
+            position: vertex.position(),
+            color: vertex.color(),
+        })
+        .collect()
 }

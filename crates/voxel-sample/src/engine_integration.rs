@@ -9,9 +9,12 @@ use std::collections::BTreeMap;
 
 use engine_api::{
     present, state as query_state, Branch, Context, Frame, GameState, IndexedQuery, JournalWriter,
-    LogicalTime, QueryInput, Renderer, Tau, Worldline,
+    LogicalTime, QueryInput, RenderVertex, Renderer, Tau, Worldline,
 };
 
+pub use engine_api::RenderBatch;
+
+use crate::camera::Camera;
 use crate::world::{cottage_blocks, VoxelContext, VoxelFact, VoxelState};
 
 /// The engine's generic worldline specialized with this game's context/facts.
@@ -23,69 +26,132 @@ pub type VoxelJournalWriter = JournalWriter<VoxelFact>;
 /// The engine's generic state envelope specialized with this game's state.
 pub type VoxelGameState = GameState<VoxelState>;
 
-/// The owned output produced by the engine's state-first presentation seam.
-#[derive(Clone, Debug, PartialEq)]
-pub struct VoxelRenderOutput {
-    logical_time: LogicalTime,
-    scale: f32,
-    voxels: Vec<RenderVoxel>,
-}
-
-impl VoxelRenderOutput {
-    #[cfg(test)]
-    pub(crate) fn logical_time(&self) -> LogicalTime {
-        self.logical_time
-    }
-
-    pub(crate) fn scale(&self) -> f32 {
-        self.scale
-    }
-
-    pub(crate) fn voxels(&self) -> &[RenderVoxel] {
-        &self.voxels
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct RenderVoxel {
-    position: crate::world::VoxelPosition,
-    color: [f32; 3],
-}
-
-impl RenderVoxel {
-    pub(crate) const fn position(self) -> crate::world::VoxelPosition {
-        self.position
-    }
-
-    pub(crate) const fn color(self) -> [f32; 3] {
-        self.color
-    }
-}
-
-/// The engine frame envelope specialized with the sample's render output.
-pub type VoxelFrame = Frame<VoxelRenderOutput>;
+/// The engine frame envelope specialized with the voxel batch.
+pub type VoxelFrame = Frame<RenderBatch>;
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct VoxelRenderer;
 
 impl Renderer<VoxelState> for VoxelRenderer {
-    type Output = VoxelRenderOutput;
+    type Output = RenderBatch;
 
     fn render(state: &VoxelGameState, _tau: Tau) -> Self::Output {
-        VoxelRenderOutput {
-            logical_time: state.logical_time(),
-            scale: state.payload().scale().as_f32(),
-            voxels: state
-                .payload()
-                .voxels()
-                .iter()
-                .map(|voxel| RenderVoxel {
-                    position: voxel.position(),
-                    color: voxel.block().color(),
-                })
-                .collect(),
+        let camera = Camera::default();
+        let scale = state.payload().scale().as_f32();
+        let mut vertices = Vec::with_capacity(state.payload().voxels().len() * 36);
+
+        for voxel in state.payload().voxels() {
+            let position = voxel.position();
+            let min = [
+                position.x() as f32 * scale,
+                position.y() as f32 * scale,
+                position.z() as f32 * scale,
+            ];
+            let max = [min[0] + scale, min[1] + scale, min[2] + scale];
+            let [min_x, min_y, min_z] = min;
+            let [max_x, max_y, max_z] = max;
+            let color = voxel.block().color();
+
+            cube_face(
+                &mut vertices,
+                &camera,
+                [
+                    [min_x, min_y, min_z],
+                    [max_x, min_y, min_z],
+                    [max_x, min_y, max_z],
+                    [min_x, min_y, max_z],
+                ],
+                color,
+                0.62,
+            );
+            cube_face(
+                &mut vertices,
+                &camera,
+                [
+                    [min_x, max_y, min_z],
+                    [min_x, max_y, max_z],
+                    [max_x, max_y, max_z],
+                    [max_x, max_y, min_z],
+                ],
+                color,
+                1.12,
+            );
+            cube_face(
+                &mut vertices,
+                &camera,
+                [
+                    [min_x, min_y, min_z],
+                    [min_x, max_y, min_z],
+                    [max_x, max_y, min_z],
+                    [max_x, min_y, min_z],
+                ],
+                color,
+                0.84,
+            );
+            cube_face(
+                &mut vertices,
+                &camera,
+                [
+                    [max_x, min_y, max_z],
+                    [max_x, max_y, max_z],
+                    [min_x, max_y, max_z],
+                    [min_x, min_y, max_z],
+                ],
+                color,
+                0.93,
+            );
+            cube_face(
+                &mut vertices,
+                &camera,
+                [
+                    [min_x, min_y, max_z],
+                    [min_x, max_y, max_z],
+                    [min_x, max_y, min_z],
+                    [min_x, min_y, min_z],
+                ],
+                color,
+                0.74,
+            );
+            cube_face(
+                &mut vertices,
+                &camera,
+                [
+                    [max_x, min_y, min_z],
+                    [max_x, max_y, min_z],
+                    [max_x, max_y, max_z],
+                    [max_x, min_y, max_z],
+                ],
+                color,
+                1.0,
+            );
         }
+
+        RenderBatch::new(vertices)
     }
+}
+
+fn cube_face(
+    vertices: &mut Vec<RenderVertex>,
+    camera: &Camera,
+    corners: [[f32; 3]; 4],
+    color: [f32; 3],
+    shade: f32,
+) {
+    let color = [
+        (color[0] * shade).min(1.0),
+        (color[1] * shade).min(1.0),
+        (color[2] * shade).min(1.0),
+        1.0,
+    ];
+    let projected = corners.map(|corner| camera.project_point(corner));
+    vertices.extend([
+        RenderVertex::new(projected[0], color),
+        RenderVertex::new(projected[1], color),
+        RenderVertex::new(projected[2], color),
+        RenderVertex::new(projected[0], color),
+        RenderVertex::new(projected[2], color),
+        RenderVertex::new(projected[3], color),
+    ]);
 }
 
 /// Interprets immutable voxel facts as the current voxel state.
@@ -231,9 +297,7 @@ mod tests {
         let sampled = state(&worldline, LogicalTime::from_ticks(17));
         let presented = super::frame(&sampled);
 
-        assert_eq!(
-            presented.payload().logical_time(),
-            LogicalTime::from_ticks(17)
-        );
+        assert_eq!(sampled.logical_time(), LogicalTime::from_ticks(17));
+        assert!(!presented.payload().is_empty());
     }
 }

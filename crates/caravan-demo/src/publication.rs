@@ -1,8 +1,9 @@
 use caravan_domain::GameJournalEntry;
-use caravan_reference::{Journal, ReferenceWorldline};
-use engine_branches::BranchError;
-use engine_journal::{JournalWriter, JournalWriterError};
-use engine_time::LogicalTime;
+
+use crate::engine_integration::{
+    BranchError, CaravanJournal, CaravanJournalWriter, CaravanWorldline, JournalWriterError,
+    LogicalTime,
+};
 
 use crate::transformation::Transformation;
 
@@ -28,44 +29,32 @@ impl From<BranchError> for PublicationError {
 
 /// Builds a counterfactual child with one accepted transformation after a fork.
 pub fn publish_counterfactual(
-    parent: &ReferenceWorldline,
+    parent: &CaravanWorldline,
     fork_boundary: LogicalTime,
     authoring_time: LogicalTime,
     transformation: Transformation,
-) -> Result<ReferenceWorldline, PublicationError> {
+) -> Result<CaravanWorldline, PublicationError> {
     let suffix = single_entry_journal(authoring_time, transformation)?;
     Ok(parent.counterfactual(fork_boundary, &suffix)?)
 }
 
 /// Builds a corrected child with one accepted transformation after a fork.
 pub fn publish_corrected(
-    parent: &ReferenceWorldline,
+    parent: &CaravanWorldline,
     fork_boundary: LogicalTime,
     authoring_time: LogicalTime,
     transformation: Transformation,
-) -> Result<ReferenceWorldline, PublicationError> {
+) -> Result<CaravanWorldline, PublicationError> {
     let suffix = single_entry_journal(authoring_time, transformation)?;
     Ok(parent.corrected_suffix(fork_boundary, &suffix)?)
-}
-
-/// Reconstructs a mutable authoring cursor from one immutable journal value.
-pub fn writer_from_journal(
-    journal: &Journal,
-) -> Result<JournalWriter<GameJournalEntry>, JournalWriterError> {
-    let mut writer = JournalWriter::new();
-    for entry in journal.iter() {
-        writer.advance_to(entry.logical_time())?;
-        writer.record(*entry.payload());
-    }
-    Ok(writer)
 }
 
 fn single_entry_journal(
     authoring_time: LogicalTime,
     transformation: Transformation,
-) -> Result<Journal, PublicationError> {
+) -> Result<CaravanJournal, PublicationError> {
     let payload = journal_payload(transformation)?;
-    let mut writer = JournalWriter::new();
+    let mut writer = CaravanJournalWriter::new();
     writer.advance_to(authoring_time)?;
     writer.record(payload);
     Ok(writer.finish())
@@ -80,18 +69,17 @@ fn journal_payload(transformation: Transformation) -> Result<GameJournalEntry, P
 #[cfg(test)]
 mod tests {
     use super::{publish_corrected, PublicationError};
+    use crate::engine_integration::{CaravanJournalWriter, LogicalTime};
     use crate::transformation::Transformation;
     use caravan_domain::{GameJournalEntry, Terrain, TileId};
     use caravan_reference::{actual, state};
-    use engine_journal::JournalWriter;
-    use engine_time::LogicalTime;
 
     fn time(ticks: i64) -> LogicalTime {
         LogicalTime::from_game_ticks(ticks).expect("test time is representable")
     }
 
     fn parent() -> caravan_reference::ReferenceWorldline {
-        let mut writer = JournalWriter::new();
+        let mut writer = CaravanJournalWriter::new();
         writer.record(GameJournalEntry::create_saucer());
         actual(writer.finish())
     }
@@ -124,7 +112,7 @@ mod tests {
         assert!(matches!(
             rejected,
             Err(PublicationError::Branch(
-                engine_branches::BranchError::SuffixNotAfterFork { .. }
+                crate::engine_integration::BranchError::SuffixNotAfterFork { .. }
             ))
         ));
     }

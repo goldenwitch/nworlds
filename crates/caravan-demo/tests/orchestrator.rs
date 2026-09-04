@@ -1,11 +1,11 @@
+use caravan_demo::engine_integration::{
+    actual_worldline as actual, BranchKind, CaravanJournalWriter as JournalWriter, GameState,
+    LogicalTime, Renderer, Tau,
+};
 use caravan_demo::input::{Button, InputPacket};
 use caravan_demo::{CaravanInteraction, CaravanOrchestrator, CaravanStage, OrchestratorError};
 use caravan_domain::{GameJournalEntry, Terrain, TileId};
-use caravan_reference::{actual, state, Snapshot};
-use engine_journal::JournalWriter;
-use engine_presentation::Renderer;
-use engine_sdk::GameState;
-use engine_time::{LogicalTime, Tau};
+use caravan_reference::{state, Snapshot};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct ProbeFrame {
@@ -169,7 +169,7 @@ fn public_stage_can_publish_a_counterfactual_child_without_mutating_parent() {
         .expect("counterfactual publication should succeed"));
     assert_eq!(
         stage.orchestrator().worldline().kind(),
-        engine_branches::BranchKind::Counterfactual
+        BranchKind::Counterfactual
     );
     assert!(parent.is_actual());
     assert_eq!(parent.journal().len(), 1);

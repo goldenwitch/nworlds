@@ -1,9 +1,7 @@
 use caravan_domain::GameJournalEntry;
-use caravan_reference::actual;
-use engine_journal::JournalWriter;
-use engine_time::{LogicalTime, Tau};
 
 use crate::{
+    engine_integration::{actual_worldline, CaravanJournalWriter, LogicalTime, Tau},
     CaravanInteraction, CaravanOrchestrator, CaravanRenderer, CaravanStage, OrchestratorError,
 };
 
@@ -12,10 +10,10 @@ pub type CaravanPackage = CaravanStage<CaravanInteraction, CaravanRenderer>;
 
 /// Builds the small deterministic Caravan package used by host proofs.
 pub fn demo_package() -> Result<CaravanPackage, OrchestratorError> {
-    let mut writer = JournalWriter::new();
+    let mut writer = CaravanJournalWriter::new();
     writer.record(GameJournalEntry::create_saucer());
     let orchestrator = CaravanOrchestrator::new(
-        actual(writer.finish()),
+        actual_worldline(writer.finish()),
         LogicalTime::zero(),
         Tau::zero(),
         CaravanInteraction,

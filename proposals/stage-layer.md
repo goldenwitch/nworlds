@@ -53,7 +53,6 @@ name a target-local bundle of concrete ports, but it is not a generic engine
 layer or a required abstraction. Game packages do not construct or select the
 entrypoint. The presentation-host vocabulary and port roles are owned by
 [presentation-host.md](presentation-host.md).
-ports, but it is not a generic engine layer or a required abstraction.
 
 ## Stage Responsibilities
 

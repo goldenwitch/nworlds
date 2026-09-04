@@ -127,10 +127,12 @@ Frame<RenderOutput>
     -> backend/device/surface
 ```
 
-The exact `RenderOutput` shape is owned by the completed rendering contract.
-The current generic boundary is `Renderer<S>::render(GameState<S>, Tau) ->
-Output` carried by `Frame<Output>`; this adapter owns only the backend/device/
-surface execution step.
+The current proof boundary is the `Renderer<S>::render(GameState<S>, Tau) ->
+Output` result carried by `Frame<Output>`; this adapter owns only the
+backend/device/surface execution step. The future target-factory
+`RenderBatch` contract owns the shared renderer-agnostic vocabulary used by
+generic target compositions; it does not retroactively redefine this proof
+client's game-specific `RenderOutput`.
 
 ### Platform lifecycle and resource adapters
 

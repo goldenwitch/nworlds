@@ -221,11 +221,7 @@ dependencies = [
  "caravan-persistence",
  "caravan-reference",
  "caravan-seeded",
- "engine-branches",
- "engine-journal",
- "engine-presentation",
- "engine-sdk",
- "engine-time",
+ "engine-api",
  "nworlds-host",
 ]
 
@@ -1023,8 +1019,7 @@ version = "0.1.0"
 dependencies = [
  "bytemuck",
  "caravan-demo",
- "caravan-domain",
- "engine-sdk",
+ "engine-api",
  "nworlds-host",
  "pollster",
  "wgpu",

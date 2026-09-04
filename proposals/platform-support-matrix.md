@@ -13,6 +13,12 @@ branch on operating system, windowing library, device, or render backend. A loca
 `ApplicationHost` value may group the selected ports for convenience; it is not
 the support-matrix abstraction.
 
+Cross-boundary ownership is indexed in
+[redundancy-register.md](redundancy-register.md). This matrix owns declared
+target regimes and support evidence; target/package/artifact resolution is
+owned by [target-factory.md](target-factory.md), while runtime port roles are
+owned by [presentation-host.md](presentation-host.md).
+
 ```text
 target-specific entrypoint
     -> lifecycle/resource adapter

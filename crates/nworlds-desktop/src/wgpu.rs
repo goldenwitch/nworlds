@@ -1,47 +1,45 @@
 use std::sync::Arc;
 
 use bytemuck::{Pod, Zeroable};
-use caravan_demo::{RenderOutput, RenderTile};
-use caravan_domain::Terrain;
-use engine_sdk::Frame;
+use engine_api::{Frame, RenderBatch};
 use nworlds_host::RenderSink;
 use winit::window::Window;
 
 const SHADER: &str = r#"
 struct VertexInput {
-    @location(0) position: vec2<f32>,
-    @location(1) color: vec3<f32>,
+    @location(0) position: vec3<f32>,
+    @location(1) color: vec4<f32>,
 };
 
 struct VertexOutput {
     @builtin(position) position: vec4<f32>,
-    @location(0) color: vec3<f32>,
+    @location(0) color: vec4<f32>,
 };
 
 @vertex
 fn vs_main(input: VertexInput) -> VertexOutput {
     var output: VertexOutput;
-    output.position = vec4<f32>(input.position, 0.0, 1.0);
+    output.position = vec4<f32>(input.position, 1.0);
     output.color = input.color;
     return output;
 }
 
 @fragment
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
-    return vec4<f32>(input.color, 1.0);
+    return input.color;
 }
 "#;
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 struct Vertex {
-    position: [f32; 2],
-    color: [f32; 3],
+    position: [f32; 3],
+    color: [f32; 4],
 }
 
 impl Vertex {
     const ATTRIBUTES: [::wgpu::VertexAttribute; 2] =
-        ::wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x3];
+        ::wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x4];
 
     const fn layout() -> ::wgpu::VertexBufferLayout<'static> {
         ::wgpu::VertexBufferLayout {
@@ -195,32 +193,23 @@ impl WgpuRenderSink {
         true
     }
 
-    fn vertices(output: &RenderOutput) -> Vec<Vertex> {
-        let mut vertices = Vec::with_capacity(output.tiles().len() * 18);
-        for tile in output.tiles() {
-            let center = tile_center(tile);
-            let color = tile_color(tile);
-            for corner in 0..6 {
-                vertices.push(Vertex {
-                    position: center,
-                    color,
-                });
-                vertices.push(Vertex {
-                    position: hex_corner(center, corner),
-                    color,
-                });
-                vertices.push(Vertex {
-                    position: hex_corner(center, corner + 1),
-                    color,
-                });
-            }
-        }
-        vertices
+    fn vertices(batch: &RenderBatch) -> Vec<Vertex> {
+        batch
+            .vertices()
+            .iter()
+            .map(|vertex| {
+                let position = vertex.position();
+                Vertex {
+                    position,
+                    color: vertex.color(),
+                }
+            })
+            .collect()
     }
 }
 
-impl RenderSink<Frame<RenderOutput>> for WgpuRenderSink {
-    fn submit(&mut self, frame: Frame<RenderOutput>) {
+impl RenderSink<Frame<RenderBatch>> for WgpuRenderSink {
+    fn submit(&mut self, frame: Frame<RenderBatch>) {
         if !self.configure_for_current_window_size() {
             return;
         }
@@ -280,35 +269,5 @@ impl RenderSink<Frame<RenderOutput>> for WgpuRenderSink {
         }
         self.queue.submit(Some(encoder.finish()));
         self.queue.present(output);
-    }
-}
-
-fn tile_center(tile: &RenderTile) -> [f32; 2] {
-    const HEX_RADIUS: f32 = 0.095;
-    let q = tile.tile().q() as f32;
-    let r = tile.tile().r() as f32;
-    [HEX_RADIUS * 1.732 * (q + r * 0.5), HEX_RADIUS * 1.5 * r]
-}
-
-fn hex_corner(center: [f32; 2], index: usize) -> [f32; 2] {
-    const HEX_RADIUS: f32 = 0.095;
-    let angle = (30.0 + 60.0 * (index % 6) as f32).to_radians();
-    [
-        center[0] + HEX_RADIUS * angle.cos(),
-        center[1] + HEX_RADIUS * angle.sin(),
-    ]
-}
-
-fn tile_color(tile: &RenderTile) -> [f32; 3] {
-    if tile.effect().fire_age().is_some() {
-        return [0.9, 0.16, 0.04];
-    }
-    if tile.actor().is_some() {
-        return [0.12, 0.72, 0.88];
-    }
-    match tile.terrain() {
-        Terrain::Void => [0.18, 0.23, 0.3],
-        Terrain::Wheat => [0.94, 0.68, 0.08],
-        Terrain::Forest => [0.12, 0.56, 0.25],
     }
 }

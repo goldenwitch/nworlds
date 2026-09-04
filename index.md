@@ -31,6 +31,8 @@ it does not advance or mutate a hidden current state.
   and their acceptance criteria.
 - [Library boundary graph](library-boundary.vine) - the library-first contract,
   ownership classification, and contamination-remediation gates.
+- [Redundancy pass](redundancy.vine) - the all-up inventory and canonical-owner
+  plan for collapsing duplicate plans, prose, code, and evidence.
 - [Library contract](proposals/library-contract.md) - the supported temporal
   surface, ownership classes, and dependency-direction rules.
 - [Rendering plan](rendering.vine) - the completed backend-neutral rendering
@@ -102,7 +104,7 @@ These crates define the concrete game fixture and its indexed rules.
 
 | Component | Description |
 | --- | --- |
-| [`caravan-demo`](crates/caravan-demo) | Runnable terminal demonstration of the anchor, arbitrary sampling, lookahead, branches, and presentation. |
+| [`caravan-demo`](crates/caravan-demo) | Runnable terminal demonstration; its [colocated README](crates/caravan-demo/README.md) presents the engine integration example and file ownership. |
 | [`nworlds-desktop`](crates/nworlds-desktop/Cargo.toml) | Target-local desktop adapter mapped over `nworlds-host`; it contains no package-owned state construction. |
 | [`voxel-sample`](crates/voxel-sample/Cargo.toml) | Independent voxel cottage consumer; its [colocated README](crates/voxel-sample/README.md) is the practical guide, and [`engine_integration.rs`](crates/voxel-sample/src/engine_integration.rs) demonstrates generic state, journal, query, branch, and presentation usage with sample-defined types. |
 | [`engine-benchmarks`](crates/engine-benchmarks) | Non-published release-build measurements for direct queries, scrubbing, branches, and frame production. |

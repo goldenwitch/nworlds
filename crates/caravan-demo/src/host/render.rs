@@ -1,22 +1,19 @@
-use crate::render::RenderOutput;
-use engine_sdk::Frame;
+use crate::engine_integration::{CaravanFrame, RenderBatch};
 
 pub use nworlds_host::RenderSink as RenderSinkAdapter;
-pub type CollectingRenderSink = nworlds_host::CollectingRenderSink<Frame<RenderOutput>>;
+pub type CollectingRenderSink = nworlds_host::CollectingRenderSink<CaravanFrame<RenderBatch>>;
 
 #[cfg(test)]
 mod tests {
     use super::{CollectingRenderSink, RenderSinkAdapter};
+    use crate::engine_integration::{present, CaravanJournalWriter, LogicalTime, Tau};
     use crate::render::CaravanRenderer;
     use caravan_domain::GameJournalEntry;
     use caravan_reference::{actual, state, Snapshot};
-    use engine_journal::JournalWriter;
-    use engine_presentation::present;
-    use engine_time::{LogicalTime, Tau};
 
     #[test]
     fn collecting_sink_owns_repeated_submissions_in_order() {
-        let mut writer = JournalWriter::new();
+        let mut writer = CaravanJournalWriter::new();
         writer.record(GameJournalEntry::create_saucer());
         let worldline = actual(writer.finish());
         let state = state(&worldline, LogicalTime::zero());

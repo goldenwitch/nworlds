@@ -1,3 +1,6 @@
+use caravan_demo::engine_integration::{
+    actual_worldline as actual, CaravanJournalWriter as JournalWriter, LogicalTime, Tau,
+};
 use caravan_demo::host::application::ApplicationHost;
 use caravan_demo::host::input::{InputIngress, MemoryInputIngress};
 use caravan_demo::host::render::CollectingRenderSink;
@@ -5,9 +8,6 @@ use caravan_demo::host::storage::{MemoryStorage, StorageTransport};
 use caravan_demo::input::{Button, InputPacket};
 use caravan_demo::{CaravanInteraction, CaravanOrchestrator, CaravanStage};
 use caravan_domain::GameJournalEntry;
-use caravan_reference::actual;
-use engine_journal::JournalWriter;
-use engine_time::{LogicalTime, Tau};
 
 fn application() -> ApplicationHost {
     let mut writer = JournalWriter::new();
@@ -45,15 +45,12 @@ fn host_crossing_delivers_input_publishes_immutable_state_and_collects_frame() {
             .len(),
         2
     );
-    assert_eq!(
-        application
-            .render()
-            .last()
-            .expect("render sink should contain a frame")
-            .payload()
-            .logical_time(),
-        LogicalTime::zero()
-    );
+    assert!(!application
+        .render()
+        .last()
+        .expect("render sink should contain a frame")
+        .payload()
+        .is_empty());
 }
 
 #[test]

@@ -1,13 +1,14 @@
 use core::marker::PhantomData;
 
 use caravan_reference::Snapshot;
-use engine_presentation::{present, Renderer};
-use engine_sdk::{Frame, GameState};
-use engine_time::{LogicalTime, Tau};
 use nworlds_host::GamePackage;
 
+use crate::engine_integration::{
+    present_state, CaravanFrame, GameState, LogicalTime, Renderer, Tau,
+};
 use crate::input::{InputPacket, InteractionDefinition, OrderedInputBatch};
-use crate::orchestrator::{CaravanInteraction, CaravanOrchestrator, OrchestratorError};
+use crate::interaction::CaravanInteraction;
+use crate::orchestrator::{CaravanOrchestrator, OrchestratorError};
 use crate::transformation::Transformation;
 
 /// The first concrete Stage composition for the Caravan anchor.
@@ -95,7 +96,7 @@ where
     }
 
     /// Presents the Orchestrator's currently selected Tau.
-    pub fn present(&self) -> Result<Frame<R::Output>, OrchestratorError> {
+    pub fn present(&self) -> Result<CaravanFrame<R::Output>, OrchestratorError> {
         self.present_at(self.orchestrator.logical_time(), self.orchestrator.tau())
     }
 
@@ -104,9 +105,9 @@ where
         &self,
         logical_time: LogicalTime,
         tau: Tau,
-    ) -> Result<Frame<R::Output>, OrchestratorError> {
+    ) -> Result<CaravanFrame<R::Output>, OrchestratorError> {
         let state = self.orchestrator.lookahead_at(logical_time)?;
-        Ok(present::<Snapshot, R>(&state, tau))
+        Ok(present_state::<R>(&state, tau))
     }
 }
 
@@ -116,7 +117,7 @@ where
     R: Renderer<Snapshot>,
 {
     type InputBatch = OrderedInputBatch;
-    type Frame = Frame<R::Output>;
+    type Frame = CaravanFrame<R::Output>;
     type Error = OrchestratorError;
     type SaveError = caravan_persistence::PersistenceError;
     type LoadError = caravan_persistence::PersistenceError;
@@ -155,14 +156,14 @@ impl Renderer<Snapshot> for NoopRenderer {
 #[cfg(test)]
 mod tests {
     use super::CaravanStage;
-    use crate::orchestrator::{CaravanInteraction, CaravanOrchestrator, OrchestratorError};
+    use crate::engine_integration::{CaravanJournalWriter, LogicalTime, Tau};
+    use crate::interaction::CaravanInteraction;
+    use crate::orchestrator::{CaravanOrchestrator, OrchestratorError};
     use caravan_domain::GameJournalEntry;
     use caravan_reference::actual;
-    use engine_journal::JournalWriter;
-    use engine_time::{LogicalTime, Tau};
 
     fn worldline() -> caravan_reference::ReferenceWorldline {
-        let mut writer = JournalWriter::new();
+        let mut writer = CaravanJournalWriter::new();
         writer.record(GameJournalEntry::create_saucer());
         actual(writer.finish())
     }

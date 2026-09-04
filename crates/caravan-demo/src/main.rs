@@ -1,17 +1,17 @@
 #![forbid(unsafe_code)]
 
+use caravan_demo::engine_integration::{
+    actual_worldline as actual, project_output, state, CaravanFrame as Frame,
+    CaravanJournal as Journal, CaravanJournalWriter as JournalWriter, LogicalTime, RenderBatch,
+    Tau, TICKS_PER_LOGICAL_SECOND,
+};
 use caravan_demo::input::{Button, InputPacket};
 use caravan_demo::{
     CaravanInteraction, CaravanOrchestrator, CaravanRenderer, CaravanStage, RenderOutput,
 };
 use caravan_domain::{ActorId, ActorKind, Effect, GameJournalEntry, Terrain, TileId};
-use caravan_reference::{
-    actual, branch_view, future, state, Journal, ReferenceWorldline, Snapshot, ViewKind,
-};
+use caravan_reference::{branch_view, future, ReferenceWorldline, Snapshot, ViewKind};
 use caravan_seeded::generate_spawn_journal;
-use engine_journal::JournalWriter;
-use engine_sdk::Frame;
-use engine_time::{LogicalTime, Tau, TICKS_PER_LOGICAL_SECOND};
 
 fn main() {
     let empty = actual(Journal::empty());
@@ -202,23 +202,26 @@ fn main() {
         stage(authored.clone(), time(10), tau(10))
             .present()
             .expect("actual stage frame should be valid"),
+        &project_output(&state(&authored, time(10))),
     );
+    let counterfactual_output = project_output(&state(&counterfactual, time(10)));
+    let counterfactual_frame = stage(counterfactual, time(10), tau(10))
+        .present()
+        .expect("counterfactual stage frame should be valid");
     print_frame(
         "counterfactual",
-        stage(counterfactual, time(10), tau(10))
-            .present()
-            .expect("counterfactual stage frame should be valid"),
+        counterfactual_frame,
+        &counterfactual_output,
     );
-    print_frame(
-        "corrected",
-        stage(corrected, time(10), tau(10))
-            .present()
-            .expect("corrected stage frame should be valid"),
-    );
+
+    let corrected_output = project_output(&state(&corrected, time(10)));
+    let corrected_frame = stage(corrected, time(10), tau(10))
+        .present()
+        .expect("corrected stage frame should be valid");
+    print_frame("corrected", corrected_frame, &corrected_output);
 }
 
-fn print_frame(label: &str, frame: Frame<RenderOutput>) {
-    let rendered = frame.payload();
+fn print_frame(label: &str, frame: Frame<RenderBatch>, rendered: &RenderOutput) {
     println!(
         "presentation {}: sdk_tau={} game_t_={} actor_ids={:?} wheat={} wood={}",
         label,

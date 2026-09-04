@@ -1,6 +1,8 @@
 #![forbid(unsafe_code)]
 
+pub mod engine_integration;
 pub mod input;
+pub mod interaction;
 pub mod orchestrator;
 pub mod package;
 pub mod publication;
@@ -15,7 +17,8 @@ pub mod host {
     pub mod storage;
 }
 
-pub use orchestrator::{CaravanInteraction, CaravanOrchestrator, OrchestratorError};
+pub use interaction::CaravanInteraction;
+pub use orchestrator::{CaravanOrchestrator, OrchestratorError};
 pub use package::{demo_package, CaravanPackage};
 pub use render::{CaravanRenderer, RenderActor, RenderOutput, RenderTile};
 pub use stage::CaravanStage;

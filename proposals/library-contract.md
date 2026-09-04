@@ -6,6 +6,10 @@ contract decisions that constrain remediation. The core-contract task will
 settle any remaining public type or crate-name choices; this register does not
 promote current implementation convenience into a library obligation.
 
+The all-up cross-boundary redundancy and canonical-owner map is
+[redundancy-register.md](redundancy-register.md); this document owns the
+library boundary and its dependency direction.
+
 ## Product Boundary
 
 The reusable library is the product. A reference game, sample application,

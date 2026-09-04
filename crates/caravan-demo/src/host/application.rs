@@ -12,17 +12,16 @@ pub type ApplicationHost<I = MemoryInputIngress, S = MemoryStorage, R = Collecti
 #[cfg(test)]
 mod tests {
     use super::ApplicationHost;
+    use crate::engine_integration::{CaravanJournalWriter, LogicalTime, Tau};
     use crate::host::input::{InputIngress, MemoryInputIngress};
     use crate::host::render::CollectingRenderSink;
     use crate::host::storage::{MemoryStorage, StorageTransport};
     use crate::{CaravanInteraction, CaravanStage};
     use caravan_domain::{GameJournalEntry, Terrain, TileId};
     use caravan_reference::actual;
-    use engine_journal::JournalWriter;
-    use engine_time::{LogicalTime, Tau};
 
     fn host() -> ApplicationHost {
-        let mut writer = JournalWriter::new();
+        let mut writer = CaravanJournalWriter::new();
         writer.record(GameJournalEntry::create_saucer());
         let orchestrator = crate::CaravanOrchestrator::new(
             actual(writer.finish()),

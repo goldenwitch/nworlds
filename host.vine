@@ -24,6 +24,7 @@ Accept: The host proposal names distinct adapter roles; the support matrix recor
 @guidance text/markdown proposals/input-and-interaction.md
 @guidance text/markdown proposals/stage-layer.md
 @guidance text/plain orchestrator.vine
+@guidance text/markdown proposals/redundancy-register.md
 ---
 [orchestrator] Caravan Orchestrator vertical slice (complete)
 Remap the completed Caravan anchor onto a developer-authored Stage and Orchestrator without changing the immutable engine semantics. Build one small working slice in ordinary Rust, then use its traces to learn which orchestration patterns are worth extracting later.

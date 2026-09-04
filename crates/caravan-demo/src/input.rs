@@ -1,7 +1,8 @@
 use std::collections::HashSet;
 
 use caravan_reference::State;
-use engine_time::Tau;
+
+use crate::engine_integration::Tau;
 
 /// A closed, platform-neutral input packet used by the Caravan Stage.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -309,8 +310,8 @@ mod tests {
         InputPacketSet, InputResolution, InteractionDefinition, ObservationId, OrderedInputBatch,
         SemanticInputBatch,
     };
+    use crate::engine_integration::{LogicalTime, Tau};
     use caravan_reference::{actual, state as reference_state, Journal};
-    use engine_time::{LogicalTime, Tau};
 
     #[derive(Clone, Debug, Eq, PartialEq)]
     struct ObservedInput {

@@ -1,0 +1,106 @@
+vine 1.2.0
+prefix: redundancy
+title: All-up redundancy removal and canonical ownership
+---
+[root] Remove architectural redundancy and restore one canonical owner per concept (planning)
+Files: redundancy.vine; *.vine; proposals/**; crates/**; tests/**; evidence/**; README.md; index.md; Cargo.toml; .github/**
+Do: Measure repeated concepts, duplicated implementation seams, overlapping plans, and duplicated evidence across the repository. Assign one canonical owner per contract and artifact, route consumers to that owner, retire shadows, and delete only superseded/unowned residue. Preserve behavior and keep the target-factory remediation downstream of settled canonical contracts.
+Accept: Every repeated architectural concept has one canonical specification owner, one active plan owner, one production implementation owner, and clearly labeled consumer/evidence records; overlapping VINE/proposal/code/evidence scopes are collapsed or explicitly historical; dependency direction remains engine -> host -> package/client -> target execution; no `caravan-windows` library or equivalent game-specific target library exists; all remaining workspace/conformance/purity/CodeQL checks remain green; and all edited VINE files validate.
+-> cleanup
+-> code-collapse
+-> dependency-closure
+-> evidence-collapse
+-> inventory
+-> ownership
+-> plan-collapse
+-> prose-collapse
+-> review
+> Redundancy is removed only after ownership is measured; similar vocabulary alone is not proof that two artifacts can be merged.
+> One implementation per artifact is the default; compatibility views, tests, generated output, and historical records must be named as such.
+> The generic temporal library is canonical for temporal mechanics; `nworlds-host` is canonical for passive host ports; target-factory is canonical for target/package/artifact resolution; each game sample owns its meaning and client projection.
+> Host execution never enters authoritative `GameState`; target execution never receives game-specific state types; samples never become library dependencies.
+@guidance text/markdown proposals/library-contract.md
+@guidance text/markdown proposals/target-factory.md
+@guidance text/markdown proposals/presentation-host.md
+---
+[inventory] Measure duplicated concepts, artifacts, and claims (complete)
+Files: redundancy.vine; *.vine; proposals/**; crates/**; tests/**; evidence/**; README.md; index.md; Cargo.toml
+Do: Build a redundancy register that groups repeated contract vocabulary, duplicated decisions, overlapping VINE nodes, multiple host/render/input implementations, duplicate facades, and repeated evidence claims. For every group record the artifacts, owner candidates, dependency edges, consumers, and whether the repetition is canonical, compatibility, historical, generated, test-only, or redundant.
+Accept: The register covers all VINE files, all boundary proposals, all workspace crates, all evidence matrices/workflows, and all target/sample compositions; each group has an observed overlap rather than a stylistic judgment; and every later collapse task can cite a register entry.
+> Count and compare data before choosing a merge; a short duplicate may still carry a distinct audience or acceptance condition.
+> A repeated statement is redundant only when it asserts the same contract, decision, or ownership without adding a distinct consumer or evidence condition.
+@artifact text/markdown proposals/redundancy-register.md
+---
+[ownership] Assign one canonical owner per concept and artifact class (complete)
+Files: proposals/redundancy-register.md; proposals/library-contract.md; proposals/target-factory.md; proposals/presentation-host.md; proposals/stage-layer.md; proposals/input-and-interaction.md; proposals/rendering-contract.md; proposals/platform-support-matrix.md; *.vine; crates/**; evidence/**
+Do: Turn the inventory into a canonical ownership map. Assign one owner for generic temporal mechanics, package/host ports, target resolution/artifacts, Stage/Orchestrator semantics, semantic input, render vocabulary, platform support, game meaning, target execution, planning, and evidence. Mark every other artifact as consumer, compatibility view, historical proof, generated output, or shadow to retire.
+Accept: No concept has two active normative owners; every proposal and VINE points to its owner instead of restating its contract; every production crate has one responsibility class; and unresolved ownership is recorded as a sized gap rather than silently duplicated.
+> `library-boundary.vine` is historical closure for library isolation; `target-factory.vine` owns future target/package remediation; completed host/rendering/orchestrator graphs remain evidence/history unless a live node is explicitly preserved.
+> `nworlds-host` owns passive ports, `engine-api` owns the supported temporal facade, samples own game semantics, and target compositions own lifecycle/backend execution.
+@artifact text/markdown proposals/redundancy-register.md
+---
+[plan-collapse] Collapse overlapping execution graphs (complete)
+Files: *.vine; proposals/redundancy-register.md; README.md; index.md; roadmap.md
+Do: Compare `build.vine`, `host.vine`, `rendering.vine`, `orchestrator.vine`, `target-factory.vine`, `library-boundary.vine`, `support.vine`, `gameplay.vine`, and `transport.vine` against the ownership map. Retain one active graph per live workstream, convert completed graphs to historical evidence where needed, replace duplicated task prose with refs/guidance, and repair dependency edges so no task is shadowed by a sibling plan.
+Accept: Each active future requirement appears in exactly one VINE; completed graphs remain only where their historical acceptance artifacts are needed; cross-graph references identify the owning graph; no two siblings share scope; and every edited VINE passes validation/no-islands checks.
+-> inventory
+-> ownership
+> Future target-host remediation lives in `target-factory.vine`; the completed `host.vine` is not extended as a second target-factory plan.
+> A VINE task owns execution/dependency state; proposals own contract prose; neither copies the other's full body.
+---
+[prose-collapse] Collapse duplicated proposal and repository prose (complete)
+Files: proposals/**; README.md; index.md; roadmap.md; evidence/clause-to-test.md; proposals/redundancy-register.md
+Do: Reconcile repeated descriptions of Stage, Orchestrator, presentation host, HostContract, RenderBatch, target profiles, input boundaries, rendering, and library ownership. Keep one normative paragraph/table/diagram per concept, replace secondary descriptions with links and audience-specific summaries, and remove stale claims exposed by the target-host remediation.
+Accept: A repository search finds one normative owner for each contract; README/index/roadmap are navigation/current-state summaries rather than competing architecture records; proposals do not silently redefine another proposal's API; and all links resolve.
+-> ownership
+> Normative prose states one decision once; consumer guides may explain usage but do not restate the contract as a second authority.
+> Positive composition language is preferred in sample/readme prose; enforcement claims belong in guards and evidence records.
+---
+[code-collapse] Remove duplicate implementation seams and target-specific shadows (planning)
+Files: crates/engine-api/**; crates/nworlds-host/**; crates/caravan-demo/**; crates/nworlds-desktop/**; crates/voxel-sample/**; crates/purity-tests/**; Cargo.toml; Cargo.lock; proposals/redundancy-register.md
+Do: Compare generic host ports, Caravan demo host wrappers, `nworlds-desktop`, voxel target code, engine facades, sample integration modules, and compatibility aliases. Keep one implementation per responsibility, move target execution behind the generic composition selected by target-factory, preserve sample-owned meaning/render projection, and retire wrappers that add no distinct behavior or evidence.
+Accept: Generic host ports have one implementation; one target composition can host Caravan and voxel without game-name branches; `nworlds-desktop` production code has no game dependency after migration; sample engine integration remains visible in one file per sample; duplicate wrappers are removed or labeled compatibility; and behavior/evidence remains green.
+-> ownership
+-> plan-collapse
+> `nworlds-desktop` is a generic target composition after target-factory remediation, not a Caravan library; no `caravan-windows` package is created.
+> `RenderBatch` is the sole shared render crossing; game-specific `RenderOutput` values do not leak into generic target code.
+> Input translation, storage transport, and lifecycle/backend execution remain separate responsibilities even when statically composed.
+---
+[dependency-closure] Enforce canonical dependency direction and facade uniqueness (planning)
+Files: crates/purity-tests/**; Cargo.toml; crates/*/Cargo.toml; .github/workflows/**; proposals/redundancy-register.md
+Do: Extend architecture guards and package checks to reject duplicate reverse edges, generic-host dependencies on samples, target-host dependencies on game crates, duplicate public facades, and target-specific types crossing the host/game boundary. Add synthetic-package checks where a generic implementation needs proof independent of Caravan and voxel.
+Accept: Production dependency direction is machine-checked; only one supported generic facade is advertised; target hosts can compile without game crates; samples can compile against the generic surface; dev-only reference fixtures are labeled and allowed only in evidence consumers; and CI runs the guard offline.
+-> code-collapse
+-> ownership
+> A passing compile is not enough; the guard must inspect manifest sections and the public composition shape.
+> Test fixtures may depend on reference games, but production crates may not inherit fixture dependencies to avoid duplicate architecture.
+---
+[evidence-collapse] Reconcile duplicate evidence and status claims (planning)
+Files: evidence/**; crates/purity-tests/**; tests/**; .github/workflows/**; proposals/redundancy-register.md
+Do: Map each canonical invariant to one primary executable/manual evidence record and list secondary observations as supporting evidence. Separate reusable-library, host, reference-game, sample, compile, runtime, device, and security claims. Remove duplicate CI commands and stale evidence rows while preserving reproducibility.
+Accept: Every canonical invariant has one named primary check; evidence rows identify scope and command; CodeQL/security, compile, runtime, and device evidence are not conflated; workspace/conformance/purity/target checks do not claim the same result twice; and CI remains sufficient after deduplication.
+-> code-collapse
+-> ownership
+> Evidence proves a requirement, not a concept's popularity; multiple tests are retained only when they cover distinct regimes or failure modes.
+> Manual native observations remain explicit and cannot be promoted to CI/device support without the required target evidence.
+---
+[cleanup] Retire superseded files, records, and filesystem residue (planning)
+Files: proposals/redundancy-register.md; *.vine; proposals/**; crates/**; README.md; index.md; Cargo.toml; Cargo.lock; .github/**
+Do: Apply the accepted collapse map. Delete empty/untracked residue, obsolete manifests, dead compatibility wrappers, superseded proposal copies, duplicate task nodes, stale links, and unused workspace members. Preserve user-authored changes, historical artifacts required by evidence, and any compatibility surface with a named consumer.
+Accept: The repository contains no empty `caravan-windows` residue or equivalent unowned target directory; no deleted artifact is still referenced; Cargo, VINE, Markdown, and evidence maps are consistent; and cleanup diff is limited to register-approved redundancy.
+-> code-collapse
+-> evidence-collapse
+-> plan-collapse
+-> prose-collapse
+> Files are deleted only when untracked/unowned or explicitly superseded by the register; historical proof is archived by reference rather than silently erased.
+> Cleanup cannot alter authoritative engine behavior or sample meaning; it removes competing descriptions/implementations around them.
+---
+[review] Verify low-entropy architecture and close the redundancy pass (planning)
+Files: redundancy.vine; proposals/redundancy-register.md; *.vine; proposals/**; crates/**; tests/**; evidence/**; .github/**
+Do: Review the post-cleanup repository as an external consumer: locate the canonical contract, canonical plan, canonical implementation, canonical sample integration example, and primary evidence for each boundary. Run graph validation, dependency guards, formatting/lint, workspace/conformance, target-host compile, and designated runtime evidence.
+Accept: An external reader can answer where each contract lives without searching competing records; no active duplicate owner remains; target-factory remediation has one downstream path; library/host/sample/target dependency direction passes guards; all VINE files validate; and the full declared evidence set is green.
+-> cleanup
+-> dependency-closure
+-> evidence-collapse
+> Closure is a measured reduction in competing owners and paths, not merely fewer files or fewer words.
+> Any intentional remaining duplication is named as compatibility, historical evidence, generated output, or distinct consumer scope in the register.

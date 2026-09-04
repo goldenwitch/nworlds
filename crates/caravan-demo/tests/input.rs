@@ -1,3 +1,6 @@
+use caravan_demo::engine_integration::{
+    actual_worldline as actual, CaravanJournalWriter as JournalWriter, LogicalTime, Tau,
+};
 use caravan_demo::input::{
     Button, InputObservation, InputPacket, InputPacketSet, InteractionDefinition, ObservationId,
     OrderedInputBatch, SemanticInputBatch,
@@ -5,9 +8,7 @@ use caravan_demo::input::{
 use caravan_demo::transformation::Transformation;
 use caravan_demo::{CaravanOrchestrator, OrchestratorError};
 use caravan_domain::{GameJournalEntry, Terrain, TileId};
-use caravan_reference::{actual, ProjectionError, ReferenceWorldline, State};
-use engine_journal::JournalWriter;
-use engine_time::{LogicalTime, Tau};
+use caravan_reference::{ProjectionError, ReferenceWorldline, State};
 
 struct StateAwareInteraction;
 

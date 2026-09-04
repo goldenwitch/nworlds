@@ -6,8 +6,7 @@ edition = "2021"
 [dependencies]
 bytemuck = { version = "1", features = ["derive"] }
 caravan-demo = { path = "../caravan-demo" }
-caravan-domain = { path = "../caravan-domain" }
-engine-sdk = { path = "../engine-sdk" }
+engine-api = { path = "../engine-api" }
 nworlds-host = { path = "../nworlds-host" }
 pollster = "1"
 wgpu = "30"
