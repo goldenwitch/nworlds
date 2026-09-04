@@ -20,7 +20,7 @@ state(worldline, logical_time) -> game_state
 Presentation is downstream:
 
 ```text
-GameState + Tau -> Frame<RenderOutput>
+GameState + Tau -> Frame<RenderBatch>
 ```
 
 The game-facing path is independent of transport and device choices. Native
@@ -30,7 +30,7 @@ authoritative interaction surface.
 
 ## Developer Path
 
-The intended target-neutral game-development path is:
+The public target-neutral game-development path is:
 
 ```text
 nworlds test
@@ -38,10 +38,13 @@ nworlds run
 nworlds package
 ```
 
-The host resolves the local environment and mints or reuses the appropriate
-artifact. Developers do not select operating systems, architectures, windowing
-libraries, or GPU backends. These commands are the desired public workflow;
-the target factory is the next host design surface.
+`nworlds test` discovers one package, validates its declaration and semantic
+evidence, and does not select a target. `nworlds run` resolves local host
+capabilities, mints or reuses a compatible artifact, and launches its generated
+static composition. `nworlds package` mints or reuses artifacts for the
+profiles permitted by host/distribution policy. Developers do not select
+operating systems, architectures, windowing libraries, or GPU backends in the
+normal workflow; raw target commands are maintenance/debug interfaces.
 
 The independent voxel sample is a separate consumer of the generic engine:
 
@@ -101,7 +104,7 @@ factory, not to the game package's public workflow.
 - [Host runtime](crates/nworlds-host) - target-neutral package contract and
   independent host-port composition.
 - [Target factory proposal](proposals/target-factory.md) - the desired
-  target-neutral developer path and host-owned artifact minting.
+  target-neutral developer path, CLI contract, and host-owned artifact minting.
 - [Target factory plan](target-factory.vine) - the dependency-ordered contract
   and migration decisions for host-owned target minting.
 - [Support graph](support.vine) - committed desktop targets, explicit gaps, and

@@ -75,15 +75,17 @@ Accept: Build-time selection, distribution-time artifact selection, and runtime 
 > Build-time profile recipes, distribution artifact selection, and runtime capability detection are distinct operations.
 > Unsupported environments return a host-owned structured result containing required capabilities, available capabilities, and remediation; games do not branch on target identity.
 ---
-[cli] Define target-neutral nworlds commands (planning)
+[cli] Define target-neutral nworlds commands (complete)
 Files: proposals/target-factory.md; README.md; CONTRIBUTING.md
 Do: Specify the user-visible behavior of nworlds test, nworlds run, and nworlds package, including package discovery, local artifact caching, failures, logs, and target transparency.
 Accept: Normal game development requires no target flag or platform knowledge; commands map to the factory contract; and raw target commands remain internal maintenance/debug interfaces rather than public game workflow.
 -> composition
 -> package-declaration
 -> resolution
-> `nworlds test`, `nworlds run`, and `nworlds package` are the public commands; raw target commands remain maintenance/debug interfaces.
-> Normal package development carries no target flag, platform name, windowing choice, or backend choice through game code.
+> `nworlds test`, `nworlds run`, and `nworlds package` are the public commands; raw target/profile commands remain maintenance/debug interfaces.
+> Discovery starts from a project root or explicit package source selector and requires exactly one loadable `PackageDeclaration`; source selection, test filters, verbosity, and output paths are not target selection.
+> `nworlds test` validates semantic package evidence without selecting a target or minting a distributable artifact; `nworlds run` resolves local capabilities and launches a reused or minted artifact; `nworlds package` mints/reuses artifacts allowed by host/distribution policy.
+> Stable host phases are discover, validate, resolve, artifact, and launch; failures preserve discovery, validation, resolution, artifact, or launch ownership, and unsupported resolution reports required, available, and remediation data.
 ---
 [artifact-ci] Define TargetArtifact and CI evidence (planning)
 Files: proposals/target-factory.md; proposals/platform-support-matrix.md; support.vine; .github/**; evidence/**

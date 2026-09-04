@@ -330,16 +330,75 @@ different supported artifact/profile, or use a target with the required
 runtime/device conditions. It does not become a game error and it does not
 ask game code to branch on target identity.
 
+## CLI Contract
+
+The public command surface is intentionally small. Commands are run from a
+project root or an explicitly selected package source; package selection is a
+source/discovery concern, not a target selector. Discovery must find exactly
+one package declaration for the requested operation. Zero matches and
+ambiguous matches are host-owned discovery failures that report the paths
+examined and the corrective action.
+
+| Command | Host behavior | Success result |
+| --- | --- | --- |
+| `nworlds test` | Discover the package, validate its `PackageDeclaration`, run package semantic tests and generic host-boundary checks, and report any missing contract evidence. It does not select a target or mint a distributable artifact. | A passing semantic/evidence result for the discovered package. |
+| `nworlds run` | Discover and validate the package, observe local `RuntimeCapabilities`, resolve a compatible `TargetProfile`, mint or reuse the matching `TargetArtifact`, and launch its generated static composition. | The selected artifact is launched through the host; target details stay in host diagnostics. |
+| `nworlds package` | Discover and validate the package, enumerate profiles permitted by host/distribution policy, mint or reuse one artifact per selected supported profile, and write artifact metadata to the host distribution output. | A named artifact set with profile metadata, checksums, and evidence state. |
+
+Normal use does not require an operating-system, architecture, target-triple,
+window-system, GPU-backend, or device flag. A package source selector, test
+filter, verbosity setting, or output-directory setting may affect discovery,
+validation, logging, or storage without selecting a target. Raw target/profile
+commands remain internal maintenance and debugging interfaces; they are not
+the game developer workflow.
+
+### Discovery and cache
+
+Discovery starts at the project root, follows the project/package manifest's
+declared package entry, and loads the package's static `GamePackage` and
+`PackageDeclaration` composition. The command must reject a package that
+cannot be loaded, declares an incompatible host/render vocabulary, or has
+multiple competing package entries. Discovery never scans arbitrary workspace
+crates and never infers a target from a game-domain type.
+
+The host-local artifact cache is keyed by the package identity and version,
+package source/dependency digest, `PackageDeclaration`, selected
+`TargetProfile`, host contract/generator version, and relevant toolchain/build
+inputs. `nworlds run` and `nworlds package` may reuse an artifact only when all
+identity inputs match and its metadata/checksum is valid. Cache paths and
+retention policy are host/distribution concerns and do not enter package code.
+
+### Phases, logs, and failures
+
+Every command reports stable host phases in this order where applicable:
+`discover`, `validate`, `resolve`, `artifact`, and `launch`. Logs identify the
+package identity and command phase; they do not require the user to understand
+the target profile during a successful run. Detailed profile, backend, and
+device information is available in host diagnostics for maintenance and
+failure analysis.
+
+Failures are non-success results and retain their owning boundary:
+
+- discovery failures identify missing or ambiguous package declarations;
+- validation failures identify package, declaration, semantic-test, or host
+  contract problems;
+- resolution failures return the structured `TargetResolution::Unsupported`
+  data with required capabilities, available capabilities, and remediation;
+- artifact failures identify build, cache-integrity, checksum, or publication
+  problems; and
+- launch failures identify host lifecycle, adapter, device, or process errors.
+
+The CLI does not translate these into game facts, assign logical time, or ask a
+package to recover from a target failure. The command surface is a transport
+for the factory contract, not a second package or target API.
+
 ## Decisions To Settle
 
 The game contract, package declaration, first render vocabulary, generated
-composition, and resolution stages are now settled in the implementation and
-evidence above. The remaining target-factory decisions are:
+composition, resolution stages, and public CLI behavior are now settled in the
+implementation and evidence above. The remaining target-factory decisions are:
 
-1. **CLI**: Specify the user-visible behavior, package discovery, caching,
-  logging, and failures for `nworlds test`, `nworlds run`, and
-  `nworlds package`.
-2. **CI and artifacts**: Specify how CI mints, names, tests, publishes, and
+1. **CI and artifacts**: Specify how CI mints, names, tests, publishes, and
   retains one artifact per supported profile, with device evidence separate
   from compilation evidence.
 
