@@ -83,7 +83,7 @@ fn voxel_sample_does_not_depend_on_caravan_consumers() {
             continue;
         };
         let name = name.trim().trim_matches('"').to_ascii_lowercase();
-        if name.starts_with("caravan-") || name == "nworlds-desktop" {
+        if name.starts_with("caravan-") {
             violations.push(name);
         }
     }

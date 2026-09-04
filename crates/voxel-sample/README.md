@@ -4,7 +4,8 @@ An independent sample consumer that puts the generic temporal engine and
 target-neutral host into practice. It builds a small cottage from distinct
 voxel block kinds, uses the engine's immutable
 journal/worldline/query/presentation path, and supplies its own camera,
-picking, native input, and `wgpu` rendering.
+picking, semantic input, and `RenderBatch` projection. The reusable desktop
+host supplies native lifecycle and `wgpu` execution.
 
 ## Run
 
@@ -31,7 +32,7 @@ engine types and uses the recommended boundaries:
 - `IndexedQuery` for direct state reconstruction;
 - `GameState<VoxelState>` for an owned logical-time sample;
 - `Renderer<VoxelState>` for state-first presentation; and
-- `Frame<VoxelRenderOutput>` for owned target output.
+- `Frame<RenderBatch>` for owned target output.
 
 The rest of the crate is deliberately divided by ownership:
 
@@ -40,13 +41,16 @@ The rest of the crate is deliberately divided by ownership:
 | [`world.rs`](src/world.rs) | Voxel positions, block kinds, facts, state, scale, and cottage geometry. |
 | [`engine_integration.rs`](src/engine_integration.rs) | The engine specialization and publication/query/presentation example. |
 | [`camera.rs`](src/camera.rs) | Camera math and CPU ray/AABB picking. |
-| [`render.rs`](src/render.rs) | Target-local `wgpu` execution through `RenderSink`. |
-| [`main.rs`](src/main.rs) | Native window events and sample composition. |
+| [`package.rs`](src/package.rs) | Voxel `GamePackage`, semantic click/wheel/resize handling, and immutable publication. |
+| [`input.rs`](src/input.rs) | Native `WindowEvent` translation into voxel-owned packets. |
+| [`main.rs`](src/main.rs) | Thin composition of the voxel package with `nworlds-desktop`. |
 
 ## Event Path
 
 ```text
 native click
+  -> VoxelInputAdapter
+  -> VoxelPackage
   -> sample ray picker
   -> VoxelFact::Remove
   -> JournalWriter
@@ -54,12 +58,14 @@ native click
   -> IndexedQuery
   -> GameState<VoxelState>
   -> Renderer + Tau
-  -> Frame<VoxelRenderOutput>
+  -> Frame<RenderBatch>
   -> target RenderSink
 ```
 
-The sample owns the meaning of a removal. The engine supplies immutable fact
-history and direct query shape. The target supplies event delivery and pixels.
+The sample owns the meaning of a removal, picking, and scale adjustment. The
+engine supplies immutable fact history and direct query shape. The generic
+desktop target supplies event delivery and pixels without inspecting voxel
+state or block kinds.
 
 ## Documentation
 

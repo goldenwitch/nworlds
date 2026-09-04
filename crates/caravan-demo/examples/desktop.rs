@@ -2,22 +2,26 @@
 
 use caravan_demo::demo_package;
 use caravan_demo::input::{Button, InputPacket};
-use nworlds_desktop::DesktopApplication;
-use nworlds_host::{PacketIngress, PlatformInputAdapter};
-use winit::event::{ElementState, KeyEvent};
+use nworlds_desktop::{DesktopApplication, DesktopInputAdapter};
+use nworlds_host::PacketIngress;
+use winit::event::{ElementState, WindowEvent};
 use winit::event_loop::EventLoop;
 use winit::keyboard::{KeyCode, PhysicalKey};
 
 #[derive(Clone, Copy, Debug, Default)]
 struct CaravanInputAdapter;
 
-impl PlatformInputAdapter<KeyEvent, InputPacket> for CaravanInputAdapter {
-    fn translate(&mut self, event: KeyEvent, ingress: &mut dyn PacketIngress<InputPacket>) {
-        if event.state == ElementState::Pressed
-            && !event.repeat
-            && event.physical_key == PhysicalKey::Code(KeyCode::Space)
-        {
-            ingress.push(InputPacket::ButtonPressed(Button::Primary));
+impl DesktopInputAdapter for CaravanInputAdapter {
+    type Packet = InputPacket;
+
+    fn translate(&mut self, event: &WindowEvent, ingress: &mut dyn PacketIngress<InputPacket>) {
+        if let WindowEvent::KeyboardInput { event, .. } = event {
+            if event.state == ElementState::Pressed
+                && !event.repeat
+                && event.physical_key == PhysicalKey::Code(KeyCode::Space)
+            {
+                ingress.push(InputPacket::ButtonPressed(Button::Primary));
+            }
         }
     }
 }

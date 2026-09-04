@@ -146,10 +146,12 @@ and its client-migration tasks. The acceptance sequence is:
   delete or relabel only target wrappers that have no distinct behavior or
   evidence and add dependency guards for reverse edges.
 
-Until the voxel client migration passes its acceptance evidence, the historical
-Caravan proof remains preserved evidence and the generic host's synthetic
-package remains the target-host compile proof. No game package gains a target
-entrypoint, target selection, or backend import as part of this migration.
+The Caravan and voxel client compositions now pass their compile and focused
+behavior evidence through the generic host. The historical Caravan proof
+remains preserved evidence, while native runtime/device observations and a
+voxel persistence codec remain separate follow-up claims. No game package
+gains a target entrypoint, target selection, or backend import as part of this
+migration.
 
 `HostContract` is a family of narrow typed abstractions supplied by the host,
 not a broad mutable capabilities object. It covers the environmental things a

@@ -27,7 +27,7 @@ engine integration example
         |
         v
 sample target
-  ray picking + wgpu rendering + native input/window lifecycle
+  generic desktop lifecycle + native event delivery + RenderSink<Frame<RenderBatch>>
 ```
 
 The sample owns voxels, cottages, blocks, and clicking while reusing the
@@ -49,15 +49,17 @@ voxel-sample -> engine-api / nworlds-host / target libraries
 | Direct state query | `state(worldline, logical_time)` is the only authoritative state lookup. | The sample can query arbitrary logical times with results stable under query order and frame history. |
 | `GameState` | The query returns `GameState<VoxelState>`, including the exact sampled logical time. | Game state is an owned, time-labelled result rather than an ambient mutable context. |
 | State-first presentation | `VoxelRenderer` implements `Renderer<VoxelState>`, and `frame` uses `present(GameState, Tau)`. | Rendering is downstream of authoritative state and cannot become an interaction authority. |
-| Owned `Frame` | `VoxelFrame` is the engine `Frame<VoxelRenderOutput>` envelope consumed by the target sink. | The target receives disposable render data, not a worldline, journal, input queue, or mutable game object. |
-| Host render port | `VoxelRenderSink` implements the target-neutral `RenderSink<VoxelFrame>` port. | `wgpu` execution remains target code; it does not leak into the game model or engine contract. |
+| Owned `Frame` | `VoxelFrame` is the engine `Frame<RenderBatch>` envelope consumed by the shared target sink. | The target receives disposable render data, not a worldline, journal, input queue, or mutable game object. |
+| Host render port | The generic desktop composition implements `RenderSink<Frame<RenderBatch>>` for the voxel package. | `wgpu` execution remains target code; it does not leak into the game model or engine contract. |
 
 ## The Click Path
 
 Clicking a voxel is deliberately a publication cycle, not a direct mutation:
 
-1. The target records the cursor position.
-2. The sample camera casts a ray through the current `VoxelState` and selects
+1. `VoxelInputAdapter` records cursor position and emits a package-owned click
+  packet through the generic host ingress.
+2. `VoxelPackage` asks the sample camera to cast a ray through the current
+  `VoxelState` and select
    the nearest voxel box.
 3. The sample creates `VoxelFact::Remove { position }`.
 4. `engine_integration::publish` records that fact through `JournalWriter`.
@@ -65,7 +67,8 @@ Clicking a voxel is deliberately a publication cycle, not a direct mutation:
    immutable value.
 6. `engine_integration::state` queries the selected worldline.
 7. `engine_integration::frame` presents the resulting `GameState`.
-8. The target render sink translates the owned frame into `wgpu` commands.
+8. The shared desktop render sink translates the owned batch into `wgpu`
+  commands.
 
 The click handler knows what a removal means for the game. The engine knows how
 to retain and query the fact. The target knows how to turn the resulting frame
@@ -119,8 +122,9 @@ device, and host-clock concerns remain in their target/application owners, so
 the camera and renderer can be replaced without changing authoritative voxel
 state production.
 
-The GPU code in `render.rs` is a target adapter. It consumes the owned
-`VoxelFrame` and performs backend work for the already-selected voxels.
+The generic desktop target is the target adapter. It consumes the owned
+`Frame<RenderBatch>` and performs backend work for the already-selected voxels;
+the voxel package never sees a device, surface, or backend command.
 
 ### The sample can teach the library
 
@@ -129,9 +133,10 @@ example:
 
 - `world.rs` answers: what does this game mean?
 - `engine_integration.rs` answers: how does the game use the engine?
-- `camera.rs` answers: how does this target select a voxel?
-- `render.rs` answers: how does this target execute an owned frame?
-- `main.rs` answers: how are native events connected to the sample?
+- `camera.rs` answers: how does the sample select a voxel?
+- `package.rs` answers: how do semantic events become immutable voxel facts?
+- `input.rs` answers: how are native events translated into voxel packets?
+- `main.rs` answers: how is the package connected to the generic desktop host?
 
 That separation is the point of the sample. It keeps the engine contract
 visible without pretending that every useful game or target abstraction belongs
@@ -148,7 +153,7 @@ The sample currently demonstrates:
 - fixed-point scale as game state;
 - CPU ray picking;
 - state-first owned rendering; and
-- target-local `winit`/`wgpu` execution.
+- generic `winit`/`wgpu` execution through `nworlds-desktop`.
 
 Its current scope is the cottage, immutable block removal, adjustable scale,
 ray picking, and state-first rendering. General voxel-engine concerns such as
@@ -165,3 +170,7 @@ cargo run --manifest-path crates/voxel-sample/Cargo.toml
 
 Click a visible voxel to publish its removal. Use the mouse wheel to publish
 scale changes. Press `Escape` or close the window to exit.
+
+The sample currently leaves persistence unavailable explicitly; a voxel
+worldline codec is a separate game-owned requirement rather than a target-host
+concern.

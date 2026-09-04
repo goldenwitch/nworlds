@@ -5,5 +5,5 @@ mod input;
 mod wgpu;
 
 pub use application::DesktopApplication;
-pub use input::NoopInputAdapter;
+pub use input::{DesktopInputAdapter, NoopInputAdapter};
 pub use wgpu::{WgpuRenderError, WgpuRenderSink};

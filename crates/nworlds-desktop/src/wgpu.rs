@@ -5,6 +5,8 @@ use engine_api::{Frame, RenderBatch};
 use nworlds_host::RenderSink;
 use winit::window::Window;
 
+const DEPTH_FORMAT: ::wgpu::TextureFormat = ::wgpu::TextureFormat::Depth24Plus;
+
 const SHADER: &str = r#"
 struct VertexInput {
     @location(0) position: vec3<f32>,
@@ -79,6 +81,7 @@ pub struct WgpuRenderSink {
     device: ::wgpu::Device,
     queue: ::wgpu::Queue,
     config: ::wgpu::SurfaceConfiguration,
+    depth_view: ::wgpu::TextureView,
     pipeline: ::wgpu::RenderPipeline,
 }
 
@@ -164,11 +167,19 @@ impl WgpuRenderSink {
                 compilation_options: ::wgpu::PipelineCompilationOptions::default(),
             }),
             primitive: ::wgpu::PrimitiveState::default(),
-            depth_stencil: None,
+            depth_stencil: Some(::wgpu::DepthStencilState {
+                format: DEPTH_FORMAT,
+                depth_write_enabled: Some(true),
+                depth_compare: Some(::wgpu::CompareFunction::Less),
+                stencil: ::wgpu::StencilState::default(),
+                bias: ::wgpu::DepthBiasState::default(),
+            }),
             multisample: ::wgpu::MultisampleState::default(),
             multiview_mask: None,
             cache: None,
         });
+
+        let depth_view = depth_view(&device, &config);
 
         Ok(Self {
             window,
@@ -176,6 +187,7 @@ impl WgpuRenderSink {
             device,
             queue,
             config,
+            depth_view,
             pipeline,
         })
     }
@@ -189,6 +201,7 @@ impl WgpuRenderSink {
             self.config.width = size.width;
             self.config.height = size.height;
             self.surface.configure(&self.device, &self.config);
+            self.depth_view = depth_view(&self.device, &self.config);
         }
         true
     }
@@ -214,14 +227,16 @@ impl RenderSink<Frame<RenderBatch>> for WgpuRenderSink {
             return;
         }
         let vertices = Self::vertices(frame.payload());
-        let vertex_buffer = ::wgpu::util::DeviceExt::create_buffer_init(
-            &self.device,
-            &::wgpu::util::BufferInitDescriptor {
-                label: Some("nworlds-desktop-vertices"),
-                contents: bytemuck::cast_slice(&vertices),
-                usage: ::wgpu::BufferUsages::VERTEX,
-            },
-        );
+        let vertex_buffer = (!vertices.is_empty()).then(|| {
+            ::wgpu::util::DeviceExt::create_buffer_init(
+                &self.device,
+                &::wgpu::util::BufferInitDescriptor {
+                    label: Some("nworlds-desktop-vertices"),
+                    contents: bytemuck::cast_slice(&vertices),
+                    usage: ::wgpu::BufferUsages::VERTEX,
+                },
+            )
+        });
         let output = match self.surface.get_current_texture() {
             ::wgpu::CurrentSurfaceTexture::Success(output)
             | ::wgpu::CurrentSurfaceTexture::Suboptimal(output) => output,
@@ -258,16 +273,47 @@ impl RenderSink<Frame<RenderBatch>> for WgpuRenderSink {
                         store: ::wgpu::StoreOp::Store,
                     },
                 })],
-                depth_stencil_attachment: None,
+                depth_stencil_attachment: Some(::wgpu::RenderPassDepthStencilAttachment {
+                    view: &self.depth_view,
+                    depth_ops: Some(::wgpu::Operations {
+                        load: ::wgpu::LoadOp::Clear(1.0),
+                        store: ::wgpu::StoreOp::Store,
+                    }),
+                    stencil_ops: None,
+                }),
                 timestamp_writes: None,
                 occlusion_query_set: None,
                 multiview_mask: None,
             });
             pass.set_pipeline(&self.pipeline);
-            pass.set_vertex_buffer(0, vertex_buffer.slice(..));
-            pass.draw(0..vertices.len() as u32, 0..1);
+            if let Some(vertex_buffer) = &vertex_buffer {
+                pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+                pass.draw(0..vertices.len() as u32, 0..1);
+            }
         }
         self.queue.submit(Some(encoder.finish()));
         self.queue.present(output);
     }
+}
+
+fn depth_view(
+    device: &::wgpu::Device,
+    config: &::wgpu::SurfaceConfiguration,
+) -> ::wgpu::TextureView {
+    device
+        .create_texture(&::wgpu::TextureDescriptor {
+            label: Some("nworlds-desktop-depth"),
+            size: ::wgpu::Extent3d {
+                width: config.width,
+                height: config.height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: ::wgpu::TextureDimension::D2,
+            format: DEPTH_FORMAT,
+            usage: ::wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        })
+        .create_view(&::wgpu::TextureViewDescriptor::default())
 }

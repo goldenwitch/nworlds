@@ -4,14 +4,15 @@ use std::sync::Arc;
 use engine_api::{Frame, RenderBatch};
 use nworlds_host::{
     ApplicationHost, GamePackage, InputBatchError, MemoryInputIngress, MemoryStorage,
-    OrderedInputBatch, PlatformInputAdapter,
+    OrderedInputBatch,
 };
 use winit::application::ApplicationHandler;
-use winit::event::{KeyEvent, WindowEvent};
+use winit::event::{ElementState, WindowEvent};
 use winit::event_loop::ActiveEventLoop;
+use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::{Window, WindowId};
 
-use crate::WgpuRenderSink;
+use crate::{DesktopInputAdapter, WgpuRenderSink};
 
 type NativeHost<P, Packet> =
     ApplicationHost<P, MemoryInputIngress<Packet>, MemoryStorage, WgpuRenderSink>;
@@ -30,7 +31,7 @@ where
     P: GamePackage<InputBatch = OrderedInputBatch<Packet>, Frame = Frame<RenderBatch>> + 'static,
     P::Error: From<InputBatchError> + std::fmt::Debug,
     Packet: 'static,
-    Input: PlatformInputAdapter<KeyEvent, Packet> + 'static,
+    Input: DesktopInputAdapter<Packet = Packet> + 'static,
 {
     /// Creates a desktop application before native resources are available.
     pub fn new(package: P, input: Input) -> Self {
@@ -82,7 +83,7 @@ where
         window.request_redraw();
     }
 
-    fn translate_key(&mut self, event: KeyEvent) {
+    fn translate_event(&mut self, event: &WindowEvent) {
         if let Some(host) = &mut self.host {
             self.input.translate(event, host.input_mut());
         }
@@ -103,7 +104,7 @@ where
     P: GamePackage<InputBatch = OrderedInputBatch<Packet>, Frame = Frame<RenderBatch>> + 'static,
     P::Error: From<InputBatchError> + std::fmt::Debug,
     Packet: 'static,
-    Input: PlatformInputAdapter<KeyEvent, Packet> + 'static,
+    Input: DesktopInputAdapter<Packet = Packet> + 'static,
 {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         self.start(event_loop);
@@ -115,6 +116,7 @@ where
         _window_id: WindowId,
         event: WindowEvent,
     ) {
+        self.translate_event(&event);
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::Resized(_) => {
@@ -122,8 +124,14 @@ where
                     window.request_redraw();
                 }
             }
-            WindowEvent::KeyboardInput { event, .. } => {
-                self.translate_key(event);
+            WindowEvent::KeyboardInput { event, .. }
+                if event.state == ElementState::Pressed
+                    && !event.repeat
+                    && event.physical_key == PhysicalKey::Code(KeyCode::Escape) =>
+            {
+                event_loop.exit();
+            }
+            WindowEvent::KeyboardInput { .. } => {
                 if let Some(window) = &self.window {
                     window.request_redraw();
                 }

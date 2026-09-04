@@ -143,15 +143,15 @@ Accept: Caravan remains a package/client; the desktop host has no Caravan depend
 > The generic desktop host remains free of Caravan dependencies and target execution; the historical Caravan native behavior is preserved as evidence, while the example provides the current compile-time client remap.
 > Terminal/demo semantics, persistence crossing, package declaration, and focused Caravan tests remain green; native launch/resize/shutdown observation stays a separate runtime evidence claim.
 ---
-[voxel-client-migration] Migrate voxel sample as a host client (planning)
+[voxel-client-migration] Migrate voxel sample as a host client (complete)
 Files: crates/voxel-sample/**; crates/nworlds-desktop/**; proposals/presentation-host.md; tests/**
 Do: Remap the independent voxel sample onto the reusable desktop host. Preserve its journal/query integration, removal publication, scale state, picking behavior, and voxel `RenderBatch` projection while using the same target composition as Caravan.
 Accept: The voxel sample remains independently game-owned; it shares target composition without sharing game state or render vocabulary; its production dependencies remain engine/host/target libraries only; its focused tests and native launch evidence remain green; and no voxel concern enters the engine or generic host contract.
 -> desktop-host-implementation
 -> render-batch
-> Voxel state, block vocabulary, picking, and scale semantics remain sample-owned.
-> The sample contributes an owned renderer-agnostic batch; the desktop host does not inspect voxel facts or block kinds.
-> One target composition serves multiple packages through types and ports, not target-layer conditionals.
+> Voxel now supplies `VoxelPackage` and `VoxelInputAdapter` through the shared `nworlds_desktop::DesktopApplication`; click, wheel, and resize events become voxel-owned semantic packets.
+> Picking remains package-owned through `Camera::pick`, publication remains immutable `VoxelFact` journal writing, and presentation remains `Frame<RenderBatch>`; no voxel state, block kind, or camera enters the generic host.
+> The obsolete voxel-specific native render sink was removed. Focused voxel tests and compile evidence pass; native launch remains separate evidence, and persistence is explicitly unavailable pending a game-owned voxel codec.
 ---
 [desktop-target-closure] Remove target-client duplication and forbidden edges (planning)
 Files: crates/nworlds-desktop/**; crates/caravan-demo/**; crates/voxel-sample/**; crates/purity-tests/**; Cargo.toml; Cargo.lock; README.md; index.md

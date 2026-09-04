@@ -87,19 +87,19 @@ than restate both. No new input abstraction is introduced.
 
 **Observed artifacts:** `rendering-contract.md`, `rendering.vine`,
 `presentation-host.md`, `target-factory.md`, `target-factory.vine`,
-`engine-presentation`, Caravan `render.rs`, voxel `render.rs`, and
+`engine-presentation`, Caravan `render.rs`, the former voxel target sink, and
 `nworlds-desktop/src/wgpu.rs`.
 
 **Classification:** The engine presentation contract, two sample projections,
 and the reusable desktop lifecycle are distinct. The shared target vocabulary
-is implemented as `engine-presentation::RenderBatch`; voxel's native client
-loop and the historical Caravan proof remain separate client evidence while
-their migration is pending.
+is implemented as `engine-presentation::RenderBatch`; the generic desktop
+lifecycle is now the shared implementation, while historical/client evidence
+remains separate.
 
 **Decision:** `rendering-contract.md` owns current state-first presentation;
 `target-factory.vine` owns the implemented `RenderBatch` and desktop-host
 remediation. Samples keep state-to-batch projection; `nworlds-desktop` owns
-generic lifecycle execution and client migration remains downstream.
+generic lifecycle execution and both client compositions use it.
 
 ### R6: Target factory, support, and host target records
 
@@ -122,15 +122,17 @@ voxel-sample's native `winit`/`wgpu` target, and `nworlds-host::ApplicationHost`
 
 **Classification:** `nworlds-host` is reusable passive composition;
 Caravan host aliases are test convenience; `nworlds-desktop` now owns reusable
-generic lifecycle execution with a synthetic package proof and the Caravan
-sample has a dev/example client composition; voxel is the remaining independent
-target client. The client loops are still separate until voxel migration
-completes, while their game-to-target render vocabulary is shared through
-`RenderBatch`.
+generic lifecycle execution with a synthetic package proof, and both Caravan
+and voxel samples provide package-owned client compositions. The historical
+Caravan proof remains evidence; native runtime/device and voxel persistence
+claims remain distinct, while game-to-target render vocabulary is shared
+through `RenderBatch`.
 
-**Decision:** Do not merge target code prematurely. Execute the target-factory
-remediation wave: define generic desktop composition, then migrate both
-clients and delete game-specific target edges.
+**Decision:** Keep target execution in `nworlds-desktop`, keep game meaning in
+the clients, and retain only historical/native evidence or package-owned
+client code with a distinct responsibility. The target-factory remediation
+wave has completed both client compositions; persistence and runtime evidence
+remain separate requirements.
 
 ### R8: Caravan reference crates
 
