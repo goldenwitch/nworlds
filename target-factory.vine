@@ -153,15 +153,15 @@ Accept: The voxel sample remains independently game-owned; it shares target comp
 > Picking remains package-owned through `Camera::pick`, publication remains immutable `VoxelFact` journal writing, and presentation remains `Frame<RenderBatch>`; no voxel state, block kind, or camera enters the generic host.
 > The obsolete voxel-specific native render sink was removed. Focused voxel tests and compile evidence pass; native launch remains separate evidence, and persistence is explicitly unavailable pending a game-owned voxel codec.
 ---
-[desktop-target-closure] Remove target-client duplication and forbidden edges (planning)
+[desktop-target-closure] Remove target-client duplication and forbidden edges (complete)
 Files: crates/nworlds-desktop/**; crates/caravan-demo/**; crates/voxel-sample/**; crates/purity-tests/**; Cargo.toml; Cargo.lock; README.md; index.md
 Do: Remove the Caravan-specific target assumptions from `nworlds-desktop`, delete any obsolete game-specific target residue, and add architecture guards for target-host dependency direction. Reconcile manifests, package maps, and sample documentation with the generic desktop composition.
 Accept: No `caravan-windows` crate or empty target residue remains; no generic target-host production manifest depends on Caravan or voxel; Caravan and voxel remain valid clients; no sample imports target internals; the dependency guard fails on reverse edges; and package/host/library descriptions agree.
 -> caravan-client-migration
 -> voxel-client-migration
-> Target host -> package dependency is forbidden; package -> target composition is selected by static composition/build machinery.
-> Filesystem cleanup is part of the closure: obsolete empty target directories and duplicate target clients are removed only when untracked/unowned.
-> Dependency guards enforce the direction structurally; prose records ownership but does not substitute for the guard.
+> `nworlds-desktop` production dependencies contain only generic engine/host/backend crates; Caravan and voxel connect through static package-owned compositions and are rejected by the dependency guard if reversed.
+> The obsolete voxel target sink and the prior Caravan-specific desktop main/dependency were removed; no `caravan-windows` crate or empty target residue remains.
+> Workspace manifests, lockfile, PR compile check, README/index/library maps, sample guides, evidence, and ownership registers now describe one generic target composition and two package clients.
 ---
 [desktop-evidence] Prove generic desktop composition and client preservation (planning)
 Files: crates/purity-tests/**; crates/nworlds-host/**; crates/nworlds-desktop/**; crates/caravan-demo/**; crates/voxel-sample/**; evidence/**; .github/workflows/**

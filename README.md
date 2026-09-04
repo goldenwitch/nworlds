@@ -93,8 +93,9 @@ factory, not to the game package's public workflow.
   public temporal surface, and dependency-direction rules.
 - [Host graph](host.vine) - first host proof composition; target minting is
   owned by the target factory.
-- [Desktop host client](crates/nworlds-desktop/Cargo.toml) - target-local
-  `winit`/`wgpu` composition mapped over the target-neutral host contract.
+- [Desktop host](crates/nworlds-desktop/Cargo.toml) - generic target-local
+  `winit`/`wgpu` composition mapped over the target-neutral host contract;
+  Caravan and voxel connect through package-owned examples/composition.
 - [Voxel sample](crates/voxel-sample/Cargo.toml) - independent voxel cottage
   consumer of the generic engine and target-neutral host surface.
 - [Voxel sample README](crates/voxel-sample/README.md) - colocated run guide

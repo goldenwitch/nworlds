@@ -60,7 +60,7 @@ target selection.
 | `caravan-reference` | Caravan reference implementation | Caravan projection/oracle, discontinuity meanings, snapshots, and parity baseline. |
 | `caravan-persistence` | Caravan reference implementation | Versioned Caravan worldline codec, branch lineage, save/load, and replay. |
 | `caravan-demo` | Sample application | Developer-authored Stage/Orchestrator composition and terminal/native sample package. |
-| `nworlds-desktop` | Target adapter | Windows `winit`/`wgpu` proof client using the target-neutral host and Caravan sample. |
+| `nworlds-desktop` | Target composition | Generic Windows `winit`/`wgpu` composition over the target-neutral host; game packages connect through static client composition. |
 | `engine-benchmarks` | Evidence | Release measurements for the current reference implementation and presentation path. |
 | `purity-tests` | Evidence | Compiler and runtime checks for immutable/data-only boundaries. |
 | `tests/conformance` | Evidence | Separate executable catalog for the Caravan anchor and library behavior. |
@@ -92,7 +92,7 @@ The following references are dev-dependencies rather than production edges:
 | `engine-presentation` tests | `caravan-domain`, `caravan-reference`, `engine-journal` | Allowed only as reference fixtures; must not shape the production renderer contract. |
 | `engine-benchmarks` and `tests/conformance` | Engine and Caravan crates | Evidence consumers; not library production dependencies. |
 | `caravan-demo` | Engine, Caravan, and `nworlds-host` crates | Sample consumer; its dependency direction is expected. |
-| `nworlds-desktop` | Caravan sample, host, and backend crates | Target-client consumer; its target and sample dependencies must not flow upward. |
+| `nworlds-desktop` | Host, engine, and backend crates | Generic target consumer; no Caravan or voxel production dependency is permitted. |
 
 ## Forbidden Production Directions
 

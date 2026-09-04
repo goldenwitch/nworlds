@@ -105,8 +105,8 @@ These crates define the concrete game fixture and its indexed rules.
 | Component | Description |
 | --- | --- |
 | [`caravan-demo`](crates/caravan-demo) | Runnable terminal demonstration; its [colocated README](crates/caravan-demo/README.md) presents the engine integration example and file ownership. |
-| [`nworlds-desktop`](crates/nworlds-desktop/Cargo.toml) | Target-local desktop adapter mapped over `nworlds-host`; it contains no package-owned state construction. |
-| [`voxel-sample`](crates/voxel-sample/Cargo.toml) | Independent voxel cottage consumer; its [colocated README](crates/voxel-sample/README.md) is the practical guide, and [`engine_integration.rs`](crates/voxel-sample/src/engine_integration.rs) demonstrates generic state, journal, query, branch, and presentation usage with sample-defined types. |
+| [`nworlds-desktop`](crates/nworlds-desktop/Cargo.toml) | Generic target-local desktop composition over `nworlds-host`; it contains no Caravan, voxel, or package-owned state construction. |
+| [`voxel-sample`](crates/voxel-sample/Cargo.toml) | Independent voxel cottage package using the shared desktop composition; its [colocated README](crates/voxel-sample/README.md) is the practical guide, and [`engine_integration.rs`](crates/voxel-sample/src/engine_integration.rs) demonstrates generic state, journal, query, branch, and presentation usage with sample-defined types. |
 | [`engine-benchmarks`](crates/engine-benchmarks) | Non-published release-build measurements for direct queries, scrubbing, branches, and frame production. |
 | [`purity-tests`](crates/purity-tests) | Runtime and `trybuild` compiler-boundary tests for immutable, data-only authoritative APIs. |
 | [`tests/conformance`](tests/conformance) | Separate workspace containing the executable conformance catalog and report generator. |

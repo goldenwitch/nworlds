@@ -18,7 +18,7 @@ assert the same contract or implement the same responsibility.
 | Renderer-agnostic render vocabulary | `engine-presentation::RenderBatch`, exposed through `engine-api` | Caravan/voxel projections and target sinks are clients; target lifecycle remains separate |
 | Target/package/artifact resolution | `target-factory.vine` and `target-factory.md` | Support matrix, host proposal, CI evidence |
 | Declared target regimes and support evidence | `support.vine` and `platform-support-matrix.md` | Target-factory resolution and CI records |
-| Native lifecycle/backend execution | Target composition (`nworlds-desktop` during migration; future generic desktop host) | Caravan/voxel client render projections and historical host graph |
+| Native lifecycle/backend execution | Generic target composition (`nworlds-desktop`) | Caravan/voxel client render projections and historical host graph |
 | Reference-game meaning | `caravan-domain`, `caravan-vegetation`, `caravan-hazards`, `caravan-seeded`, `caravan-reference`, `caravan-persistence` | Demo, conformance, benchmarks |
 | Primary evidence mapping | `evidence/clause-to-test.md` and the owning test/CI command | Snapshots, reports, and secondary observations |
 | Execution planning | The active VINE for the live workstream | Completed VINEs as historical records |
