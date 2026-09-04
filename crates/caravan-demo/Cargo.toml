@@ -10,3 +10,7 @@ caravan-seeded = { path = "../caravan-seeded" }
 engine-api = { path = "../engine-api" }
 caravan-persistence = { path = "../caravan-persistence" }
 nworlds-host = { path = "../nworlds-host" }
+
+[dev-dependencies]
+nworlds-desktop = { path = "../nworlds-desktop" }
+winit = "0.30"

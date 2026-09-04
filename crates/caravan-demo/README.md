@@ -75,6 +75,18 @@ The terminal trace covers empty and created worlds, time boundaries, indexed
 Caravan behavior, seeded journals, lookahead, branches, input publication, and
 presentation.
 
+The historical native proof is now reproduced through the reusable desktop
+host with a sample-owned input adapter:
+
+```text
+cargo run --manifest-path crates/caravan-demo/Cargo.toml --example desktop
+```
+
+The example is a dev composition. Caravan production code remains target
+neutral; it supplies `CaravanPackage`, semantic `InputPacket` values, and
+`Frame<RenderBatch>` production while `nworlds-desktop` owns native lifecycle
+and `wgpu` execution.
+
 ## Design Records
 
 - [Caravan Orchestrator anchor](../../proposals/caravan-orchestrator-anchor.md)

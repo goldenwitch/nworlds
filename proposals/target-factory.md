@@ -139,14 +139,16 @@ and its client-migration tasks. The acceptance sequence is:
   package evidence.
 3. Remap Caravan's package-defined input and `RenderBatch` production through
   that composition, preserving terminal/demo, persistence, and native input
-  behavior.
+  behavior. The sample now provides a dev/example composition using
+  `nworlds-desktop::DesktopApplication`; its production dependency surface
+  remains target-neutral.
 4. Remap the independent voxel package through the same composition, then
   delete or relabel only target wrappers that have no distinct behavior or
   evidence and add dependency guards for reverse edges.
 
-Until both client migrations pass their acceptance evidence, the historical
-Caravan proof remains evidence and the generic host's synthetic package remains
-the current target-host compile proof. No game package gains a target
+Until the voxel client migration passes its acceptance evidence, the historical
+Caravan proof remains preserved evidence and the generic host's synthetic
+package remains the target-host compile proof. No game package gains a target
 entrypoint, target selection, or backend import as part of this migration.
 
 `HostContract` is a family of narrow typed abstractions supplied by the host,

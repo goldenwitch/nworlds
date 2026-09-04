@@ -222,7 +222,9 @@ dependencies = [
  "caravan-reference",
  "caravan-seeded",
  "engine-api",
+ "nworlds-desktop",
  "nworlds-host",
+ "winit",
 ]
 
 [[package]]

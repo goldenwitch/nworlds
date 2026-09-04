@@ -370,9 +370,10 @@ packets.
 
 `nworlds-desktop` now contains the reusable generic lifecycle and a synthetic
 package compile proof without Caravan or voxel dependencies. The historical
-Caravan desktop proof remains independently preserved as client evidence. The
-Caravan and voxel client migrations still need to route both packages through
-this composition before they are claimed to share one target host.
+Caravan desktop proof remains independently preserved as client evidence, and
+the Caravan sample now has a dev/example composition through this host. The
+voxel client migration still needs to route both packages through one target
+host before shared client support is claimed.
 
 ## Time Boundary
 

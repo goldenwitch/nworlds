@@ -133,15 +133,15 @@ Accept: `nworlds-desktop` production dependencies contain no Caravan or voxel cr
 > A synthetic package test proves the generic target composition submits an owned `Frame<RenderBatch>` through the host; target lifecycle, resize, surface recovery, shutdown, and redraw scheduling remain target-local.
 > CI compiles the target manifest without selecting a game binary, and the purity dependency guard rejects Caravan/voxel production edges; Caravan and voxel client remapping remains downstream.
 ---
-[caravan-client-migration] Migrate Caravan desktop proof as a host client (planning)
+[caravan-client-migration] Migrate Caravan desktop proof as a host client (complete)
 Files: crates/caravan-demo/**; crates/nworlds-desktop/**; proposals/presentation-host.md; proposals/target-factory.md; tests/**
 Do: Remap `CaravanPackage`, Caravan input translation, and Caravan `RenderBatch` production onto the reusable desktop host. Preserve the existing terminal/demo semantics, native Space interaction, visible frame, resize, shutdown, persistence crossing, and evidence while deleting Caravan-specific target execution from the generic host.
 Accept: Caravan remains a package/client; the desktop host has no Caravan dependency; Caravan-specific input and render projection remain in the Caravan client; the old Windows behavior is reproducible through the new composition; and the package's engine integration example remains the recommended semantic path.
 -> desktop-host-implementation
 -> migration-gate
-> Caravan client code owns Caravan meaning and its `GameState -> RenderBatch` projection; the target host owns only translation/execution.
-> No `caravan-windows` crate or other game-specific target library is introduced.
-> Existing native behavior is preserved as client evidence, not used to widen the generic host contract.
+> Caravan now supplies a dev/example composition using `nworlds_desktop::DesktopApplication`; its sample-owned `CaravanInputAdapter` maps native Space to semantic `InputPacket` values, while `CaravanPackage` and `Frame<RenderBatch>` production remain in the Caravan client.
+> The generic desktop host remains free of Caravan dependencies and target execution; the historical Caravan native behavior is preserved as evidence, while the example provides the current compile-time client remap.
+> Terminal/demo semantics, persistence crossing, package declaration, and focused Caravan tests remain green; native launch/resize/shutdown observation stays a separate runtime evidence claim.
 ---
 [voxel-client-migration] Migrate voxel sample as a host client (planning)
 Files: crates/voxel-sample/**; crates/nworlds-desktop/**; proposals/presentation-host.md; tests/**

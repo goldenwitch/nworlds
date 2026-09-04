@@ -122,10 +122,11 @@ voxel-sample's native `winit`/`wgpu` target, and `nworlds-host::ApplicationHost`
 
 **Classification:** `nworlds-host` is reusable passive composition;
 Caravan host aliases are test convenience; `nworlds-desktop` now owns reusable
-generic lifecycle execution with a synthetic package proof; voxel is an
-independent target client and the historical Caravan proof remains evidence.
-The client loops are still separate until both migrations complete, while their
-game-to-target render vocabulary is shared through `RenderBatch`.
+generic lifecycle execution with a synthetic package proof and the Caravan
+sample has a dev/example client composition; voxel is the remaining independent
+target client. The client loops are still separate until voxel migration
+completes, while their game-to-target render vocabulary is shared through
+`RenderBatch`.
 
 **Decision:** Do not merge target code prematurely. Execute the target-factory
 remediation wave: define generic desktop composition, then migrate both

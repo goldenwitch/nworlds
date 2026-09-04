@@ -95,6 +95,7 @@ separate conformance catalog:
 
 | Generic desktop target has no game dependency | `cargo test -p purity-tests --test dependency_boundaries --locked` | Runtime manifest guard: `nworlds-desktop` production dependencies exclude Caravan and voxel consumers |
 | Synthetic package submits an owned desktop `Frame<RenderBatch>` | `cargo test -p nworlds-desktop --locked` | Runtime pass: target-local generic composition collects a synthetic owned batch without a game crate |
+| Caravan remaps onto the generic desktop composition | `cargo check -p caravan-demo --examples --locked` | Compile pass: the sample-owned `CaravanInputAdapter` and `CaravanPackage` compose through `nworlds-desktop::DesktopApplication`; native runtime observation remains separate |
 
 ## Target Artifact and Support Evidence
 
