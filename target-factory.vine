@@ -2,7 +2,7 @@ vine 1.2.0
 prefix: factory
 title: Target-neutral game packaging and host minting
 ---
-[root] Settle target-neutral game packaging and host minting (planning)
+[root] Settle target-neutral game packaging and host minting (complete)
 Files: target-factory.vine; proposals/target-factory.md; proposals/presentation-host.md; proposals/platform-support-matrix.md; README.md; index.md; roadmap.md; crates/**; .github/**
 Do: Define the host-owned contract that lets a game developer use nworlds test, nworlds run, and nworlds package without selecting targets. Keep game meaning, immutable state, and GameState + Tau render production separate from target resolution, capability delivery, artifact minting, and backend execution.
 Accept: HostContract, minimal host-defined renderer-agnostic RenderBatch, GamePackage declaration, TargetProfile, RuntimeCapabilities, TargetResolution, TargetArtifact, unsupported-environment behavior, and CI/artifact evidence each have one owner; the existing Caravan desktop proof is classified as a client/prototype; no target-factory implementation is resumed before the contract is settled; and prior workspace/conformance/purity/CodeQL evidence remains green.
