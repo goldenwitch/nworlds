@@ -118,6 +118,34 @@ host library may be selected by many generated compositions; the current
 `nworlds-desktop` Caravan executable remains historical proof until the
 desktop-host migration replaces its hard-coded package wiring.
 
+## Migration Gate for Existing Proof Code
+
+The current `nworlds-desktop` executable is a Caravan proof client, not the
+generic target-factory composition. Its `winit`/`wgpu` lifecycle, native Space
+input path, resize/shutdown behavior, and visible `Frame<RenderBatch>` output
+are retained as evidence to preserve. Its direct `caravan-demo` dependency and
+Caravan-specific `main` wiring are not contract authority.
+
+The migration has one owner: the target-factory desktop-host implementation
+and its client-migration tasks. The acceptance sequence is:
+
+1. Keep the existing proof independently buildable and preserve its native
+  compile/runtime observations while the generic host is introduced.
+2. Move lifecycle, surface/device setup, resize/loss recovery, scheduling,
+  native event hooks, and frame submission behind the package-neutral desktop
+  composition.
+3. Remap Caravan's package-defined input and `RenderBatch` production through
+  that composition, preserving terminal/demo, persistence, and native input
+  behavior.
+4. Remap the independent voxel package through the same composition, then
+  delete or relabel only target wrappers that have no distinct behavior or
+  evidence and add dependency guards for reverse edges.
+
+Until the generic host implementation and both client migrations pass their
+acceptance evidence, the proof executable remains historical/client code. No
+game package gains a target entrypoint, target selection, or backend import as
+part of this migration.
+
 `HostContract` is a family of narrow typed abstractions supplied by the host,
 not a broad mutable capabilities object. It covers the environmental things a
 game needs: input, byte storage, lifecycle/resource access, and a minimal

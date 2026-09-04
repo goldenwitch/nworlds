@@ -6,7 +6,7 @@ title: Target entrypoint and presentation-host adapter wiring
 Files: host.vine; proposals/presentation-host.md; proposals/platform-support-matrix.md; crates/caravan-demo/**; crates/nworlds-desktop/**; crates/nworlds-host/**; tests/**
 Do: Build the first target composition around independent translation, transport, storage, render-execution, and lifecycle/resource ports. The in-memory proof is complete. Execute the selected Windows desktop composition with winit lifecycle/input plumbing and wgpu render execution; the Orchestrator pulls the ports and the target entrypoint supplies their concrete adapters.
 Accept: The host proposal names distinct adapter roles; the support matrix records the completed in-memory proof and selected Windows target; the native composition launches locally, accepts native input, submits owned render output through wgpu, and preserves Stage/Orchestrator ownership; and all existing anchor/conformance evidence remains green.
-> This graph records the first target-local host proof, not the public game-package workflow. The target-factory proposal owns target-neutral commands, target resolution, host capability delivery, and artifact minting; do not extend this graph as a per-game target-selection contract.
+> This graph records the first target-local host proof, not the public game-package workflow. The target-factory proposal owns target-neutral commands, target resolution, host capability delivery, artifact minting, and migration of this proof to the reusable desktop composition; do not extend this graph as a per-game target-selection contract.
 -> host-composition
 -> host-contract
 -> host-evidence

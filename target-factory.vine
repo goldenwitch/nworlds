@@ -97,7 +97,7 @@ Accept: Each artifact maps to one resolved profile; compile, runtime, and device
 > Local cache reuse and distribution retention are host-owned and checksum-verified; artifact naming may expose profile metadata to host/distribution tooling but never changes the package contract.
 > Compile, runtime, and device evidence are separate claims; CI may mint and inspect artifacts without importing Caravan, voxel, or other application types into target-host production code, and compile-only evidence cannot close a runtime/device support row.
 ---
-[migration-gate] Classify and gate existing proof code (planning)
+[migration-gate] Classify and gate existing proof code (complete)
 Files: proposals/target-factory.md; host.vine; crates/caravan-demo/**; crates/nworlds-desktop/**
 Do: Classify the existing Caravan desktop wgpu implementation as historical proof/client code and define the migration sequence after the contract tasks complete. Keep the target-local proof client outside the game package and target-factory contract; do not promote it into the factory before GamePackage, HostContract, RenderBatch, composition, and resolution decisions are settled.
 Accept: No current proof detail is silently promoted to the target-factory contract; no game package contains target selection; the migration has one owner and acceptance path; and the target-local proof client remains independently buildable while the factory boundary is settled.
@@ -107,9 +107,9 @@ Accept: No current proof detail is silently promoted to the target-factory contr
 -> game-contract
 -> render-batch
 -> resolution
-> `nworlds-desktop` is classified as the current Caravan desktop proof client until the generic target-host contract and implementation are complete.
-> Existing proof behavior is evidence to preserve, not API authority to promote; migration has one owner and cannot widen the game package contract.
-> The gate is closed until RenderBatch, static composition, and resolution decisions are complete.
+> `nworlds-desktop` remains the current Caravan proof client: its lifecycle, native input, resize/shutdown, and RenderBatch frame behavior are evidence to preserve, not generic API authority.
+> Migration has one owner in the target-factory desktop-host implementation and client-migration tasks: preserve proof build/runtime evidence, extract generic lifecycle/ports, remap Caravan, remap voxel, then remove only unowned target wrappers and add dependency guards.
+> No package gains a target entrypoint, target selection, or backend import during migration; the proof remains independently buildable until both client migrations pass.
 ---
 [desktop-host-contract] Define reusable desktop target composition (complete)
 Files: proposals/target-factory.md; proposals/presentation-host.md; crates/nworlds-host/**; crates/nworlds-desktop/**; crates/engine-presentation/**; .github/**
