@@ -12,6 +12,27 @@ same cases and writes machine-readable results. The existing demo integration
 test additionally checks the complete stdout trace against
 `crates/caravan-demo/snapshots/anchor-trace.txt`.
 
+## Library Boundary Evidence
+
+This section is the reusable-library proof package. Caravan rules, the Caravan
+reference oracle, the demo, and native desktop behavior are recorded separately
+below and are not treated as generic library evidence.
+
+| Library claim | Executable evidence | Command | Coverage |
+| --- | --- | --- | --- |
+| An external consumer can use the supported generic facade | `external_consumer_composes_generic_query_branch_and_presentation`; `external_consumer_queries_an_immutable_branch_without_query_history` | `cargo test -p purity-tests --test generic_consumer --locked` | Caller-owned context and payloads compose through `engine-api`; direct queries, immutable branches, query-order independence, and `GameState + Tau` presentation are exercised without Caravan imports. |
+| Generic SDK payloads remain opaque and distinct across boundaries | `opaque_payloads_remain_generic_across_context_journal_and_worldline`; `typed_query_results_keep_values_and_domain_reasons_distinct`; `public_payload_access_is_shared_only` | `cargo test -p engine-sdk --test envelopes --locked` | Context, journal, worldline, state, frame, and query-result envelopes carry caller-owned values without game or target types. |
+| Library production dependencies do not point into consumers | `library_production_manifests_do_not_depend_on_consumers` | `cargo test -p purity-tests --test dependency_boundaries --locked` | Production manifests for the temporal library reject Caravan, sample, host, target, window, and backend dependencies. Intentional dev-only reference fixtures are outside the checked sections. |
+| The reusable library and host build without the sample or desktop target | Library-only package check in CI | `cargo check -p engine-time -p engine-sdk -p engine-journal -p engine-branches -p engine-index -p engine-presentation -p engine-api -p nworlds-host --locked` | The command names only reusable temporal/host packages; it does not build `caravan-demo` or `nworlds-desktop`. |
+| Immutable publication has no mutable authoritative escape | `no_mutable_authoritative_state`; `no_published_mutation`; `no_caller_assigned_timestamps` | `cargo test -p purity-tests --test boundary --locked` | Compile-fail evidence rejects mutable worldline/state access and caller-assigned journal timestamps. |
+| Presentation remains state-first | `no_extra_renderer_input`; `render_packets_are_owned_static_send_and_sync_data`; `repeated_equal_state_and_tau_inputs_project_equal_output` | `cargo test -p purity-tests --test boundary --locked` and `cargo test -p engine-presentation --test presentation --locked` | Render production accepts only `GameState + Tau`, returns owned output, and remains deterministic for equal inputs. |
+| Host ports remain target-neutral | `composition_delegates_to_a_target_neutral_package` and the generic `ApplicationHost` unit suite | `cargo test -p nworlds-host --locked` | Input, storage, render, and package composition are tested with non-Caravan test values; host code owns transport only. |
+
+The current retained dependency gap is intentionally empty for production
+library dependencies. Caravan appears in selected engine test/dev-dependencies
+only as reference data; the architecture guard does not treat those fixtures
+as library production contamination.
+
 | Clause | Executable case | Evidence | Coverage |
 | --- | --- | --- | --- |
 | Void, empty journal, exact `t_` | `empty-journal` | `checks.rs` | Runtime pass |
@@ -42,7 +63,7 @@ duplicated in the separate conformance runner or stamped into its report.
 | Cross-rule derived terrain and Fire ordering | `projection_fire_sees_farmer_derived_wheat_on_the_same_tick` | `crates/caravan-reference/tests/projection.rs` | Runtime pass |
 | Inside-tick visibility versus boundary activation | `inside_tick_terrain_visibility_does_not_rewrite_the_prior_tick_actor_sample`, `inside_tick_terrain_visibility_does_not_trigger_earlier_fire` | `crates/caravan-reference/tests/projection.rs` | Runtime pass |
 | Negative timestamp branch reconstruction | `branches_rebuild_negative_timestamp_prefixes` | `crates/engine-branches/tests/branches.rs` | Runtime pass |
-| Negative timestamp persistence and replay | `negative_timestamp_journals_round_trip_and_replay` | `crates/engine-persistence/tests/persistence.rs` | Runtime pass |
+| Negative timestamp persistence and replay | `negative_timestamp_journals_round_trip_and_replay` | `crates/caravan-persistence/tests/persistence.rs` | Runtime pass |
 | Bounded projection parity | `legacy_fold_matches_projection_on_shared_fixture`, `frozen_expected_corpus_matches_the_projection` | `crates/caravan-reference/src/legacy_evaluator.rs`; `crates/caravan-reference/tests/parity.rs` | Runtime pass; legacy equivalence is fixture-scoped |
 | Low-level timestamp facade boundary | `no_low_level_timestamp_import` | `crates/purity-tests/tests/ui/` | Compile-fail pass; intentional interoperability API remains documented |
 | Concrete Caravan rendering projection | `empty_state_projects_to_owned_empty_output`, `saucer_projection_preserves_stable_tile_order`, `projection_preserves_layers_actors_and_resources`, `repeated_equal_state_and_tau_inputs_project_equal_output`, `render_packets_are_owned_static_send_and_sync_data` | `crates/caravan-demo/src/render.rs` | Runtime and compile-time pass; owned render packets preserve state layers, resources, logical time, and `Tau` through `Frame` |
@@ -73,6 +94,9 @@ separate conformance catalog:
 
 ## Explicit Gaps
 
+- CodeQL remains a separate CI security workflow in
+  `.github/workflows/codeql.yml`; it is not an architectural-boundary proof
+  and was not executed locally in this closure pass.
 - The authoritative engine boundary has compiler-checked purity evidence in
   `crates/purity-tests`. Rust cannot prove arbitrary `Renderer` implementation
   bodies have no side effects; those remain a trusted presentation extension

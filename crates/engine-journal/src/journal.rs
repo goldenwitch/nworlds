@@ -1,16 +1,13 @@
-use caravan_domain::GameJournalEntry;
-use engine_sdk::Journal as SdkJournal;
+use engine_sdk::{Journal as SdkJournal, JournalEntry};
 use engine_time::LogicalTime;
-
-use crate::JournalEntry;
 
 /// An immutable, append-ordered journal of game entries.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct Journal {
-    storage: SdkJournal<GameJournalEntry>,
+pub struct Journal<P> {
+    storage: SdkJournal<P>,
 }
 
-impl Journal {
+impl<P> Journal<P> {
     /// Creates an empty journal.
     pub fn empty() -> Self {
         Self {
@@ -29,28 +26,31 @@ impl Journal {
     }
 
     /// Borrows entries in their append order.
-    pub fn iter(&self) -> impl Iterator<Item = &JournalEntry> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = &JournalEntry<P>> + '_ {
         self.storage.iter()
     }
 
     /// Borrows an entry at an append-order index.
-    pub fn get(&self, index: usize) -> Option<&JournalEntry> {
+    pub fn get(&self, index: usize) -> Option<&JournalEntry<P>> {
         self.storage.get(index)
     }
 
     /// Borrows entries whose assigned time is at or before the target time.
-    pub fn visible_at(&self, target_time: LogicalTime) -> impl Iterator<Item = &JournalEntry> + '_ {
+    pub fn visible_at(
+        &self,
+        target_time: LogicalTime,
+    ) -> impl Iterator<Item = &JournalEntry<P>> + '_ {
         self.storage.visible_at(target_time)
     }
 
-    pub(crate) fn from_entries(entries: impl IntoIterator<Item = JournalEntry>) -> Self {
+    pub(crate) fn from_entries(entries: impl IntoIterator<Item = JournalEntry<P>>) -> Self {
         Self {
             storage: SdkJournal::from_assigned_entries(entries),
         }
     }
 }
 
-impl Default for Journal {
+impl<P> Default for Journal<P> {
     fn default() -> Self {
         Self::empty()
     }
@@ -59,23 +59,15 @@ impl Default for Journal {
 #[cfg(test)]
 mod tests {
     use super::Journal;
-    use caravan_domain::GameJournalEntry;
     use engine_time::LogicalTime;
 
     #[test]
     fn empty_journal_has_no_visible_entries() {
-        let journal = Journal::empty();
+        let journal = Journal::<()>::empty();
 
         assert!(journal.is_empty());
         assert_eq!(journal.len(), 0);
         assert_eq!(journal.iter().count(), 0);
         assert_eq!(journal.visible_at(LogicalTime::zero()).count(), 0);
-    }
-
-    #[test]
-    fn domain_payloads_have_no_timestamp_field() {
-        let entry = GameJournalEntry::create_saucer();
-
-        assert_eq!(entry, GameJournalEntry::CreateSaucer { radius: 5 });
     }
 }

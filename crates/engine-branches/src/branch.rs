@@ -1,6 +1,5 @@
 use std::{error::Error, fmt, sync::Arc};
 
-use caravan_domain::GameJournalEntry;
 use engine_journal::{Journal, JournalEntry, JournalWriter, JournalWriterError};
 use engine_sdk::Context;
 use engine_time::LogicalTime;
@@ -56,19 +55,19 @@ impl From<JournalWriterError> for BranchError {
 /// The context is shared by reference-counted ownership between a parent and
 /// its children. Every child receives a newly written journal snapshot.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct Branch<C> {
+pub struct Branch<C, P> {
     context: Arc<Context<C>>,
-    journal: Journal,
+    journal: Journal<P>,
     kind: BranchKind,
     fork_boundary: Option<LogicalTime>,
 }
 
 /// The query-facing name for an immutable branch value.
-pub type Worldline<C> = Branch<C>;
+pub type Worldline<C, P> = Branch<C, P>;
 
-impl<C> Branch<C> {
+impl<C, P: Clone> Branch<C, P> {
     /// Creates the actual worldline from an immutable context and journal.
-    pub fn new(context: Context<C>, journal: Journal) -> Self {
+    pub fn new(context: Context<C>, journal: Journal<P>) -> Self {
         Self {
             context: Arc::new(context),
             journal,
@@ -78,7 +77,7 @@ impl<C> Branch<C> {
     }
 
     /// Creates the actual worldline from an immutable context and journal.
-    pub fn actual(context: Context<C>, journal: Journal) -> Self {
+    pub fn actual(context: Context<C>, journal: Journal<P>) -> Self {
         Self::new(context, journal)
     }
 
@@ -93,7 +92,7 @@ impl<C> Branch<C> {
     }
 
     /// Borrows this branch's immutable journal snapshot.
-    pub fn journal(&self) -> &Journal {
+    pub fn journal(&self) -> &Journal<P> {
         &self.journal
     }
 
@@ -121,7 +120,7 @@ impl<C> Branch<C> {
     pub fn counterfactual(
         &self,
         fork_boundary: LogicalTime,
-        suffix: &Journal,
+        suffix: &Journal<P>,
     ) -> Result<Self, BranchError> {
         self.fork_with_suffix(fork_boundary, suffix, BranchKind::Counterfactual)
     }
@@ -130,7 +129,7 @@ impl<C> Branch<C> {
     pub fn corrected_suffix(
         &self,
         fork_boundary: LogicalTime,
-        replacement_suffix: &Journal,
+        replacement_suffix: &Journal<P>,
     ) -> Result<Self, BranchError> {
         self.fork_with_suffix(fork_boundary, replacement_suffix, BranchKind::Corrected)
     }
@@ -138,7 +137,7 @@ impl<C> Branch<C> {
     fn fork_with_suffix(
         &self,
         fork_boundary: LogicalTime,
-        suffix: &Journal,
+        suffix: &Journal<P>,
         kind: BranchKind,
     ) -> Result<Self, BranchError> {
         let journal = build_child_journal(&self.journal, fork_boundary, suffix)?;
@@ -152,11 +151,11 @@ impl<C> Branch<C> {
     }
 }
 
-fn build_child_journal(
-    parent: &Journal,
+fn build_child_journal<P: Clone>(
+    parent: &Journal<P>,
     fork_boundary: LogicalTime,
-    suffix: &Journal,
-) -> Result<Journal, BranchError> {
+    suffix: &Journal<P>,
+) -> Result<Journal<P>, BranchError> {
     for entry in suffix.iter() {
         if entry.logical_time() <= fork_boundary {
             return Err(BranchError::SuffixNotAfterFork {
@@ -182,9 +181,11 @@ fn build_child_journal(
     Ok(writer.finish())
 }
 
-fn append_entry(writer: &mut JournalWriter, entry: &JournalEntry) -> Result<(), BranchError> {
+fn append_entry<P: Clone>(
+    writer: &mut JournalWriter<P>,
+    entry: &JournalEntry<P>,
+) -> Result<(), BranchError> {
     writer.advance_to(entry.logical_time())?;
-    let payload: GameJournalEntry = *entry.payload();
-    writer.record(payload);
+    writer.record(entry.payload().clone());
     Ok(())
 }

@@ -1,15 +1,14 @@
 #![forbid(unsafe_code)]
 
-use engine_api::{actual, GameJournalEntry, Journal, JournalWriter, LogicalTime};
+use engine_api::{Context, Journal, JournalWriter, LogicalTime, Worldline};
 
 fn main() {
-    let mut writer = JournalWriter::new();
-    writer.record(GameJournalEntry::create_saucer());
-    let mut journal: Journal = writer.finish();
-    journal.push(GameJournalEntry::create_saucer());
+    let mut writer = JournalWriter::<()>::new();
+    writer.record(());
+    let mut journal: Journal<()> = writer.finish();
+    journal.push(());
 
-    let worldline = actual(journal);
-    let mut worldline = worldline;
+    let mut worldline = Worldline::new(Context::new(()), journal);
     worldline.journal_mut().clear();
     let _ = LogicalTime::zero();
 }

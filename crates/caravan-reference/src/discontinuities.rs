@@ -4,11 +4,10 @@ use caravan_domain::{ActorId, ActorKind, GameJournalEntry};
 use engine_index::{
     Breakpoint, BreakpointSource, DiscontinuityIndex as EngineDiscontinuityIndex, Piece,
 };
-use engine_journal::{Journal, JournalEntry};
 use engine_time::{game_tick_index, LogicalTime};
 
 use crate::projection::{build_actor_trajectory, ActorTrajectory};
-use crate::ReferenceContext;
+use crate::{Journal, JournalEntry, ReferenceContext};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ActorThreshold {

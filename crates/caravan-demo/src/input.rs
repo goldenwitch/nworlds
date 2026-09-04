@@ -309,8 +309,7 @@ mod tests {
         InputPacketSet, InputResolution, InteractionDefinition, ObservationId, OrderedInputBatch,
         SemanticInputBatch,
     };
-    use caravan_reference::{actual, state as reference_state};
-    use engine_journal::Journal;
+    use caravan_reference::{actual, state as reference_state, Journal};
     use engine_time::{LogicalTime, Tau};
 
     #[derive(Clone, Debug, Eq, PartialEq)]

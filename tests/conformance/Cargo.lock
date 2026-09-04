@@ -12,7 +12,6 @@ dependencies = [
  "engine-branches",
  "engine-index",
  "engine-journal",
- "engine-lookahead",
  "engine-presentation",
  "engine-sdk",
  "engine-time",
@@ -67,7 +66,6 @@ dependencies = [
 name = "engine-branches"
 version = "0.1.0"
 dependencies = [
- "caravan-domain",
  "engine-journal",
  "engine-sdk",
  "engine-time",
@@ -77,7 +75,6 @@ dependencies = [
 name = "engine-index"
 version = "0.1.0"
 dependencies = [
- "caravan-domain",
  "engine-journal",
  "engine-sdk",
  "engine-time",
@@ -87,17 +84,7 @@ dependencies = [
 name = "engine-journal"
 version = "0.1.0"
 dependencies = [
- "caravan-domain",
  "engine-sdk",
- "engine-time",
-]
-
-[[package]]
-name = "engine-lookahead"
-version = "0.1.0"
-dependencies = [
- "caravan-reference",
- "engine-branches",
  "engine-time",
 ]
 

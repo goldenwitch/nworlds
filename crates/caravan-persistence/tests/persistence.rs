@@ -1,13 +1,13 @@
 use std::{fs, path::PathBuf};
 
 use caravan_domain::{ActorId, ActorKind, GameJournalEntry, Terrain, TileId};
-use caravan_reference::{actual, state};
-use engine_branches::BranchKind;
-use engine_journal::{Journal, JournalWriter};
-use engine_persistence::{
+use caravan_persistence::{
     branch_lineage, decode, encode, load, replay, replay_bytes, save, BranchLineage,
     PersistenceError, FORMAT_VERSION,
 };
+use caravan_reference::{actual, state};
+use engine_branches::BranchKind;
+use engine_journal::{Journal, JournalWriter};
 use engine_sdk::LogicalTime;
 
 fn time(ticks: i64) -> LogicalTime {
@@ -18,7 +18,9 @@ fn tile(q: i32, r: i32) -> TileId {
     TileId::new(q, r).expect("test coordinate is inside the saucer")
 }
 
-fn journal(entries: impl IntoIterator<Item = (i64, GameJournalEntry)>) -> Journal {
+fn journal(
+    entries: impl IntoIterator<Item = (i64, GameJournalEntry)>,
+) -> Journal<GameJournalEntry> {
     let mut writer = JournalWriter::new();
     for (ticks, payload) in entries {
         writer
@@ -214,8 +216,5 @@ fn encoding_rejects_unsupported_saucer_radius_before_writing_bytes() {
 }
 
 fn unique_test_path() -> PathBuf {
-    std::env::temp_dir().join(format!(
-        "caravan-engine-persistence-{}.cspf",
-        std::process::id()
-    ))
+    std::env::temp_dir().join(format!("caravan-persistence-{}.cspf", std::process::id()))
 }

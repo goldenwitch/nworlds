@@ -3,8 +3,10 @@
 use std::collections::BTreeSet;
 
 use caravan_domain::{ActorId, ActorKind, GameJournalEntry, Saucer, TileId, SAUCER_TILE_COUNT};
-use engine_journal::{Journal, JournalWriter};
+use engine_journal::{Journal as EngineJournal, JournalWriter};
 use engine_time::LogicalTime;
+
+pub type Journal = EngineJournal<GameJournalEntry>;
 
 pub const SPAWN_PERIOD_GAME_TICKS: u64 = 10;
 pub const ACTORS_PER_SPAWN: usize = 3;

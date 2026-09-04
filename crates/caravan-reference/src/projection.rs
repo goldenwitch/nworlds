@@ -8,12 +8,11 @@ use caravan_domain::{
     TileLayers,
 };
 use caravan_vegetation::IndexedTile;
-use engine_journal::{Journal, JournalEntry};
 use engine_sdk::{Context, GameState};
 use engine_time::{game_tick_index, LogicalTime, TICKS_PER_LOGICAL_SECOND};
 
 use crate::discontinuities::DiscontinuityIndex;
-use crate::{ReferenceContext, ReferenceWorldline, Snapshot, State};
+use crate::{Journal, JournalEntry, ReferenceContext, ReferenceWorldline, Snapshot, State};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ProjectionError {

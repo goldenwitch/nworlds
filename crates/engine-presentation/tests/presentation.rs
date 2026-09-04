@@ -35,7 +35,9 @@ fn time(ticks: i64) -> LogicalTime {
     LogicalTime::from_ticks(ticks)
 }
 
-fn journal(entries: impl IntoIterator<Item = (i64, GameJournalEntry)>) -> Journal {
+fn journal(
+    entries: impl IntoIterator<Item = (i64, GameJournalEntry)>,
+) -> Journal<GameJournalEntry> {
     let mut writer = JournalWriter::new();
     for (ticks, payload) in entries {
         writer

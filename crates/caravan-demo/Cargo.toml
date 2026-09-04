@@ -9,8 +9,7 @@ caravan-reference = { path = "../caravan-reference" }
 caravan-seeded = { path = "../caravan-seeded" }
 engine-branches = { path = "../engine-branches" }
 engine-journal = { path = "../engine-journal" }
-engine-lookahead = { path = "../engine-lookahead" }
-engine-persistence = { path = "../engine-persistence" }
+caravan-persistence = { path = "../caravan-persistence" }
 engine-presentation = { path = "../engine-presentation" }
 engine-sdk = { path = "../engine-sdk" }
 engine-time = { path = "../engine-time" }

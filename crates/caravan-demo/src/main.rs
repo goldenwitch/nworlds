@@ -5,10 +5,11 @@ use caravan_demo::{
     CaravanInteraction, CaravanOrchestrator, CaravanRenderer, CaravanStage, RenderOutput,
 };
 use caravan_domain::{ActorId, ActorKind, Effect, GameJournalEntry, Terrain, TileId};
-use caravan_reference::{actual, state, ReferenceWorldline, Snapshot};
+use caravan_reference::{
+    actual, branch_view, future, state, Journal, ReferenceWorldline, Snapshot, ViewKind,
+};
 use caravan_seeded::generate_spawn_journal;
-use engine_journal::{Journal, JournalWriter};
-use engine_lookahead::{branch_view, future, ViewKind};
+use engine_journal::JournalWriter;
 use engine_sdk::Frame;
 use engine_time::{LogicalTime, Tau, TICKS_PER_LOGICAL_SECOND};
 

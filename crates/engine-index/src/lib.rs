@@ -2,8 +2,7 @@
 
 mod discontinuities;
 
-use caravan_domain::GameJournalEntry;
-use engine_journal::Journal as GameJournal;
+use engine_journal::Journal as OwnedJournal;
 use engine_sdk::{Context, GameState, Journal as SdkJournal, JournalEntry};
 use engine_time::LogicalTime;
 
@@ -30,8 +29,8 @@ impl<P> JournalSource for SdkJournal<P> {
     }
 }
 
-impl JournalSource for GameJournal {
-    type Payload = GameJournalEntry;
+impl<P> JournalSource for OwnedJournal<P> {
+    type Payload = P;
 
     fn visible_entries_at(&self, target_time: LogicalTime) -> Vec<&JournalEntry<Self::Payload>> {
         self.visible_at(target_time).collect()

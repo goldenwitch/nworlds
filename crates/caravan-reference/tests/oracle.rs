@@ -17,7 +17,7 @@ fn actor_id(value: u64) -> ActorId {
     ActorId::new(value).expect("test actor IDs are positive")
 }
 
-fn journal(entries: &[(i64, GameJournalEntry)]) -> Journal {
+fn journal(entries: &[(i64, GameJournalEntry)]) -> Journal<GameJournalEntry> {
     let mut writer = JournalWriter::new();
     for (ticks, entry) in entries {
         writer

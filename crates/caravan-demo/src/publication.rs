@@ -1,7 +1,7 @@
 use caravan_domain::GameJournalEntry;
-use caravan_reference::ReferenceWorldline;
+use caravan_reference::{Journal, ReferenceWorldline};
 use engine_branches::BranchError;
-use engine_journal::{Journal, JournalWriter, JournalWriterError};
+use engine_journal::{JournalWriter, JournalWriterError};
 use engine_time::LogicalTime;
 
 use crate::transformation::Transformation;
@@ -49,7 +49,9 @@ pub fn publish_corrected(
 }
 
 /// Reconstructs a mutable authoring cursor from one immutable journal value.
-pub fn writer_from_journal(journal: &Journal) -> Result<JournalWriter, JournalWriterError> {
+pub fn writer_from_journal(
+    journal: &Journal,
+) -> Result<JournalWriter<GameJournalEntry>, JournalWriterError> {
     let mut writer = JournalWriter::new();
     for entry in journal.iter() {
         writer.advance_to(entry.logical_time())?;

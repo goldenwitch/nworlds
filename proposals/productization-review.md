@@ -44,7 +44,7 @@ not a new distribution or runtime layer.
 | --- | --- | --- |
 | Demo, proof, and benchmark reproducibility | **Binds now** | Existing artifacts and commands are the current product surface for developers and reviewers. |
 | Windows desktop host/render proof | **Baseline now** | The selected `x86_64-pc-windows-msvc` target has a working local entrypoint and independent `winit`/`wgpu` adapters; no production host policy is implied. |
-| Persistence and deterministic replay | **Baseline only** | `engine-persistence` is present, but no shipped workflow or release target activates additional product work. |
+| Persistence and deterministic replay | **Baseline only** | `caravan-persistence` is present as a Caravan reference codec, but no shipped workflow or release target activates additional product work. |
 | Packaging and release targets | **Deferred** | No target platform, installer/package format, versioning policy, or distribution requirement is recorded. |
 | Content tooling and large-scale authoring | **Deferred** | The evidence uses a fixed anchor, hand-authored traces, and a finite seeded fixture; no authoring volume or content format requirement binds. |
 | Audio and broader device/input integration | **Deferred** | The first target proves keyboard input only; audio, additional devices, and a production input policy remain unspecified. |

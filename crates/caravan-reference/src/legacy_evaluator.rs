@@ -454,10 +454,10 @@ mod tests {
     use crate::{context, project_query};
     use caravan_domain::{ActorId, ActorKind, GameJournalEntry, Terrain, TileId};
     use engine_index::state as indexed_state;
-    use engine_journal::{Journal, JournalWriter};
+    use engine_journal::JournalWriter;
     use engine_time::LogicalTime;
 
-    fn journal() -> Journal {
+    fn journal() -> crate::Journal {
         let mut writer = JournalWriter::new();
         writer.record(GameJournalEntry::create_saucer());
         writer.record(GameJournalEntry::SetTerrain {

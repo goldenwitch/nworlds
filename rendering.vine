@@ -179,12 +179,12 @@ Accept: legacy_evaluator.rs compiles only for tests, the shared-fixture comparis
 > Decision: legacy_evaluator.rs is test-only and isolated. The public state query uses projection, and the bounded legacy comparison plus anchor, conformance, demo, persistence, presentation, and purity tests pass.
 ---
 [caravan/lookahead] Indexed lookahead and branch views (complete)
-Files: crates/engine-lookahead/**; consume caravan-reference and engine-branches APIs
+Files: crates/caravan-reference/src/lookahead.rs; consume caravan-reference and engine-branches APIs
 Do: Expose future queries and branch selection through the same direct oracle while keeping the journal fixed. No future entries are generated; no current state is cached.
 Accept: Earlier lookahead values remain unchanged when new values are authored on another branch; actual, counterfactual, and corrected worlds use identical query machinery.
 -> caravan/branch-model
 -> caravan/reference-oracle
-@artifact text/plain crates/engine-lookahead/src/lib.rs
+@artifact text/plain crates/caravan-reference/src/lookahead.rs
 ---
 [caravan/presentation] State-first presentation adapter (complete)
 Files: crates/engine-presentation/**; consume engine-time and engine-sdk APIs
@@ -196,7 +196,7 @@ Accept: Forward, reverse, arbitrary scrub, repeated samples, and branch presenta
 @artifact text/plain crates/engine-presentation/src/lib.rs
 ---
 [caravan/anchor-demo] Runnable anchor demonstration (complete)
-Files: crates/caravan-demo/**; consume caravan-reference, engine-lookahead, engine-presentation, caravan-seeded, caravan-domain
+Files: crates/caravan-demo/**; consume caravan-reference, engine-presentation, caravan-seeded, caravan-domain
 Do: Build the first runnable terminal demonstration for the fixed cellular automata trace, showing empty set, saucer creation, layer queries, tick/sample decoupling, seeded entries, lookahead, and corrected/counterfactual branch views. Keep the output deterministic and do not add a mutable current board.
 Accept: One deterministic command reproduces the documented trace and visibly distinguishes SDK envelopes from game-domain snapshot data.
 -> caravan/lookahead
@@ -216,13 +216,13 @@ Accept: Skeptical readers can distinguish executable evidence, explicit limitati
 @artifact text/markdown evidence/clause-to-test.md
 ---
 [caravan/persistence] Replay and persistence (complete)
-Files: crates/engine-persistence/**; consume engine-sdk, engine-journal, engine-branches, caravan-domain, caravan-reference, caravan-demo APIs
+Files: crates/caravan-persistence/**; consume engine-sdk, engine-journal, engine-branches, caravan-domain, caravan-reference, caravan-demo APIs
 Do: Serialize SDK envelopes, game entries, context definitions, journals, and branch lineage; add save/load and deterministic replay without persisting frame history or changing query semantics.
 Accept: Anchor journals and branches round-trip exactly, incompatible versions fail explicitly, and replay preserves direct query results.
 -> caravan/anchor-demo
 -> caravan/branch-model
 -> caravan/domain-model
-@artifact text/plain crates/engine-persistence/src/lib.rs
+@artifact text/plain crates/caravan-persistence/src/lib.rs
 ---
 [caravan/benchmarks] Reference measurements (complete)
 Files: crates/engine-benchmarks/**; evidence/benchmarks/**; consume caravan-reference and caravan-demo APIs

@@ -3,10 +3,10 @@
 use std::{hint::black_box, time::Instant};
 
 use caravan_domain::{ActorId, ActorKind, GameJournalEntry, TileId};
-use caravan_reference::{actual, state, try_state, ReferenceWorldline, Snapshot};
+use caravan_reference::{actual, state, try_state, Journal, ReferenceWorldline, Snapshot};
 use caravan_seeded::{generate_spawn_journal, hand_authored_behavior_fixture};
 use engine_branches::BranchKind;
-use engine_journal::{Journal, JournalWriter};
+use engine_journal::JournalWriter;
 use engine_presentation::{present, Renderer};
 use engine_sdk::GameState;
 use engine_time::{LogicalTime, Tau};

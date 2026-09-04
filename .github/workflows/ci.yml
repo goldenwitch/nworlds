@@ -25,6 +25,14 @@ jobs:
         run: cargo fmt --all -- --check
       - name: Run Clippy
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Check reusable library and host surface
+        run: cargo check -p engine-time -p engine-sdk -p engine-journal -p engine-branches -p engine-index -p engine-presentation -p engine-api -p nworlds-host --locked
+      - name: Run library boundary evidence
+        run: |
+          cargo test -p purity-tests --test generic_consumer --locked
+          cargo test -p purity-tests --test dependency_boundaries --locked
+          cargo test -p purity-tests --test boundary --locked
+          cargo test -p nworlds-host --locked
       - name: Run workspace tests
         run: cargo test --workspace --locked
       - name: Run conformance tests

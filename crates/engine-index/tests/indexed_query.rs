@@ -40,7 +40,7 @@ fn context() -> Context<Definitions> {
     Context::new(Definitions { marker: 7 })
 }
 
-fn journal(entries: &[(i64, GameJournalEntry)]) -> Journal {
+fn journal(entries: &[(i64, GameJournalEntry)]) -> Journal<GameJournalEntry> {
     let mut writer = JournalWriter::new();
 
     for (ticks, payload) in entries {

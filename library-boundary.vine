@@ -1,0 +1,100 @@
+vine 1.2.0
+prefix: library
+title: Library-first contract and contamination remediation
+---
+[root] Delineate the library contract and remove application contamination (complete)
+Files: library-boundary.vine; proposals/library-contract.md; Cargo.toml; crates/**; tests/**; evidence/**; README.md; index.md; roadmap.md
+Do: Establish the reusable library as the product boundary, classify every current crate and evidence surface, settle the exact public contracts, and remediate production dependency edges that make library code depend on the Caravan reference or a target application. Preserve the existing temporal and presentation invariants while treating Caravan and the desktop executable as consumers and evidence.
+Accept: One library contract names public inputs, outputs, ownership, errors, time, persistence, query, branch, and presentation rules; every workspace component has one owner class; forbidden production dependency directions are explicit; generic library crates contain no Caravan or target types; the reference game and desktop sample consume only approved public surfaces; architecture guards and external-consumer evidence pass; and no target-factory or sample convenience abstraction is promoted without a named library requirement.
+-> classification
+-> core-contract
+-> core-remediation
+-> dependency-audit
+-> documentation
+-> evidence
+-> facade-contract
+-> host-contract
+-> reference-contract
+-> sample-remediation
+> The reusable library is the product. Caravan domain/rules, Caravan orchestration, and target-local desktop execution are reference or sample consumers unless a contract task proves a reusable boundary.
+> A library production dependency may not depend on caravan-*, caravan-demo, nworlds-desktop, winit, wgpu, or target metadata. Test-only dependencies may use a reference implementation only from consumer/evidence crates and may not shape production APIs.
+> Generic SDK values may carry opaque game payloads, but generic library production code does not name Caravan payloads, rules, geometry, fixtures, or reference projection types.
+> nworlds-host is a separate target-neutral host library boundary. It owns passive input, byte-storage, lifecycle/resource, and render-sink ports; it does not own game meaning, authoritative time, or target selection.
+> The authoritative library equations remain Worldline + LogicalTime -> GameState and GameState + Tau -> owned presentation output. Host execution time, device state, and application loop policy remain outside those equations.
+> The target-factory workflow remains downstream of this contract; nworlds test, nworlds run, nworlds package, target resolution, and artifact minting do not define the temporal library.
+@artifact text/markdown proposals/library-contract.md
+@guidance text/markdown spec/initial.md
+@guidance text/markdown proposals/presentation-host.md
+@guidance text/markdown proposals/target-factory.md
+@guidance text/markdown proposals/productization-review.md
+---
+[classification] Inventory library and consumer ownership (complete)
+Files: library-boundary.vine; Cargo.toml; crates/**; tests/**; evidence/**; index.md; proposals/**
+Do: Build one ownership table for every workspace crate, executable, test workspace, evidence artifact, and design record. Classify each as temporal library, host library, Caravan reference implementation, sample application, target adapter, evidence, or planning/tooling. Record production dependencies separately from dev-dependencies and identify each current Caravan or target edge crossing a proposed library boundary.
+Accept: Every named component has exactly one owner class and one owning contract; each current production contamination is named with its source and destination; test-only reference usage is distinguished from public dependency contamination; and no remediation task relies on an unrecorded classification.
+@artifact text/markdown proposals/library-contract.md
+---
+[core-contract] Settle the reusable temporal library contract (complete)
+Files: proposals/library-contract.md; crates/engine-time/**; crates/engine-sdk/**; crates/engine-journal/**; crates/engine-branches/**; crates/engine-index/**; crates/engine-presentation/**
+Do: Specify the smallest reusable temporal library surface from concrete external-consumer needs. Name the public types and functions for fixed-point time, immutable context and journal values, journal-owned timestamp authoring, direct indexed state queries, immutable branch creation, lookahead, persistence, and state-plus-Tau presentation. Define ownership, visibility, error behavior, payload parameterization, Send/static requirements where applicable, and the boundary between generic mechanics and game-owned rules without silently preserving Caravan-shaped APIs.
+Accept: The contract contains no Caravan or platform identifiers; Worldline + LogicalTime -> GameState is directly queryable and query-order independent; JournalWriter remains the timestamp authority; actual/counterfactual/corrected branches remain immutable values; persistence carries library-approved values rather than frames or host state; GameState + Tau is the only render-production input; unresolved choices are recorded as decisions; and an external-style consumer can be designed without importing implementation modules.
+-> classification
+@artifact text/markdown proposals/library-contract.md
+---
+[reference-contract] Delineate the Caravan reference implementation and sample game (complete)
+Files: proposals/library-contract.md; crates/caravan-domain/**; crates/caravan-vegetation/**; crates/caravan-hazards/**; crates/caravan-seeded/**; crates/caravan-reference/**; crates/caravan-demo/**; tests/conformance/**
+Do: Assign Caravan geometry, journal vocabulary, indexed rules, seeded fixtures, reference projection, orchestration, and terminal/demo presentation to the reference-game or sample-consumer boundary. State which public library contracts the reference implementation exercises and which behavior is evidence only. Keep the anchor semantics authoritative for the reference world without presenting its types or rule order as generic engine primitives.
+Accept: Caravan-specific values and rules have one owner outside the generic library; caravan-reference is explicitly a reference oracle/client; caravan-demo is explicitly a removable sample consumer; conformance cases identify whether they test public library behavior or reference-game behavior; and no sample convenience API is required by the library contract.
+-> core-contract
+---
+[host-contract] Delineate the target-neutral host library (complete)
+Files: proposals/library-contract.md; crates/nworlds-host/**; proposals/presentation-host.md; proposals/target-factory.md
+Do: Settle nworlds-host as an adjacent reusable host boundary rather than an application-owned game loop. Define GamePackage, InputIngress, RenderSink, StorageTransport, and platform translation responsibilities, including ownership and error flow. Separate passive transport/execution from game meaning, authoritative time, persistence semantics, and target resolution; classify ApplicationHost as a convenience composition only if the contract requires it.
+Accept: nworlds-host builds with no Caravan, target, window, or backend dependency; host ports transport already-owned values; the package owns semantic control order and immutable publication; no host clock or device handle enters GameState or render production; target-specific composition remains a consumer; and any retained convenience host API has an external-consumer reason.
+-> core-contract
+---
+[facade-contract] Define the public crate surface and external-consumer shape (complete)
+Files: proposals/library-contract.md; crates/engine-api/**; crates/engine-time/**; crates/engine-sdk/**; crates/engine-presentation/**; tests/**
+Do: Decide which crates and re-exports constitute the supported library surface and which are implementation or reference details. Replace any Caravan-facing facade claim with a library facade or explicitly classify it as a reference-game API. Define how an external consumer obtains time, journals, branches, queries, frames, errors, and host ports without reaching through private modules or demo crates.
+Accept: One public-surface map exists; no facade advertised as generic re-exports Caravan types; public examples compile using only the map; internal crate layout can change without becoming a consumer contract; and the supported surface does not include target metadata or application state.
+-> core-contract
+---
+[dependency-audit] Audit and encode forbidden dependency directions (complete)
+Files: library-boundary.vine; Cargo.toml; crates/*/Cargo.toml; .github/workflows/**; proposals/library-contract.md
+Do: Turn the ownership table and settled contracts into an explicit dependency allow/deny matrix. Inspect normal and dev dependencies, public re-exports, feature edges, build scripts, and test harnesses. Define one cheap automated check that fails when a library production crate reaches a Caravan, sample, target, window, or backend crate, while permitting clearly scoped consumer/evidence test dependencies.
+Accept: The matrix names every allowed layer and forbidden reverse edge; production and dev dependency policies are machine-checkable; the current contaminated crates are listed as remediation owners; no dependency edge is justified only by crate naming; and the check can run offline in repository CI.
+-> classification
+-> core-contract
+-> facade-contract
+-> host-contract
+-> reference-contract
+---
+[core-remediation] Remove production Caravan coupling from library crates (complete)
+Files: crates/engine-journal/**; crates/engine-branches/**; crates/engine-index/**; crates/engine-api/**; crates/engine-presentation/**; crates/caravan-reference/**; crates/caravan-persistence/**; Cargo.toml; Cargo.lock; tests/**
+Do: Apply the settled library contract and dependency matrix to production code. Move Caravan-specific journal payloads, branch conversion, projection facades, persistence codecs, lookahead aliases, and API re-exports into the reference-game layer or a separately named game-facing crate. Parameterize generic mechanics over approved opaque payloads where the contract requires it. Preserve behavior through public-contract tests and keep test-only Caravan fixtures out of production dependency declarations.
+Accept: Generic library production manifests no longer depend on Caravan or target crates; generic code contains no Caravan domain identifiers; moved reference behavior remains available through an explicitly game-owned surface; workspace and conformance tests preserve the existing anchor evidence; and no new abstraction is introduced without a concrete external consumer.
+-> dependency-audit
+-> facade-contract
+---
+[sample-remediation] Reduce Caravan demo and desktop code to public consumers (complete)
+Files: crates/caravan-demo/**; crates/nworlds-desktop/**; crates/nworlds-host/**; tests/**; proposals/presentation-host.md; proposals/demo-gameplay.md
+Do: Recompose the reference game and native desktop proof against the settled public library and host surfaces. Remove duplicate temporal, journal, branch, or render authority from application code; retain only Caravan meaning, sample orchestration, target translation, backend execution, and evidence required to demonstrate the contract. Keep the sample independently runnable without making its convenience types library requirements.
+Accept: The demo and desktop crates consume approved public surfaces; the desktop target owns only native lifecycle/input/render execution; Caravan-specific application behavior has one owner; deleting the sample leaves the library buildable; and the sample demonstrates at least one complete input-to-publication-to-query-to-frame path.
+-> core-remediation
+-> host-contract
+-> reference-contract
+---
+[evidence] Prove the library boundary with external consumers and architecture guards (complete)
+Files: crates/purity-tests/**; tests/conformance/**; tests/**; .github/workflows/**; evidence/**; Cargo.toml
+Do: Add focused evidence for public-consumer compilation, dependency-direction enforcement, generic payload opacity, immutable publication, query-order independence, state-first rendering, host-port neutrality, and sample deletion/build separation. Keep reference-game behavior evidence labeled separately from reusable-library evidence.
+Accept: A consumer outside the implementation modules compiles against the supported library surface; forbidden production dependency edges fail a focused check; library tests do not require a desktop target; reference and sample evidence have distinct labels; existing conformance, purity, workspace, and CodeQL checks remain green; and the evidence identifies any intentionally retained contamination as a sized, owned gap.
+-> core-remediation
+-> sample-remediation
+@artifact text/markdown evidence/clause-to-test.md
+---
+[documentation] Close repository maps and downstream plans around the library boundary (complete)
+Files: README.md; index.md; roadmap.md; proposals/library-contract.md; proposals/target-factory.md; proposals/presentation-host.md; library-boundary.vine
+Do: Reconcile the repository map, productization language, target-factory migration gate, host proposal, and roadmap with the settled library/consumer classification. Remove claims that the current Caravan-bound crates are already a generic released SDK. Make target-factory and gameplay work depend on the library contract without moving their application concerns into the library.
+Accept: Every public-facing architecture description points to one library contract and one owner per boundary; target-factory names the desktop proof as a consumer; gameplay names Caravan demo work as sample scope; current versus proposed behavior is explicit; and no duplicate or contradictory contract survives in the documentation set.
+-> dependency-audit
+-> evidence

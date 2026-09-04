@@ -1,7 +1,10 @@
+use caravan_domain::GameJournalEntry;
 use caravan_domain::{Terrain, TileId};
-use caravan_reference::{try_state, ProjectionError, ReferenceWorldline, State, Worldline};
+use caravan_reference::{
+    try_state, Journal, ProjectionError, ReferenceWorldline, State, Worldline,
+};
 use engine_branches::BranchError;
-use engine_journal::{Journal, JournalWriter, JournalWriterError};
+use engine_journal::{JournalWriter, JournalWriterError};
 use engine_time::{LogicalTime, Tau};
 
 use crate::input::{
@@ -76,7 +79,7 @@ impl InteractionDefinition for CaravanInteraction {
 /// The first concrete mutable game orchestrator, composed inside Stage.
 pub struct CaravanOrchestrator<I = CaravanInteraction> {
     worldline: ReferenceWorldline,
-    writer: JournalWriter,
+    writer: JournalWriter<GameJournalEntry>,
     logical_time: LogicalTime,
     tau: Tau,
     input_buffer: InputBuffer,
@@ -314,18 +317,18 @@ where
     }
 
     /// Serializes the selected immutable worldline for an Orchestrator save choice.
-    pub fn save_selected(&self) -> Result<Vec<u8>, engine_persistence::PersistenceError> {
-        engine_persistence::encode(&self.worldline)
+    pub fn save_selected(&self) -> Result<Vec<u8>, caravan_persistence::PersistenceError> {
+        caravan_persistence::encode(&self.worldline)
     }
 
     /// Loads a new immutable worldline from an encoded persistence record.
     pub fn load_selected(
         &mut self,
         bytes: &[u8],
-    ) -> Result<(), engine_persistence::PersistenceError> {
-        let worldline = engine_persistence::decode(bytes)?;
+    ) -> Result<(), caravan_persistence::PersistenceError> {
+        let worldline = caravan_persistence::decode(bytes)?;
         self.writer = writer_from_journal(worldline.journal())
-            .map_err(engine_persistence::PersistenceError::from)?;
+            .map_err(caravan_persistence::PersistenceError::from)?;
         self.worldline = worldline;
         Ok(())
     }

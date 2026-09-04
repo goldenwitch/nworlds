@@ -1,8 +1,13 @@
 # Presentation Host
 
-This proposal defines the reusable presentation-host plumbing around a
-canonical Stage. It is intentionally agnostic about operating systems,
+This proposal defines the reusable presentation-host plumbing around an
+application-owned canonical Stage. It is intentionally agnostic about operating systems,
 windowing libraries, devices, render backends, and host clock types.
+
+The reusable temporal library contract is defined in
+[library-contract.md](library-contract.md). This proposal owns the adjacent
+host-port boundary; Stage, Orchestrator, and target-specific entrypoints are
+reference/application compositions and are not generic engine APIs.
 
 A **target-specific entrypoint** is the OS- or runtime-specific executable
 composition root minted or selected by the nworlds target factory. It
@@ -172,8 +177,8 @@ responsible for:
 - platform file, storage, and persistence I/O facilities.
 
 These responsibilities are plumbing. They should be replaceable without
-changing what the Caravan Stage means by a worldline, branch, logical time,
-input packet, transformation, game state, or frame.
+changing what the reference game's Stage means by a worldline, branch, logical
+time, input packet, transformation, game state, or frame.
 
 ## Ownership
 

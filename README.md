@@ -1,13 +1,13 @@
 # nworlds
 
-nworlds is a Rust research/toy workspace for deterministic, directly indexed
-temporal game worlds. **Caravan of Seasons** is the contained demo world used
-to exercise immutable worldlines, indexed state queries, semantic input,
-presentation, and persistence.
+nworlds is a library-first Rust workspace for deterministic, directly indexed
+temporal game worlds. The reusable temporal library and target-neutral host are
+the product boundary. **Caravan of Seasons** is the contained reference game
+and sample consumer used to exercise immutable worldlines, indexed state
+queries, semantic input, presentation, and persistence.
 
-This repository is deliberately a pure demo/toy for the engine. It is an
-active proof-of-life and research implementation, not a production game, a
-stable engine SDK, or a release distribution.
+This repository is an active proof-of-life and research implementation. It is
+not a production game, a released engine SDK, or a release distribution.
 
 ## Core Model
 
@@ -52,6 +52,12 @@ cargo test --workspace --locked
 cargo test --manifest-path tests/conformance/Cargo.toml --locked
 ```
 
+The library-only boundary check is:
+
+```text
+cargo check -p engine-time -p engine-sdk -p engine-journal -p engine-branches -p engine-index -p engine-presentation -p engine-api -p nworlds-host --locked
+```
+
 Target-specific launch and device evidence belongs to host CI and the target
 factory, not to the game package's public workflow.
 
@@ -64,6 +70,10 @@ factory, not to the game package's public workflow.
 - [Productization review](proposals/productization-review.md) - what is and is not production-bound.
 - [Evidence matrix](evidence/clause-to-test.md) - executable and manual acceptance evidence.
 - [Build graph](build.vine) - dependency-ordered anchor work.
+- [Library boundary graph](library-boundary.vine) - the library-first contract
+  and application-contamination remediation plan.
+- [Library contract](proposals/library-contract.md) - ownership classes,
+  public temporal surface, and dependency-direction rules.
 - [Host graph](host.vine) - first host proof composition; target minting is
   owned by the target factory.
 - [Desktop host client](crates/nworlds-desktop/Cargo.toml) - target-local

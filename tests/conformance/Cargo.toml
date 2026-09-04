@@ -12,7 +12,6 @@ caravan-seeded = { path = "../../crates/caravan-seeded" }
 engine-branches = { path = "../../crates/engine-branches" }
 engine-index = { path = "../../crates/engine-index" }
 engine-journal = { path = "../../crates/engine-journal" }
-engine-lookahead = { path = "../../crates/engine-lookahead" }
 engine-presentation = { path = "../../crates/engine-presentation" }
 engine-sdk = { path = "../../crates/engine-sdk" }
 engine-time = { path = "../../crates/engine-time" }

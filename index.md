@@ -1,9 +1,11 @@
 # nworlds
 
-nworlds is a Rust research/toy workspace for a deterministic, directly
-indexed temporal game engine. Caravan of Seasons is the contained demo world
-used to make the engine model and evidence concrete. This repository is a
-pure demo/toy for the engine, not a production game or released engine SDK.
+nworlds is a library-first Rust workspace for a deterministic, directly
+indexed temporal game engine. The reusable temporal library and target-neutral
+host are the product boundary. Caravan of Seasons is the contained reference
+game and sample consumer used to make the engine model and evidence concrete.
+This repository is a research implementation, not a production game or
+released engine SDK.
 
 Its reference query is:
 
@@ -27,6 +29,10 @@ it does not advance or mutate a hidden current state.
   immutable breakpoint, piece-selection, and projection contract.
 - [Build graph](build.vine) - the dependency-ordered implementation packets
   and their acceptance criteria.
+- [Library boundary graph](library-boundary.vine) - the library-first contract,
+  ownership classification, and contamination-remediation gates.
+- [Library contract](proposals/library-contract.md) - the supported temporal
+  surface, ownership classes, and dependency-direction rules.
 - [Rendering plan](rendering.vine) - the completed backend-neutral rendering
   projection and its target-facing host boundary.
 - [Stage layer proposal](proposals/stage-layer.md) - the boundary between the
@@ -73,10 +79,8 @@ These crates provide the generic temporal engine and its public boundaries.
 | [`engine-journal`](crates/engine-journal) | Immutable journal storage and the journal-owned monotonic `JournalWriter`. |
 | [`engine-branches`](crates/engine-branches) | Immutable actual, counterfactual, and corrected branch construction from journal prefixes and suffixes. |
 | [`engine-index`](crates/engine-index) | Direct indexed-query kernel plus engine-neutral discontinuity breakpoints and half-open pieces. |
-| [`engine-lookahead`](crates/engine-lookahead) | Future queries and read-only branch views using the same direct query path. |
 | [`engine-presentation`](crates/engine-presentation) | State-plus-`Tau` render composition and frame values. |
-| [`engine-persistence`](crates/engine-persistence) | Game-facing versioned worldline encoding, branch lineage, save/load, and deterministic replay; host byte transport remains separate. |
-| [`engine-api`](crates/engine-api) | Game-facing facade that exposes the supported query, journal, branch, time, and domain APIs. |
+| [`engine-api`](crates/engine-api) | Generic facade for the supported temporal query, journal, branch, time, and presentation APIs. |
 | [`nworlds-host`](crates/nworlds-host) | Target-neutral `GamePackage` contract, independent host ports, and generic package/port composition. |
 
 ### Caravan Domain
@@ -90,6 +94,7 @@ These crates define the concrete game fixture and its indexed rules.
 | [`caravan-hazards`](crates/caravan-hazards) | Indexed Arsonist, Fire, Fighter, and Arborist rules, including spread, destruction, collisions, and conversion. |
 | [`caravan-seeded`](crates/caravan-seeded) | Deterministic seeded journal generation performed before evaluation. |
 | [`caravan-reference`](crates/caravan-reference) | The reference `state(worldline, t_)` oracle, discontinuity index, piecewise projection, snapshots, and bounded parity baseline. |
+| [`caravan-persistence`](crates/caravan-persistence) | Caravan-specific versioned worldline encoding, branch lineage, save/load, and deterministic replay. |
 
 ### Executables and Validation
 
@@ -105,6 +110,8 @@ These crates define the concrete game fixture and its indexed rules.
 
 - [Conformance matrix](evidence/clause-to-test.md) - maps specification clauses
   to standalone conformance cases, root-workspace evidence, and explicit gaps.
+- [Library boundary evidence](evidence/clause-to-test.md#library-boundary-evidence)
+  - maps public-consumer, dependency, host, purity, and library-only build proof.
 - [Conformance report](evidence/conformance-report.json) - machine-readable
   results for the standalone catalog; root-workspace evidence is mapped in the
   conformance matrix.
@@ -131,6 +138,9 @@ cargo run --manifest-path tests/conformance/Cargo.toml -- --report evidence/conf
 
 # Run compiler-boundary tests
 cargo test -p purity-tests
+
+# Check only the reusable temporal and host packages
+cargo check -p engine-time -p engine-sdk -p engine-journal -p engine-branches -p engine-index -p engine-presentation -p engine-api -p nworlds-host --locked
 
 # Reproduce the checked-in benchmark report
 cargo run --release --manifest-path crates/engine-benchmarks/Cargo.toml -- --iterations 10000 --warmup 1000 --report evidence/benchmarks/anchor-report.json

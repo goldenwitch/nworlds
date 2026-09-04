@@ -12,7 +12,7 @@ fn time(ticks: i64) -> LogicalTime {
     LogicalTime::from_ticks(ticks)
 }
 
-fn journal(entries: &[(i64, GameJournalEntry)]) -> Journal {
+fn journal(entries: &[(i64, GameJournalEntry)]) -> Journal<GameJournalEntry> {
     let mut writer = JournalWriter::new();
 
     for (ticks, payload) in entries {
@@ -56,7 +56,7 @@ fn expected_spawn(ticks: i64, id: u64) -> (LogicalTime, GameJournalEntry) {
     (time(ticks), payload)
 }
 
-fn entries(branch: &Branch<Definitions>) -> Vec<(LogicalTime, GameJournalEntry)> {
+fn entries(branch: &Branch<Definitions, GameJournalEntry>) -> Vec<(LogicalTime, GameJournalEntry)> {
     branch
         .journal()
         .iter()
@@ -66,7 +66,7 @@ fn entries(branch: &Branch<Definitions>) -> Vec<(LogicalTime, GameJournalEntry)>
 
 #[test]
 fn worldline_alias_and_opaque_context_are_query_facing() {
-    let worldline: Worldline<Definitions> = Branch::new(
+    let worldline: Worldline<Definitions, GameJournalEntry> = Branch::new(
         Context::new(Definitions { marker: 7 }),
         journal(&[(0, GameJournalEntry::create_saucer())]),
     );

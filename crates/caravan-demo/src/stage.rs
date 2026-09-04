@@ -90,7 +90,7 @@ where
     pub fn load_selected(
         &mut self,
         bytes: &[u8],
-    ) -> Result<(), engine_persistence::PersistenceError> {
+    ) -> Result<(), caravan_persistence::PersistenceError> {
         self.orchestrator.load_selected(bytes)
     }
 
@@ -118,8 +118,8 @@ where
     type InputBatch = OrderedInputBatch;
     type Frame = Frame<R::Output>;
     type Error = OrchestratorError;
-    type SaveError = engine_persistence::PersistenceError;
-    type LoadError = engine_persistence::PersistenceError;
+    type SaveError = caravan_persistence::PersistenceError;
+    type LoadError = caravan_persistence::PersistenceError;
 
     fn ingest_batch(&mut self, batch: Self::InputBatch) -> Result<(), Self::Error> {
         CaravanStage::ingest_batch(self, batch)

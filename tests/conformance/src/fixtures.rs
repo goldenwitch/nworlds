@@ -1,6 +1,6 @@
 use caravan_domain::{ActorId, ActorKind, GameJournalEntry, Terrain, TileId};
-use caravan_reference::{actual, state as reference_state, ReferenceWorldline, Snapshot, State};
-use engine_journal::{Journal, JournalWriter};
+use caravan_reference::{actual, state as reference_state, Journal, ReferenceWorldline, Snapshot, State};
+use engine_journal::JournalWriter;
 use engine_presentation::Renderer;
 use engine_sdk::GameState;
 use engine_time::{LogicalTime, Tau};

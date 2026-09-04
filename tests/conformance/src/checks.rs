@@ -1,12 +1,11 @@
 use std::{fs, path::PathBuf};
 
 use caravan_domain::{ActorKind, Effect, GameJournalEntry, Saucer, Terrain, TileId};
-use caravan_reference::{actual, Snapshot};
+use caravan_reference::{actual, branch_view, future, Snapshot, ViewKind};
 use caravan_seeded::generate_spawn_journal;
 use engine_branches::BranchKind;
 use engine_index::game_tick_index;
 use engine_journal::{Journal, JournalWriter};
-use engine_lookahead::{branch_view, future, ViewKind};
 use engine_presentation::present;
 use engine_time::{LogicalTime, Tau, GAME_TICK_PERIOD, TICKS_PER_LOGICAL_SECOND};
 

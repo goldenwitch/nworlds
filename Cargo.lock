@@ -218,12 +218,11 @@ name = "caravan-demo"
 version = "0.1.0"
 dependencies = [
  "caravan-domain",
+ "caravan-persistence",
  "caravan-reference",
  "caravan-seeded",
  "engine-branches",
  "engine-journal",
- "engine-lookahead",
- "engine-persistence",
  "engine-presentation",
  "engine-sdk",
  "engine-time",
@@ -242,6 +241,17 @@ dependencies = [
  "engine-index",
  "engine-sdk",
  "engine-time",
+]
+
+[[package]]
+name = "caravan-persistence"
+version = "0.1.0"
+dependencies = [
+ "caravan-domain",
+ "caravan-reference",
+ "engine-branches",
+ "engine-journal",
+ "engine-sdk",
 ]
 
 [[package]]
@@ -439,10 +449,11 @@ checksum = "d8b14ccef22fc6f5a8f4d7d768562a182c04ce9a3b3157b91390b52ddfdf1a76"
 name = "engine-api"
 version = "0.1.0"
 dependencies = [
- "caravan-domain",
- "caravan-reference",
  "engine-branches",
+ "engine-index",
  "engine-journal",
+ "engine-presentation",
+ "engine-sdk",
  "engine-time",
 ]
 
@@ -484,31 +495,8 @@ dependencies = [
 name = "engine-journal"
 version = "0.1.0"
 dependencies = [
- "caravan-domain",
  "engine-sdk",
  "engine-time",
-]
-
-[[package]]
-name = "engine-lookahead"
-version = "0.1.0"
-dependencies = [
- "caravan-domain",
- "caravan-reference",
- "engine-branches",
- "engine-journal",
- "engine-time",
-]
-
-[[package]]
-name = "engine-persistence"
-version = "0.1.0"
-dependencies = [
- "caravan-domain",
- "caravan-reference",
- "engine-branches",
- "engine-journal",
- "engine-sdk",
 ]
 
 [[package]]

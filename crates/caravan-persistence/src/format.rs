@@ -3,9 +3,9 @@ use std::{fmt, fs, path::Path};
 use caravan_domain::{
     ActorId, ActorKind, GameJournalEntry, Saucer, Terrain, TileId, SAUCER_RADIUS,
 };
-use caravan_reference::{ReferenceContext, ReferenceWorldline};
+use caravan_reference::{Journal, ReferenceContext, ReferenceWorldline};
 use engine_branches::{BranchError, BranchKind};
-use engine_journal::{Journal, JournalEntry, JournalWriter, JournalWriterError};
+use engine_journal::{JournalEntry, JournalWriter, JournalWriterError};
 use engine_sdk::{Context, LogicalTime};
 
 /// Four bytes identifying the Caravan persistence format.
@@ -329,7 +329,10 @@ fn split_at_boundary(
     Ok((prefix_writer.finish(), suffix_writer.finish()))
 }
 
-fn append_entry(writer: &mut JournalWriter, entry: &JournalEntry) -> Result<(), PersistenceError> {
+fn append_entry(
+    writer: &mut JournalWriter<GameJournalEntry>,
+    entry: &JournalEntry<GameJournalEntry>,
+) -> Result<(), PersistenceError> {
     validate_payload(entry.payload())?;
     writer.advance_to(entry.logical_time())?;
     writer.record(*entry.payload());

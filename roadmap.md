@@ -42,16 +42,21 @@ present(worldline, logical_time, tau) =
 ## Current Position
 
 The indexed anchor packet is complete. `build.vine` is complete, and its
-artifacts cover the demo, conformance report, persistence, benchmarks,
-compiler-boundary tests, and independent frozen projection corpus. The public
-query is direct, the retired tick-fold calculation is absent, and the reference
-oracle selects immutable discontinuity pieces before doing query-local rule
-calculation. The first application-level Caravan Orchestrator slice is also
-implemented and tested; it does not add a generic engine Orchestrator API.
+artifacts cover the reference game, conformance report, Caravan persistence,
+benchmarks, compiler-boundary tests, and independent frozen projection corpus.
+The public query is direct, the retired tick-fold calculation is absent, and
+the reference oracle selects immutable discontinuity pieces before doing
+query-local rule calculation. The first application-level Caravan
+Orchestrator slice is also implemented and tested; it does not add a generic
+engine Orchestrator API.
 
-This repository is a deterministic reference/demo/evidence package and a pure
-demo/toy for the engine. It is not a finished game, production host, or
-distribution platform.
+The reusable temporal library boundary is now isolated and evidenced by
+`proposals/library-contract.md`, `library-boundary.vine`, the generic
+`engine-api` consumer proof, the dependency-direction guard, and the
+library-only build check. Caravan is the reference game/sample consumer, and
+`nworlds-desktop` is its target-local proof client. The repository remains a
+research implementation, not a finished game, production host, released SDK,
+or distribution platform.
 
 ## Completed Anchor
 
@@ -61,8 +66,8 @@ The completed packet provides:
 - immutable SDK envelopes, journals, branches, and direct indexed queries;
 - the radius-5 Caravan domain and vegetation, hazard, and seeded fixtures;
 - discontinuity indexing and piecewise reference projection;
-- lookahead, the generic state-first presentation boundary, game-facing
-  persistence, and deterministic replay; and
+- direct future queries, the generic state-first presentation boundary,
+  Caravan-specific persistence, and deterministic replay; and
 - executable conformance, benchmark, demo, parity, and purity evidence.
 
 The packet-level delegation plan and its path ownership remain in

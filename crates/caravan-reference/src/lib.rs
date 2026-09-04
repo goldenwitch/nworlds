@@ -3,12 +3,13 @@
 mod discontinuities;
 #[cfg(test)]
 mod legacy_evaluator;
+mod lookahead;
 mod projection;
 mod snapshot;
 
-use caravan_domain::SAUCER_RADIUS;
+use caravan_domain::{GameJournalEntry, SAUCER_RADIUS};
 use engine_branches::Worldline as BranchWorldline;
-use engine_journal::Journal;
+use engine_journal::{Journal as EngineJournal, JournalEntry as EngineJournalEntry};
 use engine_sdk::{Context, GameState};
 use engine_time::LogicalTime;
 
@@ -17,6 +18,7 @@ pub use discontinuities::{
     discontinuity_index, ActorThreshold, CaravanBreakpointSource, DiscontinuityIndex, PieceInput,
     RuleThreshold,
 };
+pub use lookahead::{branch_view, future, BranchView, ViewKind};
 pub use projection::{
     project, project_query, project_with_index, try_project, try_project_query,
     try_project_with_index, ProjectionError,
@@ -36,8 +38,10 @@ impl ReferenceContext {
     }
 }
 
-pub type ReferenceWorldline = BranchWorldline<ReferenceContext>;
+pub type ReferenceWorldline = BranchWorldline<ReferenceContext, GameJournalEntry>;
 pub type Worldline = ReferenceWorldline;
+pub type Journal = EngineJournal<GameJournalEntry>;
+pub type JournalEntry = EngineJournalEntry<GameJournalEntry>;
 pub type State = GameState<Snapshot>;
 
 pub fn context() -> Context<ReferenceContext> {

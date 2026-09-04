@@ -194,7 +194,7 @@ fn selected_worldline_round_trips_through_orchestrator_save_choice() {
         .orchestrator()
         .save_selected()
         .expect("selected worldline should save");
-    let restored = engine_persistence::decode(&bytes).expect("saved worldline should decode");
+    let restored = caravan_persistence::decode(&bytes).expect("saved worldline should decode");
 
     assert_eq!(&restored, stage.orchestrator().worldline());
 }

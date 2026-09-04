@@ -8,7 +8,9 @@ game composition.
 This proposal owns target minting. The [presentation host](presentation-host.md)
 owns runtime ports and adapters. The [platform support matrix](platform-support-matrix.md)
 owns declared target regimes and evidence. The game owns its world and
-meaning.
+meaning. The reusable temporal and host-library boundary is recorded in
+[library-contract.md](library-contract.md); this proposal consumes that
+boundary and does not define it.
 
 ## Boundary
 
@@ -52,8 +54,9 @@ and launches it. `nworlds package` mints artifacts for supported environments.
 Normal use does not require a target flag, architecture name, windowing
 library, or GPU backend.
 
-These commands are the desired host contract. The current repository remains
-the engine/demo proof substrate while the target factory is being designed;
+These commands are the desired host contract. The current repository contains
+the isolated temporal library, the target-neutral host library, and the Caravan
+reference/demo proof client while the target factory is being designed;
 repository maintenance commands are not the public game-development path.
 
 The authoritative game boundaries remain unchanged:
@@ -115,15 +118,15 @@ the proof uses a particular Rust type.
 There is no current game consumer for a generic asset loader, audio port,
 camera service, widget system, device handle, or runtime-diagnostics port.
 Those concerns remain factory or host responsibilities until a named consumer
-requires a narrower crossing. `engine-api` currently exposes query, journal,
-branch, time, and Caravan domain values; it exposes no target or host
+requires a narrower crossing. `engine-api` exposes generic query, journal,
+branch, time, and presentation values; Caravan domain values and reference
+aliases live in the Caravan consumer layer. It exposes no target or host
 capability.
 
 The current proof therefore demonstrates three game-facing host crossings:
 neutral input transport, encoded byte transport, and owned render submission.
 `ApplicationHost` is a proof-local convenience bundle around those crossings;
 the generic composition now lives in `nworlds-host` and is not a Caravan-owned
-host abstraction or a public target-selection API.
 
 ## Implemented Static Composition
 
