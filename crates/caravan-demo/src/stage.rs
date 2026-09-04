@@ -1,7 +1,7 @@
 use core::marker::PhantomData;
 
 use caravan_reference::Snapshot;
-use nworlds_host::GamePackage;
+use nworlds_host::{GamePackage, PackageDeclaration};
 
 use crate::engine_integration::{
     present_state, CaravanFrame, GameState, LogicalTime, Renderer, Tau,
@@ -121,6 +121,10 @@ where
     type Error = OrchestratorError;
     type SaveError = caravan_persistence::PersistenceError;
     type LoadError = caravan_persistence::PersistenceError;
+
+    fn declaration() -> PackageDeclaration {
+        crate::package::CARAVAN_PACKAGE_DECLARATION
+    }
 
     fn ingest_batch(&mut self, batch: Self::InputBatch) -> Result<(), Self::Error> {
         CaravanStage::ingest_batch(self, batch)

@@ -195,6 +195,30 @@ The existing Windows proof sink consumes the shared batch rather than
 separate target-host task; this implementation settles the game-to-target
 render vocabulary without prematurely merging target lifecycle code.
 
+## Package Declaration
+
+`nworlds-host::PackageDeclaration` is the package-facing declaration consumed
+by target resolution. A `GamePackage` supplies it as a static value through
+`GamePackage::declaration`; `ApplicationHost::package_declaration` exposes the
+same value to a host composition without making package state part of
+resolution.
+
+The declaration contains only semantic package facts:
+
+| Field | Meaning | Excluded choices |
+| --- | --- | --- |
+| Identity and `SemanticVersion` | Stable package name and package release version | OS, architecture, target triple |
+| Logical `AssetRequirement` keys | Package-owned content requirements | Filesystem paths, install locations, GPU resources |
+| `PersistenceRequirement` and `SchemaVersion` | Game save format and schema understood by the package | Storage device, path, or host file policy |
+| `HostVersionRequirement` | Minimum target-neutral host contract version | Window system, backend, or device identity |
+| `RenderVocabularyRequirement` | Renderer-agnostic vocabulary capability and version | `wgpu`, GPU, surface, or native draw commands |
+
+The declaration is static and owned by the package type. The target factory may
+reject an incompatible host or render vocabulary before selecting a target
+profile, but it never asks the package to name that profile. The Caravan
+client's declaration is the first concrete instance; its empty asset list is
+an explicit statement that the current proof package has no external assets.
+
 ## Ownership
 
 - **GamePackage** supplies game meaning, immutable world/query behavior, and
@@ -225,22 +249,19 @@ TargetArtifact       minted runnable or distributable result
 
 ## Decisions To Settle
 
-1. **Game contract**: Specify the minimal target-neutral package boundary and
-  the narrow `HostContract` abstractions it may consume.
-2. **Package declaration**: Specify how identity, assets, save/schema version,
-  host version, and render-vocabulary requirements are declared without
-  declaring platforms.
-3. **Render vocabulary**: Specify the smallest host-owned draw vocabulary and
-  its `Frame<RenderBatch>` ownership/lifetime rules.
-4. **Composition**: Specify the generated static composition and keep it out
-  of the game package source tree.
-5. **Selection**: Specify build-time profile selection, distribution-time
-  artifact selection, and runtime capability resolution as separate stages.
-6. **Unsupported environments**: Specify a stable host-owned resolution error
-  containing available/required capabilities and remediation.
-7. **CI and artifacts**: Specify how CI mints, names, tests, publishes, and
-  retains one artifact per supported profile, with device evidence separate
-  from compilation evidence.
+The game contract, package declaration, and first render vocabulary are now
+settled in the implementation and evidence above. The remaining target-factory
+decisions are:
+
+1. **Composition**: Specify the generated static composition and keep it out
+   of the game package source tree.
+2. **Selection**: Specify build-time profile selection, distribution-time
+   artifact selection, and runtime capability resolution as separate stages.
+3. **Unsupported environments**: Specify a stable host-owned resolution error
+   containing available/required capabilities and remediation.
+4. **CI and artifacts**: Specify how CI mints, names, tests, publishes, and
+   retains one artifact per supported profile, with device evidence separate
+   from compilation evidence.
 
 ## Constraints
 

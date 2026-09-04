@@ -2,8 +2,18 @@
 
 use std::collections::VecDeque;
 
+mod package;
+
+pub use package::{
+    AssetRequirement, HostVersionRequirement, PackageDeclaration, PersistenceRequirement,
+    RenderVocabularyRequirement, SchemaVersion, SemanticVersion,
+};
+
 /// Target-neutral game package runtime surface supplied to the host.
 pub trait GamePackage {
+    /// Returns the package's static target-neutral requirements.
+    fn declaration() -> PackageDeclaration;
+
     /// The package-defined normalized input batch.
     type InputBatch;
     /// The owned frame submitted to a target render sink.
@@ -370,6 +380,11 @@ where
         &self.package
     }
 
+    /// Returns the package declaration consumed by target resolution.
+    pub fn package_declaration(&self) -> PackageDeclaration {
+        P::declaration()
+    }
+
     /// Mutably borrows the target-neutral package.
     pub fn package_mut(&mut self) -> &mut P {
         &mut self.package
@@ -422,7 +437,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{ApplicationHost, GamePackage, InputIngress, RenderSink, StorageTransport};
+    use super::{
+        ApplicationHost, GamePackage, HostVersionRequirement, InputIngress, PackageDeclaration,
+        PersistenceRequirement, RenderSink, RenderVocabularyRequirement, SchemaVersion,
+        SemanticVersion, StorageTransport,
+    };
 
     #[derive(Default)]
     struct TestInput {
@@ -455,6 +474,17 @@ mod tests {
         type Error = core::convert::Infallible;
         type SaveError = core::convert::Infallible;
         type LoadError = core::convert::Infallible;
+
+        fn declaration() -> PackageDeclaration {
+            PackageDeclaration::new(
+                "test-package",
+                SemanticVersion::new(0, 1, 0),
+                &[],
+                PersistenceRequirement::new("test-save", SchemaVersion::new(1)),
+                HostVersionRequirement::new(SemanticVersion::new(0, 1, 0)),
+                RenderVocabularyRequirement::new("test-frame", SemanticVersion::new(1, 0, 0)),
+            )
+        }
 
         fn ingest_batch(&mut self, batch: Self::InputBatch) -> Result<(), Self::Error> {
             self.batches.push(batch);
@@ -511,6 +541,12 @@ mod tests {
         );
         host.input_mut().push(7);
         host.input_mut().push(9);
+
+        assert_eq!(host.package_declaration().identity(), "test-package");
+        assert_eq!(
+            host.package_declaration().render_vocabulary().name(),
+            "test-frame"
+        );
 
         assert!(host.step().expect("test package step should succeed"));
         assert_eq!(host.package().batches, vec![vec![7, 9]]);

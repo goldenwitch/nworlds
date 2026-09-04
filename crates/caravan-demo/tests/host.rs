@@ -8,6 +8,7 @@ use caravan_demo::host::storage::{MemoryStorage, StorageTransport};
 use caravan_demo::input::{Button, InputPacket};
 use caravan_demo::{CaravanInteraction, CaravanOrchestrator, CaravanStage};
 use caravan_domain::GameJournalEntry;
+use nworlds_host::SemanticVersion;
 
 fn application() -> ApplicationHost {
     let mut writer = JournalWriter::new();
@@ -51,6 +52,23 @@ fn host_crossing_delivers_input_publishes_immutable_state_and_collects_frame() {
         .expect("render sink should contain a frame")
         .payload()
         .is_empty());
+}
+
+#[test]
+fn host_exposes_caravan_semantic_package_declaration() {
+    let declaration = application().package_declaration();
+
+    assert_eq!(declaration.identity(), "caravan-demo");
+    assert_eq!(declaration.version(), SemanticVersion::new(0, 1, 0));
+    assert!(declaration.assets().is_empty());
+    assert_eq!(declaration.persistence().format(), "caravan-worldline");
+    assert_eq!(declaration.persistence().schema().value(), 1);
+    assert_eq!(declaration.host().minimum(), SemanticVersion::new(0, 1, 0));
+    assert_eq!(declaration.render_vocabulary().name(), "triangle-list-rgba");
+    assert_eq!(
+        declaration.render_vocabulary().version(),
+        SemanticVersion::new(1, 0, 0)
+    );
 }
 
 #[test]

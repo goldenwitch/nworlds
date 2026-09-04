@@ -1,4 +1,8 @@
 use caravan_domain::GameJournalEntry;
+use nworlds_host::{
+    HostVersionRequirement, PackageDeclaration, PersistenceRequirement,
+    RenderVocabularyRequirement, SchemaVersion, SemanticVersion,
+};
 
 use crate::{
     engine_integration::{actual_worldline, CaravanJournalWriter, LogicalTime, Tau},
@@ -7,6 +11,16 @@ use crate::{
 
 /// The target-neutral Caravan package composition supplied to a host.
 pub type CaravanPackage = CaravanStage<CaravanInteraction, CaravanRenderer>;
+
+/// The semantic requirements declared by the distributable Caravan package.
+pub const CARAVAN_PACKAGE_DECLARATION: PackageDeclaration = PackageDeclaration::new(
+    "caravan-demo",
+    SemanticVersion::new(0, 1, 0),
+    &[],
+    PersistenceRequirement::new("caravan-worldline", SchemaVersion::new(1)),
+    HostVersionRequirement::new(SemanticVersion::new(0, 1, 0)),
+    RenderVocabularyRequirement::new("triangle-list-rgba", SemanticVersion::new(1, 0, 0)),
+);
 
 /// Builds the small deterministic Caravan package used by host proofs.
 pub fn demo_package() -> Result<CaravanPackage, OrchestratorError> {

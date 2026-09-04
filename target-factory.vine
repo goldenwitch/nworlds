@@ -34,7 +34,7 @@ Accept: A consumer matrix names each required host capability, its consumer, its
 @artifact text/plain crates/nworlds-host/src/lib.rs
 @artifact text/markdown proposals/target-factory.md
 ---
-[package-declaration] Define platform-free package declaration (planning)
+[package-declaration] Define platform-free package declaration (complete)
 Files: proposals/target-factory.md; Cargo.toml; crates/**
 Do: Specify package identity/version, assets, persistence/schema requirements, host-version compatibility, and render-vocabulary capability requirements without target declarations.
 Accept: A package declares what it needs semantically; no package field names an OS, architecture, window system, GPU backend, or target triple; and the declaration can be consumed by nworlds test/run/package.
