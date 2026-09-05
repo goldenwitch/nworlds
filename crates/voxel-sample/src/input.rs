@@ -69,26 +69,124 @@ impl DesktopInputAdapter for VoxelInputAdapter {
             WindowEvent::KeyboardInput { event, .. }
                 if event.state == ElementState::Pressed && !event.repeat =>
             {
-                let packet = match event.physical_key {
-                    PhysicalKey::Code(KeyCode::KeyR) => Some(VoxelInputPacket::CameraReset),
-                    PhysicalKey::Code(KeyCode::Equal) | PhysicalKey::Code(KeyCode::NumpadAdd) => {
-                        Some(VoxelInputPacket::CameraZoom {
-                            distance_milli: -500,
-                        })
-                    }
-                    PhysicalKey::Code(KeyCode::Minus)
-                    | PhysicalKey::Code(KeyCode::NumpadSubtract) => {
-                        Some(VoxelInputPacket::CameraZoom {
-                            distance_milli: 500,
-                        })
-                    }
-                    _ => None,
-                };
-                if let Some(packet) = packet {
-                    ingress.push(packet);
-                }
+                self.translate_key(event.physical_key, ingress);
             }
             _ => {}
         }
+    }
+}
+
+impl VoxelInputAdapter {
+    fn translate_key(
+        &mut self,
+        key: PhysicalKey,
+        ingress: &mut dyn PacketIngress<VoxelInputPacket>,
+    ) {
+        let packet = match key {
+            PhysicalKey::Code(KeyCode::KeyR) => Some(VoxelInputPacket::CameraReset),
+            PhysicalKey::Code(KeyCode::Equal) | PhysicalKey::Code(KeyCode::NumpadAdd) => {
+                Some(VoxelInputPacket::CameraZoom {
+                    distance_milli: -500,
+                })
+            }
+            PhysicalKey::Code(KeyCode::Minus) | PhysicalKey::Code(KeyCode::NumpadSubtract) => {
+                Some(VoxelInputPacket::CameraZoom {
+                    distance_milli: 500,
+                })
+            }
+            _ => None,
+        };
+        if let Some(packet) = packet {
+            ingress.push(packet);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::VoxelInputAdapter;
+    use crate::package::VoxelInputPacket;
+    use nworlds_desktop::DesktopInputAdapter;
+    use nworlds_host::{InputIngress, MemoryInputIngress};
+    use winit::dpi::PhysicalPosition;
+    use winit::event::{ElementState, MouseButton, WindowEvent};
+
+    fn drain(adapter: &mut VoxelInputAdapter, event: WindowEvent) -> Vec<VoxelInputPacket> {
+        let mut ingress = MemoryInputIngress::new();
+        adapter.translate(&event, &mut ingress);
+        ingress
+            .drain()
+            .expect("test input should normalize")
+            .packets()
+            .collect()
+    }
+
+    #[test]
+    fn camera_keyboard_controls_emit_packets() {
+        let mut adapter = VoxelInputAdapter::default();
+        let mut ingress = MemoryInputIngress::new();
+
+        adapter.translate_key(
+            winit::keyboard::PhysicalKey::Code(winit::keyboard::KeyCode::KeyR),
+            &mut ingress,
+        );
+        assert_eq!(
+            ingress
+                .drain()
+                .expect("reset input should normalize")
+                .packets()
+                .collect::<Vec<_>>(),
+            vec![VoxelInputPacket::CameraReset]
+        );
+        let mut ingress = MemoryInputIngress::new();
+        adapter.translate_key(
+            winit::keyboard::PhysicalKey::Code(winit::keyboard::KeyCode::Equal),
+            &mut ingress,
+        );
+        assert_eq!(
+            ingress
+                .drain()
+                .expect("zoom input should normalize")
+                .packets()
+                .collect::<Vec<_>>(),
+            vec![VoxelInputPacket::CameraZoom {
+                distance_milli: -500
+            }]
+        );
+    }
+
+    #[test]
+    fn right_drag_emits_orbit_packets_between_press_and_release() {
+        let mut adapter = VoxelInputAdapter::default();
+        let moved = WindowEvent::CursorMoved {
+            device_id: winit::event::DeviceId::dummy(),
+            position: PhysicalPosition::new(100.0, 100.0),
+        };
+        let press = WindowEvent::MouseInput {
+            device_id: winit::event::DeviceId::dummy(),
+            state: ElementState::Pressed,
+            button: MouseButton::Right,
+        };
+        let drag = WindowEvent::CursorMoved {
+            device_id: winit::event::DeviceId::dummy(),
+            position: PhysicalPosition::new(120.0, 90.0),
+        };
+        let release = WindowEvent::MouseInput {
+            device_id: winit::event::DeviceId::dummy(),
+            state: ElementState::Released,
+            button: MouseButton::Right,
+        };
+
+        assert!(drain(&mut adapter, moved).is_empty());
+        assert!(drain(&mut adapter, press).is_empty());
+        assert_eq!(
+            drain(&mut adapter, drag.clone()),
+            vec![VoxelInputPacket::CameraOrbit {
+                horizontal: 20,
+                vertical: -10,
+            }]
+        );
+        assert!(drain(&mut adapter, release).is_empty());
+        assert!(drain(&mut adapter, drag).is_empty());
     }
 }
