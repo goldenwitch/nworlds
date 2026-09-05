@@ -204,10 +204,11 @@ fn tile_color(tile: &RenderTile) -> [f32; 3] {
 mod tests {
     use super::{project_output, CaravanRenderer, RenderOutput};
     use crate::engine_integration::{
-        present, CaravanFrame, CaravanJournal, CaravanJournalWriter, LogicalTime, RenderBatch, Tau,
+        present_state, CaravanFrame, CaravanJournal, CaravanJournalWriter, LogicalTime,
+        RenderBatch, Tau,
     };
     use caravan_domain::{ActorId, ActorKind, Effect, GameJournalEntry, Terrain, TileId};
-    use caravan_reference::{actual, state, Snapshot};
+    use caravan_reference::{actual, state};
     use caravan_seeded::hand_authored_behavior_fixture;
 
     fn frame(
@@ -216,7 +217,7 @@ mod tests {
         tau: Tau,
     ) -> CaravanFrame<RenderBatch> {
         let state = state(worldline, time);
-        present::<Snapshot, CaravanRenderer>(&state, tau)
+        present_state::<CaravanRenderer>(&state, tau)
     }
 
     fn saucer_worldline() -> caravan_reference::ReferenceWorldline {

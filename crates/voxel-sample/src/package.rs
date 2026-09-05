@@ -1,3 +1,4 @@
+use engine_api::{PresentationDriver, PresentationError, Tau};
 use nworlds_host::{
     GamePackage, HostVersionRequirement, InputBatchError, OrderedInputBatch, PackageDeclaration,
     PersistenceRequirement, RenderVocabularyRequirement, SchemaVersion, SemanticVersion,
@@ -5,8 +6,7 @@ use nworlds_host::{
 
 use crate::camera::Camera;
 use crate::engine_integration::{
-    cottage_worldline, frame, publish, state_at_zero, VoxelFrame, VoxelJournalWriter,
-    VoxelWorldline,
+    cottage_worldline, publish, state_at_zero, VoxelFrame, VoxelJournalWriter, VoxelWorldline,
 };
 use crate::world::VoxelFact;
 
@@ -27,16 +27,19 @@ pub struct VoxelPackage {
     writer: VoxelJournalWriter,
     pending: Vec<VoxelInputPacket>,
     viewport: (u32, u32),
+    presentation: PresentationDriver<crate::world::VoxelState>,
 }
 
 impl VoxelPackage {
     pub fn new() -> Self {
         let (worldline, writer) = cottage_worldline();
+        let presentation = PresentationDriver::new(state_at_zero(&worldline));
         Self {
             worldline,
             writer,
             pending: Vec::new(),
             viewport: (960, 720),
+            presentation,
         }
     }
 
@@ -81,6 +84,16 @@ impl VoxelPackage {
     fn publish(&mut self, fact: VoxelFact) {
         self.worldline = publish(&self.worldline, &mut self.writer, fact);
     }
+
+    /// Advances downstream visual time without querying or mutating the worldline.
+    pub fn advance_visual_time(&mut self, delta: Tau) -> Result<Tau, PresentationError> {
+        self.presentation.advance_visual_time(delta)
+    }
+
+    /// Returns the current downstream visual time.
+    pub const fn visual_time(&self) -> Tau {
+        self.presentation.visual_time()
+    }
 }
 
 impl Default for VoxelPackage {
@@ -115,15 +128,26 @@ impl GamePackage for VoxelPackage {
     fn update(&mut self) -> Result<bool, Self::Error> {
         let pending = core::mem::take(&mut self.pending);
         let mut changed = false;
+        let mut authoritative_changed = false;
         for packet in pending {
-            changed |= self.apply_packet(packet);
+            let authoritative_packet = matches!(
+                packet,
+                VoxelInputPacket::PrimaryClick { .. } | VoxelInputPacket::Wheel { .. }
+            );
+            let packet_changed = self.apply_packet(packet);
+            changed |= packet_changed;
+            authoritative_changed |= packet_changed && authoritative_packet;
+        }
+        if authoritative_changed {
+            self.presentation.select(state_at_zero(&self.worldline));
         }
         Ok(changed)
     }
 
     fn present(&self) -> Result<Self::Frame, Self::Error> {
-        let sampled = state_at_zero(&self.worldline);
-        Ok(frame(&sampled))
+        Ok(self
+            .presentation
+            .present::<crate::engine_integration::VoxelRenderer>())
     }
 
     fn save_selected(&self) -> Result<Vec<u8>, Self::SaveError> {
@@ -174,10 +198,14 @@ mod tests {
     fn wheel_changes_the_fixed_point_scale() {
         let mut package = VoxelPackage::new();
         package
+            .advance_visual_time(engine_api::Tau::from_ticks(7))
+            .expect("visual time should advance");
+        package
             .ingest_batch(batch(VoxelInputPacket::Wheel { milli_delta: 1 }))
             .expect("wheel batch should ingest");
 
-        assert!(package.step().expect("wheel should step").0);
+        assert!(package.update().expect("wheel should update"));
+        assert_eq!(package.visual_time(), engine_api::Tau::zero());
         assert_eq!(
             crate::engine_integration::state_at_zero(&package.worldline)
                 .payload()

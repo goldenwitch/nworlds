@@ -2,7 +2,7 @@ vine 1.2.0
 prefix: rendering
 title: Caravan rendering layer
 ---
-[root] Rendering and presentation-driver architecture (planning)
+[root] Rendering and presentation-driver architecture (complete)
 Complete the first backend-neutral rendering slice, then build the developer-facing presentation-driver layer on top of it. Keep authoritative worldline sampling, complete GameState values, visual Tau, and target redraw execution as separate responsibilities.
 Files: rendering.vine; proposals/rendering-contract.md; proposals/presentation-host.md; crates/engine-presentation/**; crates/engine-api/**; crates/nworlds-host/**; crates/nworlds-desktop/**; crates/caravan-demo/**; crates/voxel-sample/**; crates/purity-tests/**; evidence/**
 Do: Preserve the completed single-state RenderBatch boundary while defining complete-state read-ahead/sample plans, visual-time anchoring/reset, redraw independence, and sample adoption. Do not introduce a mutable current game state or implicit interpolation between complete worlds.
@@ -452,21 +452,21 @@ Accept: A driver can select a complete GameState, reset Tau on a different selec
 > `GamePackage::update()` now performs semantic input/publication without submitting a frame, while `GamePackage::present()` emits the current complete-state presentation; `ApplicationHost` retains `step()` only as an explicit convenience composition.
 > `nworlds-desktop` updates on native input events and presents only on redraw; redraw frequency is not an authoritative simulation clock. Caravan and voxel remain compatible clients.
 ---
-[presentation-adoption] Adopt presentation driver in both samples (planning)
+[presentation-adoption] Adopt presentation driver in both samples (complete)
 Files: crates/caravan-demo/**; crates/voxel-sample/**; proposals/voxel-sample.md; README.md; index.md
 Do: Demonstrate the presentation-driver pattern in Caravan and voxel without moving camera, animation, or presentation controls into authoritative GameState. Exercise complete-state selection/read-ahead where useful, visual Tau variation for a fixed state, and reset on a new selected state; keep sample meaning and RenderBatch projection local.
 Accept: Both samples use the same developer-facing pattern with distinct game state types, Caravan and voxel worldlines remain immutable, Tau variation never publishes or changes logical state, and sample-specific visual controls remain downstream presentation state.
 -> presentation-driver
-> Caravan and voxel remain separate clients: common driver/RenderBatch mechanics are shared, game meaning and semantic projections are not.
-> Camera and other showcase controls are presentation state; they do not become Caravan/Voxel facts or authoritative worldline entries.
-> A sample may read ahead complete worlds for preview/scrubbing/comparison, but no sample silently invents a transition/interpolation contract.
+> Caravan routes its existing `present_state` seam through `PresentationDriver`; voxel stores a driver for its selected complete `VoxelState` and reselects/resets it only after authoritative click/wheel publication.
+> Both samples keep camera, viewport, and other showcase controls downstream of authoritative facts; viewport-only changes do not reset visual Tau.
+> Existing Caravan and voxel worldline/presentation regression tests remain green; sample-specific Tau variation/reset evidence is now the final presentation-evidence task.
 ---
-[presentation-evidence] Prove presentation-driver purity and redraw independence (planning)
+[presentation-evidence] Prove presentation-driver purity and redraw independence (complete)
 Files: crates/purity-tests/**; crates/engine-presentation/**; crates/nworlds-host/**; crates/caravan-demo/**; crates/voxel-sample/**; evidence/**
 Do: Add focused evidence for complete-state read-ahead, Tau-only visual variation, selected-state Tau reset, no authoritative mutation/query from Tau changes, redraw independence, and unchanged RenderBatch/target behavior. Keep compile-fail purity evidence distinct from sample runtime evidence.
 Accept: Equal selected GameState values remain authoritative under repeated Tau changes; a new selected GameState anchors Tau at zero; no renderer or driver can mutate/publish/query through visual Tau; both samples pass regression evidence; and workspace/conformance/purity checks remain green.
 -> presentation-adoption
 -> presentation-driver
-> Generic compile-fail evidence proves the boundary shape; Caravan/voxel tests prove client adoption; neither evidence class substitutes for the other.
-> Compile, deterministic presentation, native runtime, and device/profile support remain separately named claims.
-> The evidence must prove redraw frequency is not an authoritative simulation clock.
+> The generic driver tests prove Tau-only variation, reset-on-selection, complete-state sample plans, overflow behavior, and owned static values.
+> The host test proves update() can complete without submitting a frame; present() is a separate redraw-facing operation; desktop and client regression suites remain green.
+> Caravan render tests route through `present_state`/PresentationDriver; voxel package tests prove Tau advances without publication and resets after authoritative click/wheel changes.

@@ -100,6 +100,15 @@ separate conformance catalog:
 | Current Caravan client launches through the generic desktop composition | `cargo run -p caravan-demo --example desktop --locked` | Manual local runtime smoke: the generated/example composition opened without startup errors on Windows; no device-support claim |
 | Current voxel client launches through the generic desktop composition | `cargo run -p voxel-sample --locked` | Manual local runtime smoke: the shared host launched the voxel package without startup errors on Windows; click/scale behavior is covered by package tests; no device-support claim |
 
+## Presentation Driver Evidence
+
+| Claim | Primary evidence | Coverage |
+| --- | --- | --- |
+| Visual Tau varies presentation without replacing the selected complete state | `cargo test -p engine-presentation --locked` | `PresentationDriver` tests cover Tau-only variation, selected-state identity, overflow, and complete-state sample plans |
+| Selecting a new complete state resets visual Tau | `cargo test -p engine-presentation --locked`; `cargo test -p voxel-sample --locked` | Generic driver and voxel package tests cover reset after authoritative publication |
+| Redraw is presentation demand, not package update | `cargo test -p nworlds-host --locked`; `cargo test -p nworlds-desktop --locked` | Host test separates `update()` from `present()`; target test proves the generic redraw composition remains package-neutral |
+| Both samples use the driver-backed presentation path | `cargo test -p caravan-demo --locked`; `cargo test -p voxel-sample --locked` | Caravan `present_state` and voxel `VoxelPackage` presentation paths remain green with immutable worldline tests |
+
 ## Target Artifact and Support Evidence
 
 The target-factory proposal owns artifact identity, manifest/checksum

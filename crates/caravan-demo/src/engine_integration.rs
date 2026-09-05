@@ -15,7 +15,8 @@ pub use caravan_reference::ProjectionError;
 pub use engine_api::JournalWriterError;
 pub use engine_api::{
     present, BranchError, BranchKind, Frame, GameState, IndexedQuery, JournalWriter, LogicalTime,
-    QueryInput, RenderBatch, RenderVertex, Renderer, Tau, Worldline, TICKS_PER_LOGICAL_SECOND,
+    PresentationDriver, QueryInput, RenderBatch, RenderVertex, Renderer, Tau, Worldline,
+    TICKS_PER_LOGICAL_SECOND,
 };
 
 /// The Caravan specialization of the engine's immutable worldline.
@@ -56,7 +57,9 @@ pub fn present_state<R>(state: &CaravanState, tau: Tau) -> Frame<R::Output>
 where
     R: Renderer<caravan_reference::Snapshot>,
 {
-    present::<caravan_reference::Snapshot, R>(state, tau)
+    let mut driver = PresentationDriver::new(state.clone());
+    driver.set_visual_time(tau);
+    driver.present::<R>()
 }
 
 /// Rebuilds the game-facing timestamp writer from one immutable journal.
