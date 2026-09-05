@@ -23,6 +23,11 @@ Controls:
 - Press `R` to reset the camera; use `+`/`-` to adjust camera distance.
 - Press `Escape` or close the window to exit.
 
+The window includes a target-owned developer console showing the package
+identity, package version, host requirement, render vocabulary, and the Git
+build revision used to compile the executable. A `-DIRTY` suffix means the
+binary was built while the source worktree had uncommitted changes.
+
 ## Start Here
 
 Read [engine_integration.rs](src/engine_integration.rs) first. It is the

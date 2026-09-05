@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 mod application;
+mod debug_console;
 mod input;
 mod wgpu;
 

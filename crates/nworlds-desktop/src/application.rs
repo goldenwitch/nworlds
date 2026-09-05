@@ -61,7 +61,7 @@ where
                 return;
             }
         };
-        let sink = match pollster::block_on(WgpuRenderSink::new(window.clone())) {
+        let sink = match pollster::block_on(WgpuRenderSink::new(window.clone(), P::declaration())) {
             Ok(sink) => sink,
             Err(error) => {
                 eprintln!("could not initialize desktop wgpu rendering: {error}");

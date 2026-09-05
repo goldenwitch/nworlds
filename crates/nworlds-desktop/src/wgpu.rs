@@ -2,8 +2,10 @@ use std::sync::Arc;
 
 use bytemuck::{Pod, Zeroable};
 use engine_api::{Frame, RenderBatch};
-use nworlds_host::RenderSink;
+use nworlds_host::{PackageDeclaration, RenderSink};
 use winit::window::Window;
+
+use crate::debug_console::{ConsoleVertex, DeveloperConsole};
 
 const DEPTH_FORMAT: ::wgpu::TextureFormat = ::wgpu::TextureFormat::Depth24Plus;
 
@@ -83,10 +85,16 @@ pub struct WgpuRenderSink {
     config: ::wgpu::SurfaceConfiguration,
     depth_view: ::wgpu::TextureView,
     pipeline: ::wgpu::RenderPipeline,
+    console_pipeline: ::wgpu::RenderPipeline,
+    console_buffer: ::wgpu::Buffer,
+    console_vertex_count: u32,
 }
 
 impl WgpuRenderSink {
-    pub async fn new(window: Arc<Window>) -> Result<Self, WgpuRenderError> {
+    pub async fn new(
+        window: Arc<Window>,
+        declaration: PackageDeclaration,
+    ) -> Result<Self, WgpuRenderError> {
         let instance = ::wgpu::Instance::default();
         let surface = instance
             .create_surface(window.clone())
@@ -178,6 +186,50 @@ impl WgpuRenderSink {
             multiview_mask: None,
             cache: None,
         });
+        let console_pipeline = device.create_render_pipeline(&::wgpu::RenderPipelineDescriptor {
+            label: Some("nworlds-desktop-console-pipeline"),
+            layout: Some(&layout),
+            vertex: ::wgpu::VertexState {
+                module: &shader,
+                entry_point: Some("vs_main"),
+                buffers: &[Some(Vertex::layout())],
+                compilation_options: ::wgpu::PipelineCompilationOptions::default(),
+            },
+            fragment: Some(::wgpu::FragmentState {
+                module: &shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(::wgpu::ColorTargetState {
+                    format,
+                    blend: Some(::wgpu::BlendState::ALPHA_BLENDING),
+                    write_mask: ::wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: ::wgpu::PipelineCompilationOptions::default(),
+            }),
+            primitive: ::wgpu::PrimitiveState::default(),
+            depth_stencil: None,
+            multisample: ::wgpu::MultisampleState::default(),
+            multiview_mask: None,
+            cache: None,
+        });
+
+        let console = DeveloperConsole::new(declaration, env!("NWORLDS_DESKTOP_BUILD_ID"));
+        let console_vertices = console
+            .vertices()
+            .iter()
+            .map(|vertex: &ConsoleVertex| Vertex {
+                position: vertex.position,
+                color: vertex.color,
+            })
+            .collect::<Vec<_>>();
+        let console_vertex_count = console_vertices.len() as u32;
+        let console_buffer = ::wgpu::util::DeviceExt::create_buffer_init(
+            &device,
+            &::wgpu::util::BufferInitDescriptor {
+                label: Some("nworlds-desktop-console-vertices"),
+                contents: bytemuck::cast_slice(&console_vertices),
+                usage: ::wgpu::BufferUsages::VERTEX,
+            },
+        );
 
         let depth_view = depth_view(&device, &config);
 
@@ -189,6 +241,9 @@ impl WgpuRenderSink {
             config,
             depth_view,
             pipeline,
+            console_pipeline,
+            console_buffer,
+            console_vertex_count,
         })
     }
 
@@ -290,6 +345,27 @@ impl RenderSink<Frame<RenderBatch>> for WgpuRenderSink {
                 pass.set_vertex_buffer(0, vertex_buffer.slice(..));
                 pass.draw(0..vertices.len() as u32, 0..1);
             }
+        }
+        {
+            let mut pass = encoder.begin_render_pass(&::wgpu::RenderPassDescriptor {
+                label: Some("nworlds-desktop-console-pass"),
+                color_attachments: &[Some(::wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    depth_slice: None,
+                    resolve_target: None,
+                    ops: ::wgpu::Operations {
+                        load: ::wgpu::LoadOp::Load,
+                        store: ::wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+                multiview_mask: None,
+            });
+            pass.set_pipeline(&self.console_pipeline);
+            pass.set_vertex_buffer(0, self.console_buffer.slice(..));
+            pass.draw(0..self.console_vertex_count, 0..1);
         }
         self.queue.submit(Some(encoder.finish()));
         self.queue.present(output);
