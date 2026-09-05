@@ -1,6 +1,6 @@
 use caravan_demo::engine_integration::{
     actual_worldline as actual, BranchKind, CaravanJournalWriter as JournalWriter, GameState,
-    LogicalTime, Renderer, Tau,
+    LogicalTime, PresentationDriver, Renderer, Tau,
 };
 use caravan_demo::input::{Button, InputPacket};
 use caravan_demo::{CaravanInteraction, CaravanOrchestrator, CaravanStage, OrchestratorError};
@@ -150,6 +150,37 @@ fn render_output_carries_both_selected_state_time_and_tau() {
     assert_eq!(second.payload().logical_time, time(3));
     assert_eq!(first.payload().tau, first_tau);
     assert_eq!(second.payload().tau, second_tau);
+}
+
+#[test]
+fn complete_state_and_visual_tau_are_independent_axes() {
+    let worldline = worldline();
+    let first_state = state(&worldline, time(0));
+    let second_state = state(&worldline, time(3));
+    let mut driver = PresentationDriver::new(first_state);
+
+    driver.set_visual_time(Tau::zero());
+    let first = driver.present::<ProbeRenderer>();
+    driver.set_visual_time(Tau::from_ticks(7));
+    let second = driver.present::<ProbeRenderer>();
+    driver.set_visual_time(Tau::from_ticks(14));
+    let third = driver.present::<ProbeRenderer>();
+
+    assert_eq!(driver.selected().logical_time(), time(0));
+    assert_eq!(first.payload().logical_time, time(0));
+    assert_eq!(second.payload().logical_time, time(0));
+    assert_eq!(third.payload().logical_time, time(0));
+    assert_eq!(first.payload().tau, Tau::zero());
+    assert_eq!(second.payload().tau, Tau::from_ticks(7));
+    assert_eq!(third.payload().tau, Tau::from_ticks(14));
+
+    driver.select(second_state);
+    let selected = driver.present::<ProbeRenderer>();
+
+    assert_eq!(driver.selected().logical_time(), time(3));
+    assert_eq!(driver.visual_time(), Tau::zero());
+    assert_eq!(selected.payload().logical_time, time(3));
+    assert_eq!(selected.payload().tau, Tau::zero());
 }
 
 #[test]

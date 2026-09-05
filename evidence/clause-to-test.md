@@ -104,7 +104,7 @@ separate conformance catalog:
 
 | Claim | Primary evidence | Coverage |
 | --- | --- | --- |
-| Visual Tau varies presentation without replacing the selected complete state | `cargo test -p engine-presentation --locked` | `PresentationDriver` tests cover Tau-only variation, selected-state identity, overflow, and complete-state sample plans |
+| Visual Tau varies presentation without replacing the selected complete state | `cargo test -p engine-presentation --locked`; `cargo test -p caravan-demo --test orchestrator --locked` | Generic `PresentationDriver` tests and Caravan's explicit complete-state/Tau matrix cover Tau-only variation and selected-state identity |
 | Selecting a new complete state resets visual Tau | `cargo test -p engine-presentation --locked`; `cargo test -p voxel-sample --locked` | Generic driver and voxel package tests cover reset after authoritative publication |
 | Redraw is presentation demand, not package update | `cargo test -p nworlds-host --locked`; `cargo test -p nworlds-desktop --locked` | Host test separates `update()` from `present()`; target test proves the generic redraw composition remains package-neutral |
 | Both samples use the driver-backed presentation path | `cargo test -p caravan-demo --locked`; `cargo test -p voxel-sample --locked` | Caravan `present_state` and voxel `VoxelPackage` presentation paths remain green with immutable worldline tests |
