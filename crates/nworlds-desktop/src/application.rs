@@ -4,7 +4,7 @@ use std::sync::Arc;
 use engine_api::{Frame, RenderBatch};
 use nworlds_host::{
     ApplicationHost, GamePackage, InputBatchError, MemoryInputIngress, MemoryStorage,
-    OrderedInputBatch,
+    OrderedInputBatch, PacketIngress,
 };
 use winit::application::ApplicationHandler;
 use winit::event::{ElementState, WindowEvent};
@@ -16,6 +16,22 @@ use crate::{DesktopInputAdapter, WgpuRenderSink};
 
 type NativeHost<P, Packet> =
     ApplicationHost<P, MemoryInputIngress<Packet>, MemoryStorage, WgpuRenderSink>;
+
+fn is_console_toggle(physical_key: PhysicalKey, state: ElementState, repeat: bool) -> bool {
+    state == ElementState::Pressed
+        && !repeat
+        && physical_key == PhysicalKey::Code(KeyCode::Backquote)
+}
+
+fn translate_input_event<Input>(
+    input: &mut Input,
+    event: &WindowEvent,
+    ingress: &mut dyn PacketIngress<Input::Packet>,
+) where
+    Input: DesktopInputAdapter,
+{
+    input.translate(event, ingress);
+}
 
 /// Generic native desktop lifecycle around one target-neutral package.
 pub struct DesktopApplication<P, Packet, Input> {
@@ -85,7 +101,7 @@ where
 
     fn translate_event(&mut self, event: &WindowEvent) {
         if let Some(host) = &mut self.host {
-            self.input.translate(event, host.input_mut());
+            translate_input_event(&mut self.input, event, host.input_mut());
         }
     }
 
@@ -146,9 +162,7 @@ where
                 }
             }
             WindowEvent::KeyboardInput { event, .. }
-                if event.state == ElementState::Pressed
-                    && !event.repeat
-                    && event.physical_key == PhysicalKey::Code(KeyCode::Backquote) =>
+                if is_console_toggle(event.physical_key, event.state, event.repeat) =>
             {
                 self.toggle_console();
                 if let Some(window) = &self.window {
@@ -181,11 +195,29 @@ where
 
 #[cfg(test)]
 mod tests {
+    use super::translate_input_event;
     use engine_api::{Frame, RenderBatch, Tau};
     use nworlds_host::{
-        ApplicationHost, CollectingRenderSink, GamePackage, InputBatchError, MemoryInputIngress,
-        MemoryStorage, OrderedInputBatch, PackageDeclaration,
+        ApplicationHost, CollectingRenderSink, GamePackage, InputBatchError, InputIngress,
+        MemoryInputIngress, MemoryStorage, OrderedInputBatch, PackageDeclaration, PacketIngress,
     };
+    use winit::event::{ElementState, WindowEvent};
+    use winit::keyboard::{KeyCode, PhysicalKey};
+
+    #[derive(Default)]
+    struct RecordingInputAdapter;
+
+    impl super::DesktopInputAdapter for RecordingInputAdapter {
+        type Packet = ();
+
+        fn translate(
+            &mut self,
+            _event: &WindowEvent,
+            ingress: &mut dyn PacketIngress<Self::Packet>,
+        ) {
+            ingress.push(());
+        }
+    }
 
     struct SyntheticPackage;
 
@@ -253,5 +285,42 @@ mod tests {
             .expect("synthetic frame should be collected")
             .payload()
             .is_empty());
+    }
+
+    #[test]
+    fn window_event_reaches_the_package_input_adapter() {
+        let mut input = RecordingInputAdapter;
+        let mut ingress = MemoryInputIngress::<()>::new();
+
+        translate_input_event(&mut input, &WindowEvent::RedrawRequested, &mut ingress);
+
+        let batch = ingress
+            .drain()
+            .expect("the window event should form an input batch");
+        assert_eq!(batch.len(), 1);
+    }
+
+    #[test]
+    fn console_toggle_requires_a_non_repeated_backquote_press() {
+        assert!(super::is_console_toggle(
+            PhysicalKey::Code(KeyCode::Backquote),
+            ElementState::Pressed,
+            false,
+        ));
+        assert!(!super::is_console_toggle(
+            PhysicalKey::Code(KeyCode::Backquote),
+            ElementState::Pressed,
+            true,
+        ));
+        assert!(!super::is_console_toggle(
+            PhysicalKey::Code(KeyCode::Backquote),
+            ElementState::Released,
+            false,
+        ));
+        assert!(!super::is_console_toggle(
+            PhysicalKey::Code(KeyCode::Escape),
+            ElementState::Pressed,
+            false,
+        ));
     }
 }
