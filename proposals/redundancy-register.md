@@ -13,8 +13,8 @@ assert the same contract or implement the same responsibility.
 | Journals, timestamp authoring, branches, direct indexed queries | `engine-journal`, `engine-branches`, `engine-index`, exposed through `engine-api` | Game specializations and evidence |
 | State-first presentation contract | `engine-presentation` and the rendering contract | Game render projections and target sinks |
 | Passive input, storage, render, and package ports | `nworlds-host` | Target compositions and in-memory proofs |
-| Stage/Orchestrator application semantics | `caravan-demo`'s `engine_integration.rs`, `stage.rs`, `orchestrator.rs` | `stage-layer.md`, `caravan-orchestrator-anchor.md`, implementation and evidence records |
-| Semantic input and transformation boundary | `caravan-demo`'s `input.rs`, `interaction.rs`, `transformation.rs` plus transport primitives | `input-and-interaction.md`, `transport-and-journal.md`, implementation and evidence records |
+| Stage/Orchestrator application semantics | `caravan-sample`'s `engine_integration.rs`, `stage.rs`, `orchestrator.rs` | `stage-layer.md`, `caravan-orchestrator-anchor.md`, implementation and evidence records |
+| Semantic input and transformation boundary | `caravan-sample`'s `input.rs`, `interaction.rs`, `transformation.rs` plus transport primitives | `input-and-interaction.md`, `transport-and-journal.md`, implementation and evidence records |
 | Renderer-agnostic render vocabulary | `engine-presentation::RenderBatch`, exposed through `engine-api` | Caravan/voxel projections and target sinks are clients; target lifecycle remains separate |
 | Target/package/artifact resolution | `target-factory.md` | Support matrix, host proposal, CI evidence |
 | Declared target regimes and support evidence | `support.vine` and `platform-support-matrix.md` | Target-factory resolution and CI records |
@@ -56,8 +56,8 @@ focused on package/artifact resolution. Do not create another host library.
 ### R3: Stage and Orchestrator
 
 **Observed artifacts:** `proposals/stage-layer.md`,
-`proposals/caravan-orchestrator-anchor.md`, `nworlds-desktop`, `caravan-demo/src/stage.rs`,
-`caravan-demo/src/orchestrator.rs`, and `engine_integration.rs`.
+`proposals/caravan-orchestrator-anchor.md`, `nworlds-desktop`, `caravan-sample/src/stage.rs`,
+`caravan-sample/src/orchestrator.rs`, and `engine_integration.rs`.
 
 **Classification:** One application implementation with several historical and
 contract records. The current Caravan integration file is the sample's example
@@ -71,7 +71,7 @@ VINEs as history. Remove duplicate full ownership prose from future docs.
 
 **Observed artifacts:** `input-and-interaction.md`,
 `transport-and-journal.md`, `nworlds-host`,
-`caravan-demo/src/input.rs`, `src/interaction.rs`, `src/host/input.rs`, and
+`caravan-sample/src/input.rs`, `src/interaction.rs`, `src/host/input.rs`, and
 `nworlds-host` input ports.
 
 **Classification:** Two real boundaries are being described: reusable identity/

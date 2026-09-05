@@ -1,11 +1,11 @@
-use caravan_demo::engine_integration::{
+use caravan_domain::{GameJournalEntry, Terrain, TileId};
+use caravan_reference::{state, Snapshot};
+use caravan_sample::engine_integration::{
     actual_worldline as actual, BranchKind, CaravanJournalWriter as JournalWriter, GameState,
     LogicalTime, PresentationDriver, Renderer, Tau,
 };
-use caravan_demo::input::{Button, InputPacket};
-use caravan_demo::{CaravanInteraction, CaravanOrchestrator, CaravanStage, OrchestratorError};
-use caravan_domain::{GameJournalEntry, Terrain, TileId};
-use caravan_reference::{state, Snapshot};
+use caravan_sample::input::{Button, InputPacket};
+use caravan_sample::{CaravanInteraction, CaravanOrchestrator, CaravanStage, OrchestratorError};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct ProbeFrame {
@@ -192,7 +192,7 @@ fn public_stage_can_publish_a_counterfactual_child_without_mutating_parent() {
         .apply_counterfactual(
             time(0),
             time(1),
-            caravan_demo::transformation::Transformation::SetTerrain {
+            caravan_sample::transformation::Transformation::SetTerrain {
                 tile: TileId::origin(),
                 terrain: Terrain::Forest,
             },

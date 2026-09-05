@@ -2,9 +2,9 @@ use std::process::Command;
 
 #[test]
 fn terminal_trace_matches_snapshot() {
-    let output = Command::new(env!("CARGO_BIN_EXE_caravan-demo"))
+    let output = Command::new(env!("CARGO_BIN_EXE_caravan-trace"))
         .output()
-        .expect("cargo provides the demo binary for integration tests");
+        .expect("cargo provides the trace binary for integration tests");
 
     assert!(
         output.status.success(),

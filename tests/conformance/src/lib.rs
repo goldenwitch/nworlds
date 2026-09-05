@@ -149,11 +149,11 @@ pub fn cases() -> &'static [Case] {
             run: checks::presentation_supports_scrubbing_branches_and_repeatable_rendering,
         },
         Case {
-            id: "demo-trace",
-            clause: "Runnable demo trace exposes the anchor observables",
-            test: "demo_trace_contains_the_anchor_observables",
-            artifact: "crates/caravan-demo/snapshots/anchor-trace.txt",
-            run: checks::demo_trace_contains_the_anchor_observables,
+            id: "caravan-trace",
+            clause: "Runnable Caravan trace exposes the anchor observables",
+            test: "caravan_trace_contains_the_anchor_observables",
+            artifact: "crates/caravan-sample/snapshots/anchor-trace.txt",
+            run: checks::caravan_trace_contains_the_anchor_observables,
         },
     ]
 }

@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 
-use caravan_demo::demo_package;
-use caravan_demo::input::{Button, InputPacket};
+use caravan_sample::input::{Button, InputPacket};
+use caravan_sample::sample_package;
 use nworlds_desktop::{DesktopApplication, DesktopInputAdapter};
 use nworlds_host::PacketIngress;
 use winit::event::{ElementState, WindowEvent};
@@ -28,7 +28,7 @@ impl DesktopInputAdapter for CaravanInputAdapter {
 
 fn main() {
     let event_loop = EventLoop::new().expect("the Caravan desktop event loop should initialize");
-    let package = demo_package().expect("the initial Caravan package should be valid");
+    let package = sample_package().expect("the initial Caravan package should be valid");
     event_loop
         .run_app(&mut DesktopApplication::new(package, CaravanInputAdapter))
         .expect("the Caravan desktop event loop should run");

@@ -103,8 +103,8 @@ factory, not to the game package's public workflow.
   native or appropriate CI work.
 - [Demo gameplay plan](gameplay.vine) - the design-derived inventory and
   ordered plan for the remaining player-facing demo loop.
-- [Caravan demo README](crates/caravan-demo/README.md) - colocated guide to the
-  reference-game organization and engine integration example.
+- [Caravan sample README](crates/caravan-sample/README.md) - colocated guide to
+  the reference-game organization, engine integration, native sample, and trace.
 
 ## Development Checks
 

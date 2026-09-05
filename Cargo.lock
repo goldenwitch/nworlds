@@ -214,20 +214,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "caravan-demo"
-version = "0.1.0"
-dependencies = [
- "caravan-domain",
- "caravan-persistence",
- "caravan-reference",
- "caravan-seeded",
- "engine-api",
- "nworlds-desktop",
- "nworlds-host",
- "winit",
-]
-
-[[package]]
 name = "caravan-domain"
 version = "0.1.0"
 
@@ -265,6 +251,20 @@ dependencies = [
  "engine-journal",
  "engine-sdk",
  "engine-time",
+]
+
+[[package]]
+name = "caravan-sample"
+version = "0.1.0"
+dependencies = [
+ "caravan-domain",
+ "caravan-persistence",
+ "caravan-reference",
+ "caravan-seeded",
+ "engine-api",
+ "nworlds-desktop",
+ "nworlds-host",
+ "winit",
 ]
 
 [[package]]

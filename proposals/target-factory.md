@@ -124,7 +124,7 @@ The historical `nworlds-desktop` executable was a Caravan proof client, not the
 generic target-factory composition. Its `winit`/`wgpu` lifecycle, native Space
 input path, resize/shutdown behavior, and visible `Frame<RenderBatch>` output
 remain retained evidence. The current `nworlds-desktop` target has no
-`caravan-demo` or voxel dependency and uses a synthetic package to prove the
+`caravan-sample` or voxel dependency and uses a synthetic package to prove the
 generic host boundary; Caravan-specific `main` wiring is not contract
 authority.
 
@@ -214,9 +214,9 @@ does not know Caravan state, journal facts, logical time, render objects,
 native events, windows, devices, or backends. The package owns interaction,
 publication, state selection, and presentation semantics.
 
-The intended Caravan mapping is `caravan-demo::CaravanPackage`, a
+The intended Caravan mapping is `caravan-sample::CaravanPackage`, a
 target-neutral alias for its existing Stage/Orchestrator/renderer composition.
-The historical desktop proof used `caravan_demo::demo_package()` with the
+The historical desktop proof used `caravan_sample::sample_package()` with the
 generic host; the current generic target uses a synthetic package until the
 Caravan client migration remaps that package. This remains a host-client
 mapping, not a second Caravan game model.
@@ -247,7 +247,7 @@ worldline, input, device, or host-clock value.
 
 Both current sample clients now produce `Frame<RenderBatch>`:
 
-- `caravan-demo::CaravanRenderer` projects Caravan tile/actor/effect values;
+- `caravan-sample::CaravanRenderer` projects Caravan tile/actor/effect values;
 - `voxel-sample::VoxelRenderer` projects voxel cubes through its sample camera.
 
 The existing Windows proof sink consumes the shared batch rather than

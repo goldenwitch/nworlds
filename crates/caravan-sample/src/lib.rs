@@ -19,6 +19,6 @@ pub mod host {
 
 pub use interaction::CaravanInteraction;
 pub use orchestrator::{CaravanOrchestrator, OrchestratorError};
-pub use package::{demo_package, CaravanPackage};
+pub use package::{sample_package, CaravanPackage};
 pub use render::{CaravanRenderer, RenderActor, RenderOutput, RenderTile};
 pub use stage::CaravanStage;

@@ -419,10 +419,10 @@ pub fn presentation_supports_scrubbing_branches_and_repeatable_rendering() {
     assert_eq!(corrected_frame.payload().actor_ids, vec![3]);
 }
 
-pub fn demo_trace_contains_the_anchor_observables() {
+pub fn caravan_trace_contains_the_anchor_observables() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../crates/caravan-demo/snapshots/anchor-trace.txt");
-    let trace = fs::read_to_string(path).expect("the checked-in demo trace is readable");
+        .join("../../crates/caravan-sample/snapshots/anchor-trace.txt");
+    let trace = fs::read_to_string(path).expect("the checked-in Caravan trace is readable");
     for line in [
         "empty journal: saucer=false tiles=0",
         "create saucer: journal_t_=0 radius=5 tiles=91 void=91",

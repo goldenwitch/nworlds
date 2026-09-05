@@ -3,7 +3,7 @@ prefix: support
 title: Canonical desktop target support and native CI
 ---
 [root] Canonical target support and native CI (planning)
-Files: support.vine; proposals/platform-support-matrix.md; .github/workflows/**; crates/caravan-demo/**; tests/**; evidence/clause-to-test.md
+Files: support.vine; proposals/platform-support-matrix.md; .github/workflows/**; crates/caravan-sample/**; tests/**; evidence/clause-to-test.md
 Do: Close the committed desktop target gaps one target regime at a time. Preserve the game-facing Stage, Orchestrator, SemanticInputBatch, immutable worldline, and CaravanRenderer boundaries while supplying target-local lifecycle, input, render, storage, runtime evidence, and appropriate CI. Require native runtime/device evidence before changing a matrix row to complete.
 Accept: The support matrix is the authoritative closed target universe; Windows remains complete; Ubuntu Linux, Arch/SteamOS-family Linux, physical Steam Deck, macOS Intel, and macOS Apple Silicon each have an owned implementation/evidence task; native or appropriate CI exists for each target; out-of-scope rows are explicit; and all existing workspace, conformance, purity, and CodeQL evidence remains green.
 -> ci-foundation
@@ -34,14 +34,14 @@ Accept: CI names and reports map one-to-one to matrix rows; Ubuntu, Arch-family 
 -> matrix
 ---
 [linux-ubuntu] Ubuntu Linux native target (notstarted)
-Files: crates/caravan-demo/**; .github/workflows/ci.yml; evidence/clause-to-test.md
+Files: crates/caravan-sample/**; .github/workflows/ci.yml; evidence/clause-to-test.md
 Do: Add the Linux target-local entrypoint and adapters behind the existing host ports. Exercise X11 and Wayland lifecycle/input/render paths where the runner supports them, and keep storage/game semantics unchanged.
 Accept: `x86_64-unknown-linux-gnu` builds on a native Ubuntu runner; the target launches and renders under an appropriate X11 and Wayland smoke environment; native input reaches the existing semantic interaction path; resize and shutdown are observed; and the matrix row remains gap until runtime evidence is recorded.
 -> ci-foundation
 -> matrix
 ---
 [linux-arch] Arch and SteamOS-family Linux target (started)
-Files: crates/caravan-demo/**; .github/workflows/ci.yml; evidence/clause-to-test.md
+Files: crates/caravan-sample/**; .github/workflows/ci.yml; evidence/clause-to-test.md
 Do: Add an Arch-compatible build/runtime lane for the same Linux target and verify the Vulkan-first wgpu path with Wayland/X11 conditions representative of SteamOS-family desktops. Keep distro work below the game-facing boundary.
 Accept: The Arch-compatible lane builds the native target; a reproducible Arch-family runtime smoke path launches and renders; native input, resize, and shutdown are observed; and the matrix records remaining SteamOS hardware uncertainty separately from distro evidence.
 -> ci-foundation
@@ -56,14 +56,14 @@ Accept: The target launches on physical Steam Deck hardware, renders a visible f
 -> matrix
 ---
 [macos-intel] macOS Intel target (notstarted)
-Files: crates/caravan-demo/**; .github/workflows/ci.yml; evidence/clause-to-test.md
+Files: crates/caravan-sample/**; .github/workflows/ci.yml; evidence/clause-to-test.md
 Do: Add the target-local macOS entrypoint and Metal-backed wgpu composition for `x86_64-apple-darwin`. Exercise native window/input/render lifecycle without exposing macOS types to Stage or game logic.
 Accept: A native Intel macOS runner builds the target; a designated Intel Mac launches and renders the demo; input, resize, and shutdown are observed; and the matrix row remains gap until runtime evidence is recorded.
 -> ci-foundation
 -> matrix
 ---
 [macos-arm64] macOS Apple Silicon target (notstarted)
-Files: crates/caravan-demo/**; .github/workflows/ci.yml; evidence/clause-to-test.md
+Files: crates/caravan-sample/**; .github/workflows/ci.yml; evidence/clause-to-test.md
 Do: Add or verify the target-local macOS entrypoint and Metal-backed wgpu composition for `aarch64-apple-darwin`. Keep architecture-specific resource behavior inside the host/backend boundary.
 Accept: A native Apple Silicon macOS runner builds the target; a designated Apple Silicon Mac launches and renders the demo; input, resize, and shutdown are observed; and the matrix row remains gap until runtime evidence is recorded.
 -> ci-foundation

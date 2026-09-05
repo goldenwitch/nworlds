@@ -61,7 +61,7 @@ CaravanOrchestrator
     query, branch, save, and presentation decisions
 ```
 
-The initial Rust structs live in `caravan-demo`; their shape is intentionally
+The initial Rust structs live in `caravan-sample`; their shape is intentionally
 still application-owned. The first target-local host proof is implemented in
 the Windows `winit`/`wgpu` composition. The desired
 target-neutral developer workflow and target minting are owned by

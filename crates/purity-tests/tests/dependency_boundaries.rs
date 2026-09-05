@@ -15,7 +15,7 @@ const DESKTOP_TARGET_MANIFEST: &str = "crates/nworlds-desktop/Cargo.toml";
 
 const FORBIDDEN_PRODUCTION_DEPENDENCIES: &[&str] = &[
     "caravan",
-    "caravan-demo",
+    "caravan-sample",
     "voxel-sample",
     "nworlds-host",
     "nworlds-desktop",

@@ -1,13 +1,13 @@
-use caravan_demo::engine_integration::{
+use caravan_domain::GameJournalEntry;
+use caravan_sample::engine_integration::{
     actual_worldline as actual, CaravanJournalWriter as JournalWriter, LogicalTime, Tau,
 };
-use caravan_demo::host::application::ApplicationHost;
-use caravan_demo::host::input::{InputIngress, MemoryInputIngress};
-use caravan_demo::host::render::CollectingRenderSink;
-use caravan_demo::host::storage::{MemoryStorage, StorageTransport};
-use caravan_demo::input::{Button, InputPacket};
-use caravan_demo::{CaravanInteraction, CaravanOrchestrator, CaravanStage};
-use caravan_domain::GameJournalEntry;
+use caravan_sample::host::application::ApplicationHost;
+use caravan_sample::host::input::{InputIngress, MemoryInputIngress};
+use caravan_sample::host::render::CollectingRenderSink;
+use caravan_sample::host::storage::{MemoryStorage, StorageTransport};
+use caravan_sample::input::{Button, InputPacket};
+use caravan_sample::{CaravanInteraction, CaravanOrchestrator, CaravanStage};
 use nworlds_host::SemanticVersion;
 
 fn application() -> ApplicationHost {
@@ -58,7 +58,7 @@ fn host_crossing_delivers_input_publishes_immutable_state_and_collects_frame() {
 fn host_exposes_caravan_semantic_package_declaration() {
     let declaration = application().package_declaration();
 
-    assert_eq!(declaration.identity(), "caravan-demo");
+    assert_eq!(declaration.identity(), "caravan-sample");
     assert_eq!(declaration.version(), SemanticVersion::new(0, 1, 0));
     assert!(declaration.assets().is_empty());
     assert_eq!(declaration.persistence().format(), "caravan-worldline");

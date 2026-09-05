@@ -87,7 +87,7 @@ These crates define the concrete game fixture and its indexed rules.
 
 | Component | Description |
 | --- | --- |
-| [`caravan-demo`](crates/caravan-demo) | Runnable terminal demonstration; its [colocated README](crates/caravan-demo/README.md) presents the engine integration example and file ownership. |
+| [`caravan-sample`](crates/caravan-sample) | Native Caravan sample and explicit `caravan-trace` evidence binary; its [colocated README](crates/caravan-sample/README.md) presents the engine integration example and file ownership. |
 | [`nworlds-desktop`](crates/nworlds-desktop/Cargo.toml) | Generic target-local desktop composition over `nworlds-host`; it contains no Caravan, voxel, or package-owned state construction. |
 | [`voxel-sample`](crates/voxel-sample/Cargo.toml) | Independent voxel cottage package using the shared desktop composition; its [colocated README](crates/voxel-sample/README.md) is the practical guide, and [`engine_integration.rs`](crates/voxel-sample/src/engine_integration.rs) demonstrates generic state, journal, query, branch, and presentation usage with sample-defined types. |
 | [`engine-benchmarks`](crates/engine-benchmarks) | Non-published release-build measurements for direct queries, scrubbing, branches, and frame production. |
@@ -105,8 +105,8 @@ These crates define the concrete game fixture and its indexed rules.
   conformance matrix.
 - [Benchmark report](evidence/benchmarks/anchor-report.json) - conditions and
   measurements for the fixed anchor workloads.
-- [Demo trace](crates/caravan-demo/snapshots/anchor-trace.txt) - checked-in
-  deterministic output from the terminal demo.
+- [Caravan trace](crates/caravan-sample/snapshots/anchor-trace.txt) - checked-in
+  deterministic output from the evidence binary.
 - [Projection parity snapshot](crates/caravan-reference/snapshots/discontinuity-parity.json)
   - frozen observations and the scope of the historical-fold comparison.
 - [Productization review](proposals/productization-review.md) - current

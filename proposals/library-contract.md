@@ -59,7 +59,7 @@ target selection.
 | `caravan-seeded` | Caravan reference implementation | Deterministic Caravan journal fixtures. |
 | `caravan-reference` | Caravan reference implementation | Caravan projection/oracle, discontinuity meanings, snapshots, and parity baseline. |
 | `caravan-persistence` | Caravan reference implementation | Versioned Caravan worldline codec, branch lineage, save/load, and replay. |
-| `caravan-demo` | Sample application | Developer-authored Stage/Orchestrator composition and terminal/native sample package. |
+| `caravan-sample` | Sample application | Developer-authored Stage/Orchestrator composition and native sample package, with a separate trace binary for evidence. |
 | `nworlds-desktop` | Target composition | Generic Windows `winit`/`wgpu` composition over the target-neutral host; game packages connect through static client composition. |
 | `engine-benchmarks` | Evidence | Release measurements for the current reference implementation and presentation path. |
 | `purity-tests` | Evidence | Compiler and runtime checks for immutable/data-only boundaries. |
@@ -91,7 +91,7 @@ The following references are dev-dependencies rather than production edges:
 | --- | --- | --- |
 | `engine-presentation` tests | `caravan-domain`, `caravan-reference`, `engine-journal` | Allowed only as reference fixtures; must not shape the production renderer contract. |
 | `engine-benchmarks` and `tests/conformance` | Engine and Caravan crates | Evidence consumers; not library production dependencies. |
-| `caravan-demo` | Engine, Caravan, and `nworlds-host` crates | Sample consumer; its dependency direction is expected. |
+| `caravan-sample` | Engine, Caravan, and `nworlds-host` crates | Sample consumer; its dependency direction is expected. |
 | `nworlds-desktop` | Host, engine, and backend crates | Generic target consumer; no Caravan or voxel production dependency is permitted. |
 
 ## Forbidden Production Directions
@@ -128,7 +128,7 @@ The following are constraints for the next graph tasks, not alternate designs:
 - Presentation accepts only `GameState` and `Tau`, then returns owned output.
 - Host ports transport values and bytes but do not add host clock or device
   state to game-state or render production.
-- The public facade must be consumable without importing `caravan-demo`,
+- The public facade must be consumable without importing `caravan-sample`,
   `nworlds-desktop`, or private implementation modules.
 
 The core-contract task must turn these constraints into one public crate/type
@@ -174,7 +174,7 @@ values. `caravan-reference` may expose convenience aliases such as
 `ReferenceWorldline` and `State`, but those aliases are game-owned and must be
 built from the generic library types.
 
-`caravan-demo` owns the developer-authored `Stage`, `Orchestrator`, input
+`caravan-sample` owns the developer-authored `Stage`, `Orchestrator`, input
 interpretation, Caravan transformations, and the sample renderer. It is a
 consumer of the library and host contracts. Its existence is justified by the
 complete public-library path it demonstrates, not by any type that the generic

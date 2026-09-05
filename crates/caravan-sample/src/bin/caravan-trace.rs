@@ -1,22 +1,22 @@
 #![forbid(unsafe_code)]
 
-use caravan_demo::engine_integration::{
+use caravan_domain::{ActorId, ActorKind, Effect, GameJournalEntry, Terrain, TileId};
+use caravan_reference::{branch_view, future, ReferenceWorldline, Snapshot, ViewKind};
+use caravan_sample::engine_integration::{
     actual_worldline as actual, project_output, state, CaravanFrame as Frame,
     CaravanJournal as Journal, CaravanJournalWriter as JournalWriter, LogicalTime, RenderBatch,
     Tau, TICKS_PER_LOGICAL_SECOND,
 };
-use caravan_demo::input::{Button, InputPacket};
-use caravan_demo::{
+use caravan_sample::input::{Button, InputPacket};
+use caravan_sample::{
     CaravanInteraction, CaravanOrchestrator, CaravanRenderer, CaravanStage, RenderOutput,
 };
-use caravan_domain::{ActorId, ActorKind, Effect, GameJournalEntry, Terrain, TileId};
-use caravan_reference::{branch_view, future, ReferenceWorldline, Snapshot, ViewKind};
 use caravan_seeded::generate_spawn_journal;
 
 fn main() {
     let empty = actual(Journal::empty());
     let empty_state = state(&empty, time(0));
-    println!("caravan anchor demo");
+    println!("caravan sample trace");
     println!(
         "empty journal: saucer={} tiles={} void={} actors={} effects={} wheat={} wood={}",
         empty_state.payload().has_saucer(),
