@@ -131,16 +131,7 @@ where
         _window_id: WindowId,
         event: WindowEvent,
     ) {
-        let toggles_console = matches!(
-            &event,
-            WindowEvent::KeyboardInput { event, .. }
-                if event.state == ElementState::Pressed
-                    && !event.repeat
-                    && event.physical_key == PhysicalKey::Code(KeyCode::Backquote)
-        );
-        if !toggles_console {
-            self.translate_event(&event);
-        }
+        self.translate_event(&event);
         if !matches!(
             event,
             WindowEvent::RedrawRequested | WindowEvent::CloseRequested
