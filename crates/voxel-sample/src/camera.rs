@@ -31,8 +31,29 @@ impl Default for Camera {
 }
 
 impl Camera {
+    pub const MIN_PITCH: f32 = -1.45;
+    pub const MAX_PITCH: f32 = 1.45;
+    pub const MIN_DISTANCE: f32 = 6.0;
+    pub const MAX_DISTANCE: f32 = 40.0;
+
     pub fn set_aspect(&mut self, aspect: f32) {
         self.aspect = aspect.max(0.1);
+    }
+
+    pub fn orbit(&mut self, yaw_delta: f32, pitch_delta: f32) {
+        self.yaw += yaw_delta;
+        self.pitch = (self.pitch + pitch_delta).clamp(Self::MIN_PITCH, Self::MAX_PITCH);
+    }
+
+    pub fn zoom(&mut self, distance_delta: f32) {
+        self.distance =
+            (self.distance + distance_delta).clamp(Self::MIN_DISTANCE, Self::MAX_DISTANCE);
+    }
+
+    pub fn reset(&mut self) {
+        let aspect = self.aspect;
+        *self = Self::default();
+        self.aspect = aspect;
     }
 
     pub fn view_projection(self) -> Matrix4 {
@@ -229,5 +250,34 @@ mod tests {
         let position = Camera::default().pick(480.0, 360.0, 960.0, 720.0, sampled.payload());
 
         assert!(position.is_some());
+    }
+
+    #[test]
+    fn orbit_changes_projection_and_reset_restores_default_view() {
+        let camera = Camera::default();
+        let point = [0.0, 2.2, 0.0];
+        let original = camera.project_point(point);
+        let mut rotated = camera;
+
+        rotated.orbit(0.4, -0.2);
+        assert_ne!(rotated.project_point(point), original);
+
+        rotated.reset();
+        assert_eq!(rotated.project_point(point), original);
+    }
+
+    #[test]
+    fn orbit_and_zoom_are_clamped_deterministically() {
+        let mut camera = Camera::default();
+
+        camera.orbit(0.0, 100.0);
+        camera.zoom(-100.0);
+        assert_eq!(camera.pitch, Camera::MAX_PITCH);
+        assert_eq!(camera.distance, Camera::MIN_DISTANCE);
+
+        camera.orbit(0.0, -100.0);
+        camera.zoom(100.0);
+        assert_eq!(camera.pitch, Camera::MIN_PITCH);
+        assert_eq!(camera.distance, Camera::MAX_DISTANCE);
     }
 }

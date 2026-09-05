@@ -18,7 +18,9 @@ cargo run --manifest-path crates/voxel-sample/Cargo.toml
 Controls:
 
 - Left click a visible voxel to publish its removal.
+- Right-drag to orbit the presentation camera around the cottage.
 - Use the mouse wheel to publish voxel-scale changes.
+- Press `R` to reset the camera; use `+`/`-` to adjust camera distance.
 - Press `Escape` or close the window to exit.
 
 ## Start Here

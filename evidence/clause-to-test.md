@@ -108,6 +108,7 @@ separate conformance catalog:
 | Selecting a new complete state resets visual Tau | `cargo test -p engine-presentation --locked`; `cargo test -p voxel-sample --locked` | Generic driver and voxel package tests cover reset after authoritative publication |
 | Redraw is presentation demand, not package update | `cargo test -p nworlds-host --locked`; `cargo test -p nworlds-desktop --locked` | Host test separates `update()` from `present()`; target test proves the generic redraw composition remains package-neutral |
 | Both samples use the driver-backed presentation path | `cargo test -p caravan-demo --locked`; `cargo test -p voxel-sample --locked` | Caravan `present_state` and voxel `VoxelPackage` presentation paths remain green with immutable worldline tests |
+| Voxel camera controls remain presentation-only and share one camera for picking/projection | `cargo test -p voxel-sample --locked` | Orbit/reset/clamp tests and package tests prove camera changes alter presentation without changing the worldline; authoritative scale publication resets Tau while preserving camera state |
 
 ## Target Artifact and Support Evidence
 

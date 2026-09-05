@@ -16,10 +16,12 @@ Accept: The first rendering slice remains green; one contract names the complete
 -> render-demo
 -> render-evidence
 -> render-projection
-> The existing `GameState + Tau -> Frame<RenderBatch>` boundary remains the primitive projection; the new layer encodes sample plans and presentation driving above it.
-> Read-ahead returns complete authoritative GameState values. No implementation may treat a future GameState as a partial transition endpoint by default.
-> Selecting a different exact GameState resets visual Tau to zero. Varying Tau alone cannot query, publish, branch, or mutate authoritative state.
-> Target redraw is presentation demand only; it must not advance logical game state or turn host time into logical time.
+-> voxel-camera-contract
+-> voxel-camera-evidence
+-> voxel-camera-implementation
+> Voxel camera controls are a sample-owned presentation concern, not VoxelFact/VoxelState/worldline authority.
+> The same presentation Camera value must drive both voxel RenderBatch projection and CPU picking; no separate default-camera instances may remain once controls are active.
+> Camera changes may alter presentation and picking context without publishing facts or changing the voxel worldline; authoritative voxel publication resets visual Tau but preserves camera state.
 ---
 [anchor] Caravan anchor implementation (packet plan) (complete)
 Execute the independent packets below. Keep SDK objects separate from Caravan game objects, use direct indexed queries rather than interval stepping, and dispatch packets only after their dependencies are reviewed. The cellular automata anchor specification is the shared behavior target. Files: spec/cellular-automata-anchor.md; roadmap.md; spec/initial.md
@@ -470,3 +472,28 @@ Accept: Equal selected GameState values remain authoritative under repeated Tau 
 > The generic driver tests prove Tau-only variation, reset-on-selection, complete-state sample plans, overflow behavior, and owned static values.
 > The host test proves update() can complete without submitting a frame; present() is a separate redraw-facing operation; desktop and client regression suites remain green.
 > Caravan render tests route through `present_state`/PresentationDriver; voxel package tests prove Tau advances without publication and resets after authoritative click/wheel changes.
+---
+[voxel-camera-contract] Define voxel presentation camera recomposition (complete)
+Files: crates/voxel-sample/src/camera.rs; crates/voxel-sample/src/package.rs; crates/voxel-sample/src/engine_integration.rs; proposals/voxel-sample.md; rendering.vine
+Do: Specify the sample-owned presentation camera context, shared camera use for projection and picking, orbit/zoom/reset semantics, viewport behavior, and the boundary between camera controls, visual Tau, and authoritative VoxelFact/VoxelState.
+Accept: Camera state is explicitly downstream presentation state; one Camera value drives both picking and RenderBatch projection; camera changes never publish voxel facts; authoritative voxel publication resets visual Tau but preserves camera state; and camera clamps/reset behavior are named.
+-> presentation-adoption
+> Camera yaw, pitch, distance, target, and aspect are downstream voxel presentation state; they never become VoxelFact, VoxelState, or worldline data.
+> One Camera value is the source for both CPU picking and Voxel RenderBatch projection; separate default camera instances are forbidden once controls are active.
+> The first deterministic control set is right-drag orbit, `R` reset, `+/-` distance, wheel voxel scale, and resize aspect; pitch/distance are clamped and reset preserves current viewport aspect.
+> Authoritative click/scale publication selects a new complete VoxelState and resets visual Tau while preserving camera state; camera-only controls change presentation context without publishing facts.
+---
+[voxel-camera-implementation] Implement shared voxel camera presentation context (complete)
+Files: crates/voxel-sample/src/camera.rs; crates/voxel-sample/src/input.rs; crates/voxel-sample/src/package.rs; crates/voxel-sample/src/engine_integration.rs; crates/voxel-sample/src/main.rs
+Do: Add deterministic orbit, zoom, reset, and viewport controls to the voxel presentation context. Route the same camera into CPU picking and cube RenderBatch projection while keeping camera state outside VoxelFact/VoxelState and preserving the PresentationDriver worldline/Tau rules.
+Accept: Left-drag/orbit, reset, and zoom controls work through package-owned presentation packets; rendered projection and picking use the same camera; camera controls leave journal/worldline values unchanged; authoritative click/scale publication resets Tau but retains camera; and existing voxel behavior remains green.
+-> voxel-camera-contract
+---
+[voxel-camera-evidence] Prove voxel camera purity and visual consistency (complete)
+Files: crates/voxel-sample/src/camera.rs; crates/voxel-sample/src/package.rs; crates/voxel-sample/src/engine_integration.rs; crates/voxel-sample/tests/**; evidence/clause-to-test.md
+Do: Add deterministic tests for camera orbit/reset/clamps, same-camera picking/projection consistency, camera-only worldline identity, authoritative publication/Tau reset with camera preservation, and viewport projection changes without authoritative mutation. Record focused evidence separately from native runtime/device evidence.
+Accept: Camera control tests pass without GPU/device dependence; a rotated camera changes presentation without changing VoxelWorldline; picking uses the rendered camera; reset reproduces default projection; camera bounds are deterministic; and workspace/conformance/purity evidence remains green.
+-> voxel-camera-implementation
+> Camera math tests prove orbit changes projection, reset restores the default view, and pitch/distance clamps are deterministic.
+> Voxel package tests prove camera orbit changes RenderBatch while preserving the parent worldline, reset restores the default projection, and authoritative scale publication resets Tau without replacing camera context.
+> Workspace, conformance, purity, dependency, and compile evidence remain green; native camera interaction remains manual runtime evidence separate from device/profile support.

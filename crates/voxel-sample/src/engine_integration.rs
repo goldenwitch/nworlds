@@ -36,98 +36,102 @@ impl Renderer<VoxelState> for VoxelRenderer {
     type Output = RenderBatch;
 
     fn render(state: &VoxelGameState, _tau: Tau) -> Self::Output {
-        let camera = Camera::default();
-        let scale = state.payload().scale().as_f32();
-        let mut vertices = Vec::with_capacity(state.payload().voxels().len() * 36);
-
-        for voxel in state.payload().voxels() {
-            let position = voxel.position();
-            let min = [
-                position.x() as f32 * scale,
-                position.y() as f32 * scale,
-                position.z() as f32 * scale,
-            ];
-            let max = [min[0] + scale, min[1] + scale, min[2] + scale];
-            let [min_x, min_y, min_z] = min;
-            let [max_x, max_y, max_z] = max;
-            let color = voxel.block().color();
-
-            cube_face(
-                &mut vertices,
-                &camera,
-                [
-                    [min_x, min_y, min_z],
-                    [max_x, min_y, min_z],
-                    [max_x, min_y, max_z],
-                    [min_x, min_y, max_z],
-                ],
-                color,
-                0.62,
-            );
-            cube_face(
-                &mut vertices,
-                &camera,
-                [
-                    [min_x, max_y, min_z],
-                    [min_x, max_y, max_z],
-                    [max_x, max_y, max_z],
-                    [max_x, max_y, min_z],
-                ],
-                color,
-                1.12,
-            );
-            cube_face(
-                &mut vertices,
-                &camera,
-                [
-                    [min_x, min_y, min_z],
-                    [min_x, max_y, min_z],
-                    [max_x, max_y, min_z],
-                    [max_x, min_y, min_z],
-                ],
-                color,
-                0.84,
-            );
-            cube_face(
-                &mut vertices,
-                &camera,
-                [
-                    [max_x, min_y, max_z],
-                    [max_x, max_y, max_z],
-                    [min_x, max_y, max_z],
-                    [min_x, min_y, max_z],
-                ],
-                color,
-                0.93,
-            );
-            cube_face(
-                &mut vertices,
-                &camera,
-                [
-                    [min_x, min_y, max_z],
-                    [min_x, max_y, max_z],
-                    [min_x, max_y, min_z],
-                    [min_x, min_y, min_z],
-                ],
-                color,
-                0.74,
-            );
-            cube_face(
-                &mut vertices,
-                &camera,
-                [
-                    [max_x, min_y, min_z],
-                    [max_x, max_y, min_z],
-                    [max_x, max_y, max_z],
-                    [max_x, min_y, max_z],
-                ],
-                color,
-                1.0,
-            );
-        }
-
-        RenderBatch::new(vertices)
+        render_batch(state, Camera::default())
     }
+}
+
+/// Projects one complete voxel state through an explicit presentation camera.
+pub fn render_batch(state: &VoxelGameState, camera: Camera) -> RenderBatch {
+    let scale = state.payload().scale().as_f32();
+    let mut vertices = Vec::with_capacity(state.payload().voxels().len() * 36);
+
+    for voxel in state.payload().voxels() {
+        let position = voxel.position();
+        let min = [
+            position.x() as f32 * scale,
+            position.y() as f32 * scale,
+            position.z() as f32 * scale,
+        ];
+        let max = [min[0] + scale, min[1] + scale, min[2] + scale];
+        let [min_x, min_y, min_z] = min;
+        let [max_x, max_y, max_z] = max;
+        let color = voxel.block().color();
+
+        cube_face(
+            &mut vertices,
+            &camera,
+            [
+                [min_x, min_y, min_z],
+                [max_x, min_y, min_z],
+                [max_x, min_y, max_z],
+                [min_x, min_y, max_z],
+            ],
+            color,
+            0.62,
+        );
+        cube_face(
+            &mut vertices,
+            &camera,
+            [
+                [min_x, max_y, min_z],
+                [min_x, max_y, max_z],
+                [max_x, max_y, max_z],
+                [max_x, max_y, min_z],
+            ],
+            color,
+            1.12,
+        );
+        cube_face(
+            &mut vertices,
+            &camera,
+            [
+                [min_x, min_y, min_z],
+                [min_x, max_y, min_z],
+                [max_x, max_y, min_z],
+                [max_x, min_y, min_z],
+            ],
+            color,
+            0.84,
+        );
+        cube_face(
+            &mut vertices,
+            &camera,
+            [
+                [max_x, min_y, max_z],
+                [max_x, max_y, max_z],
+                [min_x, max_y, max_z],
+                [min_x, min_y, max_z],
+            ],
+            color,
+            0.93,
+        );
+        cube_face(
+            &mut vertices,
+            &camera,
+            [
+                [min_x, min_y, max_z],
+                [min_x, max_y, max_z],
+                [min_x, max_y, min_z],
+                [min_x, min_y, min_z],
+            ],
+            color,
+            0.74,
+        );
+        cube_face(
+            &mut vertices,
+            &camera,
+            [
+                [max_x, min_y, min_z],
+                [max_x, max_y, min_z],
+                [max_x, max_y, max_z],
+                [max_x, min_y, max_z],
+            ],
+            color,
+            1.0,
+        );
+    }
+
+    RenderBatch::new(vertices)
 }
 
 fn cube_face(
@@ -231,6 +235,11 @@ pub fn state_at_zero(worldline: &VoxelWorldline) -> VoxelGameState {
 /// Uses the engine's `GameState + Tau -> Frame` presentation boundary.
 pub fn frame(state: &VoxelGameState) -> VoxelFrame {
     present::<VoxelState, VoxelRenderer>(state, Tau::zero())
+}
+
+/// Presents one complete voxel state through an explicit camera and Tau.
+pub fn frame_with_camera(state: &VoxelGameState, camera: Camera, tau: Tau) -> VoxelFrame {
+    Frame::new(tau, render_batch(state, camera))
 }
 
 #[cfg(test)]

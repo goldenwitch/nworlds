@@ -38,6 +38,27 @@ envelope. The positive composition is:
 voxel-sample -> engine-api / nworlds-host / target libraries
 ```
 
+## Presentation Camera
+
+The camera is sample-owned presentation state. It is not a `VoxelFact`, is not
+stored in `VoxelState`, and never enters the authoritative voxel worldline.
+One `Camera` value is shared by both presentation and picking:
+
+```text
+WindowEvent
+  -> VoxelInputAdapter
+  -> camera orbit/zoom/reset or voxel semantic packet
+  -> Camera
+       |-> VoxelPackage picking
+       `-> VoxelState -> RenderBatch projection
+```
+
+The first controls are right-drag orbit, `R` reset, `+/-` camera distance,
+mouse-wheel voxel scale, and viewport aspect updates. Camera pitch and distance
+are clamped deterministically. Camera-only packets change presentation context
+without publishing facts; click/scale facts select a new complete voxel state,
+reset visual `Tau`, and preserve the camera.
+
 ## Features Used
 
 | Engine feature | How the sample uses it | Why it matters |
@@ -133,7 +154,7 @@ example:
 
 - `world.rs` answers: what does this game mean?
 - `engine_integration.rs` answers: how does the game use the engine?
-- `camera.rs` answers: how does the sample select a voxel?
+- `camera.rs` answers: how does the sample orbit, project, and select a voxel?
 - `package.rs` answers: how do semantic events become immutable voxel facts?
 - `input.rs` answers: how are native events translated into voxel packets?
 - `main.rs` answers: how is the package connected to the generic desktop host?

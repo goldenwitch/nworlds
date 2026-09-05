@@ -15,6 +15,9 @@ pub enum VoxelInputPacket {
     PrimaryClick { x: u32, y: u32 },
     Wheel { milli_delta: i32 },
     ViewportResized { width: u32, height: u32 },
+    CameraOrbit { horizontal: i32, vertical: i32 },
+    CameraZoom { distance_milli: i32 },
+    CameraReset,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -27,6 +30,7 @@ pub struct VoxelPackage {
     writer: VoxelJournalWriter,
     pending: Vec<VoxelInputPacket>,
     viewport: (u32, u32),
+    camera: Camera,
     presentation: PresentationDriver<crate::world::VoxelState>,
 }
 
@@ -34,11 +38,14 @@ impl VoxelPackage {
     pub fn new() -> Self {
         let (worldline, writer) = cottage_worldline();
         let presentation = PresentationDriver::new(state_at_zero(&worldline));
+        let mut camera = Camera::default();
+        camera.set_aspect(960.0 / 720.0);
         Self {
             worldline,
             writer,
             pending: Vec::new(),
             viewport: (960, 720),
+            camera,
             presentation,
         }
     }
@@ -47,9 +54,7 @@ impl VoxelPackage {
         match packet {
             VoxelInputPacket::PrimaryClick { x, y } => {
                 let sampled = state_at_zero(&self.worldline);
-                let mut camera = Camera::default();
-                camera.set_aspect(self.viewport.0.max(1) as f32 / self.viewport.1.max(1) as f32);
-                let position = camera.pick(
+                let position = self.camera.pick(
                     x as f32,
                     y as f32,
                     self.viewport.0.max(1) as f32,
@@ -76,6 +81,24 @@ impl VoxelPackage {
             }
             VoxelInputPacket::ViewportResized { width, height } => {
                 self.viewport = (width, height);
+                self.camera
+                    .set_aspect(width.max(1) as f32 / height.max(1) as f32);
+                true
+            }
+            VoxelInputPacket::CameraOrbit {
+                horizontal,
+                vertical,
+            } => {
+                self.camera
+                    .orbit(horizontal as f32 * 0.01, -(vertical as f32) * 0.01);
+                true
+            }
+            VoxelInputPacket::CameraZoom { distance_milli } => {
+                self.camera.zoom(distance_milli as f32 / 1_000.0);
+                true
+            }
+            VoxelInputPacket::CameraReset => {
+                self.camera.reset();
                 true
             }
         }
@@ -93,6 +116,10 @@ impl VoxelPackage {
     /// Returns the current downstream visual time.
     pub const fn visual_time(&self) -> Tau {
         self.presentation.visual_time()
+    }
+
+    pub const fn camera(&self) -> Camera {
+        self.camera
     }
 }
 
@@ -145,9 +172,11 @@ impl GamePackage for VoxelPackage {
     }
 
     fn present(&self) -> Result<Self::Frame, Self::Error> {
-        Ok(self
-            .presentation
-            .present::<crate::engine_integration::VoxelRenderer>())
+        Ok(crate::engine_integration::frame_with_camera(
+            self.presentation.selected(),
+            self.camera,
+            self.presentation.visual_time(),
+        ))
     }
 
     fn save_selected(&self) -> Result<Vec<u8>, Self::SaveError> {
@@ -212,6 +241,50 @@ mod tests {
                 .scale()
                 .milli(),
             1_001
+        );
+    }
+
+    #[test]
+    fn camera_controls_change_presentation_without_changing_the_worldline() {
+        let mut package = VoxelPackage::new();
+        let parent = package.worldline.clone();
+        let original = package.present().expect("default camera should present");
+
+        package
+            .ingest_batch(batch(VoxelInputPacket::CameraOrbit {
+                horizontal: 20,
+                vertical: -10,
+            }))
+            .expect("camera batch should ingest");
+        assert!(package.update().expect("camera update should succeed"));
+        let rotated = package.present().expect("rotated camera should present");
+
+        assert_eq!(package.worldline, parent);
+        assert_ne!(original.payload(), rotated.payload());
+    }
+
+    #[test]
+    fn camera_reset_restores_default_projection_and_authority_stays_unchanged() {
+        let mut package = VoxelPackage::new();
+        let original = package.present().expect("default camera should present");
+        let parent = package.worldline.clone();
+
+        package
+            .ingest_batch(batch(VoxelInputPacket::CameraOrbit {
+                horizontal: 20,
+                vertical: -10,
+            }))
+            .expect("camera batch should ingest");
+        package.update().expect("camera orbit should update");
+        package
+            .ingest_batch(batch(VoxelInputPacket::CameraReset))
+            .expect("reset batch should ingest");
+        package.update().expect("camera reset should update");
+
+        assert_eq!(package.worldline, parent);
+        assert_eq!(
+            package.present().expect("reset camera should present"),
+            original
         );
     }
 }
