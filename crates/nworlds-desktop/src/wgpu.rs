@@ -88,6 +88,7 @@ pub struct WgpuRenderSink {
     console_pipeline: ::wgpu::RenderPipeline,
     console_buffer: ::wgpu::Buffer,
     console_vertex_count: u32,
+    console_visible: bool,
 }
 
 impl WgpuRenderSink {
@@ -244,7 +245,13 @@ impl WgpuRenderSink {
             console_pipeline,
             console_buffer,
             console_vertex_count,
+            console_visible: false,
         })
+    }
+
+    pub fn toggle_console(&mut self) -> bool {
+        self.console_visible = !self.console_visible;
+        self.console_visible
     }
 
     fn configure_for_current_window_size(&mut self) -> bool {
@@ -346,7 +353,7 @@ impl RenderSink<Frame<RenderBatch>> for WgpuRenderSink {
                 pass.draw(0..vertices.len() as u32, 0..1);
             }
         }
-        {
+        if self.console_visible {
             let mut pass = encoder.begin_render_pass(&::wgpu::RenderPassDescriptor {
                 label: Some("nworlds-desktop-console-pass"),
                 color_attachments: &[Some(::wgpu::RenderPassColorAttachment {

@@ -28,6 +28,9 @@ identity, package version, host requirement, render vocabulary, and the Git
 build revision used to compile the executable. A `-DIRTY` suffix means the
 binary was built while the source worktree had uncommitted changes.
 
+Press the backquote/tilde key to toggle the console without changing game
+state or presentation camera state.
+
 ## Start Here
 
 Read [engine_integration.rs](src/engine_integration.rs) first. It is the

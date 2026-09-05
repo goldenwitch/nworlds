@@ -99,6 +99,7 @@ separate conformance catalog:
 | Voxel remaps onto the generic desktop composition | `cargo test -p voxel-sample --locked`; `cargo check -p voxel-sample --locked` | Runtime/compile pass: package-owned click picking, wheel scale publication, and `Frame<RenderBatch>` production compose through the shared target; native launch and persistence remain separate |
 | Current Caravan client launches through the generic desktop composition | `cargo run -p caravan-demo --example desktop --locked` | Manual local runtime smoke: the generated/example composition opened without startup errors on Windows; no device-support claim |
 | Current voxel client launches through the generic desktop composition | `cargo run -p voxel-sample --locked` | Manual local runtime smoke: the shared host launched the voxel package without startup errors on Windows; click/scale behavior is covered by package tests; no device-support claim |
+| Developer console identifies the running package/build | `cargo test -p nworlds-desktop --locked`; manual voxel runtime observation | Target-owned overlay is sourced from `PackageDeclaration` plus the Git build revision; backquote/tilde toggles visibility without entering package semantics |
 
 ## Presentation Driver Evidence
 

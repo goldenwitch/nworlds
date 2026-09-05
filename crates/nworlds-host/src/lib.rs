@@ -420,6 +420,11 @@ where
         &self.render
     }
 
+    /// Mutably borrows the render sink port for target-owned controls.
+    pub fn render_mut(&mut self) -> &mut R {
+        &mut self.render
+    }
+
     /// Pulls neutral input and delegates semantic control to the package.
     pub fn update(&mut self) -> Result<bool, P::Error> {
         let batch = self.input.drain().map_err(P::Error::from)?;

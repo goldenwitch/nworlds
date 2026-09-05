@@ -106,6 +106,12 @@ where
             }
         }
     }
+
+    fn toggle_console(&mut self) {
+        if let Some(host) = &mut self.host {
+            host.render_mut().toggle_console();
+        }
+    }
 }
 
 impl<P, Packet, Input> ApplicationHandler for DesktopApplication<P, Packet, Input>
@@ -135,6 +141,16 @@ where
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::Resized(_) => {
+                if let Some(window) = &self.window {
+                    window.request_redraw();
+                }
+            }
+            WindowEvent::KeyboardInput { event, .. }
+                if event.state == ElementState::Pressed
+                    && !event.repeat
+                    && event.physical_key == PhysicalKey::Code(KeyCode::Backquote) =>
+            {
+                self.toggle_console();
                 if let Some(window) = &self.window {
                     window.request_redraw();
                 }
