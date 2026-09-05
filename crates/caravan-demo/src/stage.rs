@@ -130,10 +130,12 @@ where
         CaravanStage::ingest_batch(self, batch)
     }
 
-    fn step(&mut self) -> Result<(bool, Self::Frame), Self::Error> {
-        let applied = self.interact_and_apply()?;
-        let frame = self.present()?;
-        Ok((applied, frame))
+    fn update(&mut self) -> Result<bool, Self::Error> {
+        self.interact_and_apply()
+    }
+
+    fn present(&self) -> Result<Self::Frame, Self::Error> {
+        CaravanStage::present(self)
     }
 
     fn save_selected(&self) -> Result<Vec<u8>, Self::SaveError> {

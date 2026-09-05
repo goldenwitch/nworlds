@@ -112,14 +112,18 @@ impl GamePackage for VoxelPackage {
         Ok(())
     }
 
-    fn step(&mut self) -> Result<(bool, Self::Frame), Self::Error> {
+    fn update(&mut self) -> Result<bool, Self::Error> {
         let pending = core::mem::take(&mut self.pending);
         let mut changed = false;
         for packet in pending {
             changed |= self.apply_packet(packet);
         }
+        Ok(changed)
+    }
+
+    fn present(&self) -> Result<Self::Frame, Self::Error> {
         let sampled = state_at_zero(&self.worldline);
-        Ok((changed, frame(&sampled)))
+        Ok(frame(&sampled))
     }
 
     fn save_selected(&self) -> Result<Vec<u8>, Self::SaveError> {

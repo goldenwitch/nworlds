@@ -18,7 +18,7 @@ pub trait GamePackage {
     type InputBatch;
     /// The owned frame submitted to a target render sink.
     type Frame;
-    /// Error raised while ingesting input or running one package step.
+    /// Error raised while ingesting input or running package update/presentation.
     type Error;
     /// Error raised while encoding the selected package state.
     type SaveError;
@@ -28,8 +28,18 @@ pub trait GamePackage {
     /// Accepts one normalized batch without assigning host or input time.
     fn ingest_batch(&mut self, batch: Self::InputBatch) -> Result<(), Self::Error>;
 
-    /// Runs package-owned semantic control and returns one owned frame.
-    fn step(&mut self) -> Result<(bool, Self::Frame), Self::Error>;
+    /// Runs package-owned semantic control and publication without presenting.
+    fn update(&mut self) -> Result<bool, Self::Error>;
+
+    /// Presents the package's currently selected complete state.
+    fn present(&self) -> Result<Self::Frame, Self::Error>;
+
+    /// Composes one update and one presentation for convenience callers.
+    fn step(&mut self) -> Result<(bool, Self::Frame), Self::Error> {
+        let applied = self.update()?;
+        let frame = self.present()?;
+        Ok((applied, frame))
+    }
 
     /// Encodes the selected immutable package value for host byte transport.
     fn save_selected(&self) -> Result<Vec<u8>, Self::SaveError>;
@@ -410,13 +420,24 @@ where
         &self.render
     }
 
-    /// Pulls neutral input, delegates semantic control to the package, and
-    /// submits the resulting owned frame to the target sink.
-    pub fn step(&mut self) -> Result<bool, P::Error> {
+    /// Pulls neutral input and delegates semantic control to the package.
+    pub fn update(&mut self) -> Result<bool, P::Error> {
         let batch = self.input.drain().map_err(P::Error::from)?;
         self.package.ingest_batch(batch)?;
-        let (applied, frame) = self.package.step()?;
+        self.package.update()
+    }
+
+    /// Presents the package's currently selected complete state to the sink.
+    pub fn present(&mut self) -> Result<(), P::Error> {
+        let frame = self.package.present()?;
         self.render.submit(frame);
+        Ok(())
+    }
+
+    /// Pulls input, updates package semantics, and presents one frame.
+    pub fn step(&mut self) -> Result<bool, P::Error> {
+        let applied = self.update()?;
+        self.present()?;
         Ok(applied)
     }
 
@@ -491,8 +512,12 @@ mod tests {
             Ok(())
         }
 
-        fn step(&mut self) -> Result<(bool, Self::Frame), Self::Error> {
-            Ok((true, self.batches.last().cloned().unwrap_or_default()))
+        fn update(&mut self) -> Result<bool, Self::Error> {
+            Ok(true)
+        }
+
+        fn present(&self) -> Result<Self::Frame, Self::Error> {
+            Ok(self.batches.last().cloned().unwrap_or_default())
         }
 
         fn save_selected(&self) -> Result<Vec<u8>, Self::SaveError> {
@@ -548,8 +573,12 @@ mod tests {
             "test-frame"
         );
 
-        assert!(host.step().expect("test package step should succeed"));
+        assert!(host.update().expect("test package update should succeed"));
         assert_eq!(host.package().batches, vec![vec![7, 9]]);
+        assert!(host.render().frames.is_empty());
+
+        host.present()
+            .expect("test package presentation should succeed");
         assert_eq!(host.render().frames, vec![vec![7, 9]]);
 
         host.save_selected()

@@ -349,8 +349,12 @@ target-local and mechanical:
 ```text
 native event
     -> PlatformInputAdapter -> InputIngress
-    -> ApplicationHost::step
-    -> GamePackage::ingest_batch / step
+    -> ApplicationHost::update
+    -> GamePackage::ingest_batch / update
+
+native redraw
+    -> ApplicationHost::present
+    -> GamePackage::present
     -> RenderSink<Frame<RenderBatch>>
 ```
 
@@ -367,6 +371,11 @@ selected target composition supplies the concrete lifecycle, storage, and
 backend adapters. A client may add target-neutral semantic observations such
 as cursor coordinates; target execution still treats them as opaque package
 packets.
+
+The target may redraw continuously, but redraw is presentation demand only. A
+package update may publish or select a new immutable worldline/state; a package
+presentation reads the currently selected complete state and visual `Tau`.
+The host must not use redraw frequency as an authoritative simulation clock.
 
 `nworlds-desktop` now contains the reusable generic lifecycle and a synthetic
 package compile proof without Caravan or voxel dependencies. The historical

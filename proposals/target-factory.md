@@ -195,7 +195,8 @@ package retain semantic control:
 ```text
 GamePackage
   ingest_batch(package-defined batch)
-  step() -> (accepted, owned frame)
+  update() -> accepted
+  present() -> owned frame
   save_selected() -> encoded bytes
   load_selected(encoded bytes)
 
@@ -206,11 +207,12 @@ RenderSink<Frame> <- owned frame
 ```
 
 `nworlds-host::ApplicationHost<P, I, S, R>` drains `I`, delegates input and
-control to `P`, submits the returned frame to `R`, and transports persistence
-bytes through `S`. It does not know Caravan state, journal facts, logical time,
-render objects, native events, windows, devices, or backends. The package owns
-the order of interaction, publication, state selection, and presentation
-inside its `step` implementation.
+semantic update to `P`, submits the package's current presentation to `R`, and
+transports persistence bytes through `S`. Its `update()` path does not submit a
+frame; its `present()` path does not update authoritative package state. It
+does not know Caravan state, journal facts, logical time, render objects,
+native events, windows, devices, or backends. The package owns interaction,
+publication, state selection, and presentation semantics.
 
 The intended Caravan mapping is `caravan-demo::CaravanPackage`, a
 target-neutral alias for its existing Stage/Orchestrator/renderer composition.

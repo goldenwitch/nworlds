@@ -2,19 +2,24 @@ vine 1.2.0
 prefix: rendering
 title: Caravan rendering layer
 ---
-[root] Backend-neutral rendering slice (complete)
-Build the first concrete rendering layer on top of the completed indexed anchor. Keep this packet small: it should make a deterministic, inspectable composition of owned rendering objects from one immutable `GameState<Snapshot>` and one `Tau` through the existing engine-presentation boundary. Rendering objects are downstream products; game reasoning continues to use `GameState`. This is a render-model and demo slice, not a final graphics architecture.
-Files: rendering.vine; spec/initial.md; proposals/productization-review.md; proposals/stage-layer.md; proposals/presentation-host.md; proposals/input-and-interaction.md; roadmap.md; crates/engine-presentation/**; crates/caravan-demo/**
-Do: Dispatch the contract, projection, demo wiring, and evidence tasks only after their dependencies are reviewed. Preserve the distinction between authoritative game state and owned render output.
-Accept: The branch has one settled rendering contract, one deterministic backend-neutral projection, a runnable demo observable, and focused evidence. The current anchor, presentation, conformance, and persistence behavior remains green.
+[root] Rendering and presentation-driver architecture (planning)
+Complete the first backend-neutral rendering slice, then build the developer-facing presentation-driver layer on top of it. Keep authoritative worldline sampling, complete GameState values, visual Tau, and target redraw execution as separate responsibilities.
+Files: rendering.vine; proposals/rendering-contract.md; proposals/presentation-host.md; crates/engine-presentation/**; crates/engine-api/**; crates/nworlds-host/**; crates/nworlds-desktop/**; crates/caravan-demo/**; crates/voxel-sample/**; crates/purity-tests/**; evidence/**
+Do: Preserve the completed single-state RenderBatch boundary while defining complete-state read-ahead/sample plans, visual-time anchoring/reset, redraw independence, and sample adoption. Do not introduce a mutable current game state or implicit interpolation between complete worlds.
+Accept: The first rendering slice remains green; one contract names the complete-state and visual-time distinctions; one implementation owns the presentation driver/sample-plan mechanism; both samples demonstrate the developer-facing pattern; and focused evidence proves Tau changes presentation only while selecting a new GameState resets visual time.
 -> anchor
+-> presentation-adoption
+-> presentation-contract
+-> presentation-driver
+-> presentation-evidence
 -> render-contract
 -> render-demo
 -> render-evidence
 -> render-projection
-> Stage owns the canonical selected Worldline, LogicalTime, and Tau; the presentation host is independent platform/execution plumbing.
-> Orchestrator is developer-authored ordinary imperative control code inside Stage. It chooses LogicalTime and Tau samples, input orchestration, lookahead, branches, persistence, and presentation, but it may not own imperative game state.
-> Only publication of a new immutable journal/worldline value may change authoritative game state. InteractionDefinition returns closed Transformation data and cannot construct timestamped journal entries directly.
+> The existing `GameState + Tau -> Frame<RenderBatch>` boundary remains the primitive projection; the new layer encodes sample plans and presentation driving above it.
+> Read-ahead returns complete authoritative GameState values. No implementation may treat a future GameState as a partial transition endpoint by default.
+> Selecting a different exact GameState resets visual Tau to zero. Varying Tau alone cannot query, publish, branch, or mutate authoritative state.
+> Target redraw is presentation demand only; it must not advance logical game state or turn host time into logical time.
 ---
 [anchor] Caravan anchor implementation (packet plan) (complete)
 Execute the independent packets below. Keep SDK objects separate from Caravan game objects, use direct indexed queries rather than interval stepping, and dispatch packets only after their dependencies are reviewed. The cellular automata anchor specification is the shared behavior target. Files: spec/cellular-automata-anchor.md; roadmap.md; spec/initial.md
@@ -427,3 +432,41 @@ Accept: The projection task's focused unit evidence passes, the demo snapshot re
 @artifact text/plain crates/caravan-demo/snapshots/anchor-trace.txt
 @guidance text/markdown proposals/rendering-contract.md
 @guidance text/markdown crates/caravan-demo/tests/snapshot.rs
+---
+[presentation-contract] Define complete-state sampling and visual-time contract (complete)
+Files: proposals/rendering-contract.md; proposals/presentation-host.md; rendering.vine
+Do: Make the developer-facing distinctions normative: read-ahead/sample plans return complete GameState values; Tau is visual time relative to the selected exact GameState; selecting a different GameState resets Tau; redraw does not advance authoritative state; and state comparison/interpolation is opt-in presentation logic rather than worldline semantics.
+Accept: The contract has one owner, names the selected-sample identity and reset rule, separates LogicalTime from visual Tau and host time, preserves the primitive RenderBatch boundary, and explicitly defers keyframes, retained scenes, GPU animation, and universal transition interpolation.
+-> render-contract
+> Complete sampled worlds are values in their own right; `S1` is not an implicit transition endpoint for `S0`.
+> `Tau` is a presentation phase/coordinate anchored at zero when the exact selected GameState changes; it is not a logical-time advance or host-clock API.
+> A redraw requests presentation of the selected state at current Tau; it does not call an authoritative update step.
+---
+[presentation-driver] Implement presentation driver and sample plans (complete)
+Files: crates/engine-presentation/**; crates/engine-api/**; crates/nworlds-host/**; crates/nworlds-desktop/**
+Do: Implement the settled generic presentation driver/sample-plan mechanism without replacing immutable query semantics. Keep the existing one-state Renderer compatibility path, add selected complete-state ownership plus visual-Tau anchoring/reset, and separate package publication/state selection from target redraw and frame submission.
+Accept: A driver can select a complete GameState, reset Tau on a different selection, advance visual Tau without querying or mutating authority, and emit Frame<RenderBatch>; sample plans contain complete states only; host redraw does not imply GamePackage authoritative stepping; and host time never enters LogicalTime.
+-> presentation-contract
+> `engine-presentation::PresentationDriver<S>` owns one selected complete `GameState<S>` and downstream visual `Tau`; selecting a state resets Tau, visual-time advance cannot query or mutate authority, and `present()` uses the existing pure Renderer boundary.
+> `engine-presentation::SamplePlan<S>` owns complete GameState samples for read-ahead/scrubbing/preview; it does not define transition interpolation or partial-state semantics.
+> `GamePackage::update()` now performs semantic input/publication without submitting a frame, while `GamePackage::present()` emits the current complete-state presentation; `ApplicationHost` retains `step()` only as an explicit convenience composition.
+> `nworlds-desktop` updates on native input events and presents only on redraw; redraw frequency is not an authoritative simulation clock. Caravan and voxel remain compatible clients.
+---
+[presentation-adoption] Adopt presentation driver in both samples (planning)
+Files: crates/caravan-demo/**; crates/voxel-sample/**; proposals/voxel-sample.md; README.md; index.md
+Do: Demonstrate the presentation-driver pattern in Caravan and voxel without moving camera, animation, or presentation controls into authoritative GameState. Exercise complete-state selection/read-ahead where useful, visual Tau variation for a fixed state, and reset on a new selected state; keep sample meaning and RenderBatch projection local.
+Accept: Both samples use the same developer-facing pattern with distinct game state types, Caravan and voxel worldlines remain immutable, Tau variation never publishes or changes logical state, and sample-specific visual controls remain downstream presentation state.
+-> presentation-driver
+> Caravan and voxel remain separate clients: common driver/RenderBatch mechanics are shared, game meaning and semantic projections are not.
+> Camera and other showcase controls are presentation state; they do not become Caravan/Voxel facts or authoritative worldline entries.
+> A sample may read ahead complete worlds for preview/scrubbing/comparison, but no sample silently invents a transition/interpolation contract.
+---
+[presentation-evidence] Prove presentation-driver purity and redraw independence (planning)
+Files: crates/purity-tests/**; crates/engine-presentation/**; crates/nworlds-host/**; crates/caravan-demo/**; crates/voxel-sample/**; evidence/**
+Do: Add focused evidence for complete-state read-ahead, Tau-only visual variation, selected-state Tau reset, no authoritative mutation/query from Tau changes, redraw independence, and unchanged RenderBatch/target behavior. Keep compile-fail purity evidence distinct from sample runtime evidence.
+Accept: Equal selected GameState values remain authoritative under repeated Tau changes; a new selected GameState anchors Tau at zero; no renderer or driver can mutate/publish/query through visual Tau; both samples pass regression evidence; and workspace/conformance/purity checks remain green.
+-> presentation-adoption
+-> presentation-driver
+> Generic compile-fail evidence proves the boundary shape; Caravan/voxel tests prove client adoption; neither evidence class substitutes for the other.
+> Compile, deterministic presentation, native runtime, and device/profile support remain separately named claims.
+> The evidence must prove redraw frequency is not an authoritative simulation clock.

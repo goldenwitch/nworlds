@@ -33,11 +33,12 @@ impl GamePackage for SyntheticPackage {
         Ok(())
     }
 
-    fn step(&mut self) -> Result<(bool, Self::Frame), Self::Error> {
-        Ok((
-            false,
-            Frame::new(engine_api::Tau::zero(), RenderBatch::empty()),
-        ))
+    fn update(&mut self) -> Result<bool, Self::Error> {
+        Ok(false)
+    }
+
+    fn present(&self) -> Result<Self::Frame, Self::Error> {
+        Ok(Frame::new(engine_api::Tau::zero(), RenderBatch::empty()))
     }
 
     fn save_selected(&self) -> Result<Vec<u8>, Self::SaveError> {

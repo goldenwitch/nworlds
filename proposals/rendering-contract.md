@@ -153,3 +153,76 @@ The first implementation is sufficient when focused evidence proves:
 
 The contract does not require a particular Rust struct layout beyond the
 existing `Renderer<Snapshot>` and `Frame` boundaries.
+
+## Presentation Driver Extension
+
+The first rendering slice above is the primitive projection boundary. The next
+developer-facing layer encodes presentation without making a redraw callback
+the game loop.
+
+### Complete-state sampling
+
+Read-ahead is a sampling operation over complete immutable worlds:
+
+```text
+S0 = state(worldline, t0)
+S1 = state(worldline, t1)
+S2 = state(worldline, t2)
+```
+
+Each `S` is a complete `GameState` at its exact `LogicalTime`. `S1` is not an
+animation endpoint or a partially advanced `S0`; the engine never requires
+interpolation between authoritative states. A sample plan may return one or
+many complete states for scrubbing, preview, comparison, or presentation.
+
+### Visual-time anchoring
+
+`Tau` is visual time relative to the currently selected complete `GameState`.
+When a different exact `GameState` sample is selected, the presentation driver
+resets its visual-time anchor:
+
+```text
+select(S0)       -> Tau = 0
+advance_visual   -> Tau = Tau + delta
+present(S0,Tau)  -> Frame<RenderBatch>
+select(S1)       -> Tau = 0
+```
+
+Changing `Tau` alone may change only presentation/animation output for the
+fixed selected state. It may not query another logical state, select a branch,
+publish a journal fact, mutate authoritative values, or turn host time into
+logical game time. `Tau` is a visual phase/coordinate, not a logical-time
+advance, a state-transition instruction, or a host-clock API.
+
+The exact selected sample is the anchor identity. A change of selected
+`GameState` value, including its sampled `LogicalTime`, resets `Tau`; equal
+visual output does not authorize the driver to retain a stale anchor across a
+new selection.
+
+### Redraw independence
+
+The target may redraw at any rate. Redraw is a request to present the current
+selected state at the driver's current visual `Tau`; it is not a request to
+advance authoritative game state:
+
+```text
+native redraw
+  -> present(selected GameState, current Tau)
+  -> Frame<RenderBatch>
+  -> RenderSink
+```
+
+Input/publication, complete-state sampling, visual-time advancement, and target
+submission are separate responsibilities. A package may publish a new
+immutable worldline in response to semantic input, select a complete state
+from that worldline, and render that state repeatedly at different visual
+times without a traditional mutable update loop.
+
+### Explicit non-goals
+
+This extension does not yet define keyframes, skeletal animation, retained
+scene graphs, GPU resource lifetimes, automatic transition interpolation, or a
+universal animation-rate policy. Those are later consumers of the complete
+state plus visual-time boundary. Any visual comparison or diff between two
+complete sampled worlds must be an explicit presentation operation, not an
+implicit change to authoritative state semantics.
