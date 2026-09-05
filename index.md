@@ -27,28 +27,16 @@ it does not advance or mutate a hidden current state.
   concrete radius-5, 91-tile fixture used by the implementation and tests.
 - [Discontinuity projection](spec/discontinuity-projection.md) - the
   immutable breakpoint, piece-selection, and projection contract.
-- [Build graph](build.vine) - the dependency-ordered implementation packets
-  and their acceptance criteria.
-- [Library boundary graph](library-boundary.vine) - the library-first contract,
-  ownership classification, and contamination-remediation gates.
-- [Redundancy pass](redundancy.vine) - the all-up inventory and canonical-owner
-  plan for collapsing duplicate plans, prose, code, and evidence.
 - [Library contract](proposals/library-contract.md) - the supported temporal
   surface, ownership classes, and dependency-direction rules.
-- [Rendering plan](rendering.vine) - the completed backend-neutral rendering
-  projection and its target-facing host boundary.
 - [Stage layer proposal](proposals/stage-layer.md) - the boundary between the
   canonical logical game experience and platform presentation plumbing.
 - [Presentation host proposal](proposals/presentation-host.md) - the platform
   and execution responsibilities surrounding Stage.
 - [Target factory proposal](proposals/target-factory.md) - the target-neutral
   developer path and host-owned artifact minting contract.
-- [Target factory plan](target-factory.vine) - the ordered design work for
-  HostContract, RenderBatch, resolution, CLI, and artifact minting.
 - [Platform support matrix](proposals/platform-support-matrix.md) - adapter
   axes, target cells, and activation gates for host composition.
-- [Host adapter wiring graph](host.vine) - the first host proof composition;
-  target minting is owned by the target factory proposal.
 - [Target support graph](support.vine) - the closed desktop target universe,
   explicit gaps, and native or appropriate CI plan.
 - [Demo gameplay plan](gameplay.vine) - the design-derived inventory and
@@ -61,14 +49,9 @@ it does not advance or mutate a hidden current state.
   reusable identity, ordering, transport-envelope, membership-view, and
   immutable journal-operation pattern for local, replay, and future network
   input.
-- [Transport and journal graph](transport.vine) - the completed contract,
-  ordered-batch, journal-bridge, and cross-source evidence packets.
 - [Caravan Orchestrator anchor](proposals/caravan-orchestrator-anchor.md) -
   the completed application checkpoint for exercising Stage and Orchestrator
   around the existing immutable engine seams.
-- [Orchestrator build graph](orchestrator.vine) - the completed vertical slice,
-  host-facing composition, and acceptance evidence; future extraction remains
-  conditional.
 
 ## Workspace Components
 

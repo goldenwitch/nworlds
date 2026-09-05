@@ -1,7 +1,7 @@
 # Caravan of Seasons Roadmap
 
 The abstract model is defined in [spec/initial.md](spec/initial.md). The
-implementation graph is [build.vine](build.vine); canonical behavior lives in
+current implementation is complete for the anchor; canonical behavior lives in
 the specifications and active proposals that own each boundary.
 
 ## Target
@@ -41,8 +41,8 @@ present(worldline, logical_time, tau) =
 
 ## Current Position
 
-The indexed anchor packet is complete. `build.vine` is complete, and its
-artifacts cover the reference game, conformance report, Caravan persistence,
+The indexed anchor packet and its supporting artifacts are complete for the
+reference game, conformance report, Caravan persistence,
 benchmarks, compiler-boundary tests, and independent frozen projection corpus.
 The public query is direct, the retired tick-fold calculation is absent, and
 the reference oracle selects immutable discontinuity pieces before doing
@@ -51,7 +51,7 @@ Orchestrator slice is also implemented and tested; it does not add a generic
 engine Orchestrator API.
 
 The reusable temporal library boundary is now isolated and evidenced by
-`proposals/library-contract.md`, `library-boundary.vine`, the generic
+`proposals/library-contract.md`, the generic
 `engine-api` consumer proof, the dependency-direction guard, and the
 library-only build check. Caravan is the reference game/sample consumer, and
 `nworlds-desktop` now supplies the generic target-host lifecycle with a
@@ -71,13 +71,13 @@ The completed packet provides:
   Caravan-specific persistence, and deterministic replay; and
 - executable conformance, benchmark, demo, parity, and purity evidence.
 
-The packet-level delegation plan and its path ownership remain in
-[build.vine](build.vine); this roadmap records the higher-level direction.
+The packet-level delegation and path ownership are settled by the implementation;
+this roadmap records the higher-level direction.
 
 The Orchestrator experiment provides a mutable control layer over immutable
 worldline, journal, and game-state values. Its input, transformation,
-publication, Stage, persistence, and presentation evidence is in
-[orchestrator.vine](orchestrator.vine).
+publication, Stage, persistence, and presentation evidence is recorded in the
+[Caravan Orchestrator anchor](proposals/caravan-orchestrator-anchor.md).
 
 The concrete Caravan rendering-object projection, first presentation-host proof,
 and Windows `winit`/`wgpu` runtime evidence are implemented and manually
@@ -101,7 +101,7 @@ nworlds package
 
 Target resolution, host capabilities, artifact minting, and unsupported-
 environment reporting belong to nworlds, not to each game package.
-The design work is ordered in [target-factory.vine](target-factory.vine); the
+The target-factory proposal records the design; the
 desktop proof client is not the target-factory implementation.
 
 ## Remaining Work
@@ -112,8 +112,8 @@ Extend the domain only when a concrete requirement identifies the additional
 definitions, composition rules, and evidence needed beyond the current anchor.
 
 The reusable transport and journal layer is implemented in
-[proposals/transport-and-journal.md](proposals/transport-and-journal.md) and
-[transport.vine](transport.vine). `OrderedInputBatch`, `InputBuffer`,
+[proposals/transport-and-journal.md](proposals/transport-and-journal.md).
+`OrderedInputBatch`, `InputBuffer`,
 `InputWindow`, and `SemanticInputBatch` are the canonical transport-to-game
 crossing; `InputPacketSet` remains only as a compatibility membership view
 until deliberate cleanup.

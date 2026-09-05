@@ -15,7 +15,7 @@ not a new distribution or runtime layer.
 
 ## Current Basis
 
-- `build.vine` makes productization depend on benchmarks, persistence, and the
+- The completed anchor makes productization depend on benchmarks, persistence, and the
   proof package. Its acceptance condition requires an owner, contract,
   dependency, and reproducible evidence for every activated concern.
 - The root workspace contains the engine/domain crates, a terminal demo,
@@ -61,4 +61,4 @@ test or report. Until then, keep the terminal demo, local desktop proof,
 evidence reports, and reference measurements as the productization boundary.
 
 This review does not change source, manifests, specifications, the semantic
-contract, the roadmap, or `build.vine`.
+contract, or the roadmap.

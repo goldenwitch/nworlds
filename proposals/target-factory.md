@@ -520,7 +520,6 @@ remaining target-factory decisions are:
 
 ## Deferred Implementation
 
-The dependency-ordered design and implementation work is recorded in
-[target-factory.vine](../target-factory.vine). No target-factory crate,
+The design and implementation work remains deferred. No target-factory crate,
 generated entrypoint, or package manifest is implemented by this proposal;
 those are downstream artifacts of the decisions and acceptance evidence.

@@ -62,8 +62,8 @@ CaravanOrchestrator
 ```
 
 The initial Rust structs live in `caravan-demo`; their shape is intentionally
-still application-owned. The first target-local host proof is recorded in the
-Windows `winit`/`wgpu` composition in [host.vine](../host.vine). The desired
+still application-owned. The first target-local host proof is implemented in
+the Windows `winit`/`wgpu` composition. The desired
 target-neutral developer workflow and target minting are owned by
 [target-factory.md](target-factory.md). No engine-wide
 `Orchestrator` trait is required until multiple concrete orchestrators reveal a

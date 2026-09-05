@@ -1,7 +1,7 @@
 # Library Contract and Ownership Register
 
-This document is the working register for the library-first boundary tracked by
-`library-boundary.vine`. It records the current repository facts and the
+This document is the working register for the library-first boundary. It records
+the current repository facts and the
 contract decisions that constrain remediation. The core-contract task will
 settle any remaining public type or crate-name choices; this register does not
 promote current implementation convenience into a library obligation.

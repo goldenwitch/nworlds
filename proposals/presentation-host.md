@@ -160,8 +160,8 @@ where adaptation lives. The first native row is Windows
 (`x86_64-pc-windows-msvc`) with `winit` lifecycle/input plumbing and a `wgpu`
 render sink; additional platform rows remain pending in that matrix.
 
-The dependency-ordered first-proof plan is recorded in
-[host.vine](../host.vine). The public target-minting workflow is owned by the
+The first-proof composition is implemented by the generic desktop host.
+The public target-minting workflow is owned by the
 target-factory proposal; this host proposal owns the runtime port boundary.
 
 ## Host Responsibilities

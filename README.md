@@ -84,15 +84,8 @@ factory, not to the game package's public workflow.
 - [Platform matrix](proposals/platform-support-matrix.md) - host-owned target profiles.
 - [Productization review](proposals/productization-review.md) - what is and is not production-bound.
 - [Evidence matrix](evidence/clause-to-test.md) - executable and manual acceptance evidence.
-- [Build graph](build.vine) - dependency-ordered anchor work.
-- [Library boundary graph](library-boundary.vine) - the library-first contract
-  and application-contamination remediation plan.
-- [Redundancy pass](redundancy.vine) - the all-up inventory, canonical-owner,
-  collapse, cleanup, and evidence-closure plan.
 - [Library contract](proposals/library-contract.md) - ownership classes,
   public temporal surface, and dependency-direction rules.
-- [Host graph](host.vine) - first host proof composition; target minting is
-  owned by the target factory.
 - [Desktop host](crates/nworlds-desktop/Cargo.toml) - generic target-local
   `winit`/`wgpu` composition mapped over the target-neutral host contract;
   Caravan and voxel connect through package-owned examples/composition.
@@ -106,8 +99,6 @@ factory, not to the game package's public workflow.
   independent host-port composition.
 - [Target factory proposal](proposals/target-factory.md) - the desired
   target-neutral developer path, CLI contract, and host-owned artifact minting.
-- [Target factory plan](target-factory.vine) - the dependency-ordered contract
-  and migration decisions for host-owned target minting.
 - [Support graph](support.vine) - committed desktop targets, explicit gaps, and
   native or appropriate CI work.
 - [Demo gameplay plan](gameplay.vine) - the design-derived inventory and

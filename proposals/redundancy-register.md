@@ -1,6 +1,6 @@
 # Redundancy Register
 
-This is the measured register for [redundancy.vine](../redundancy.vine). It
+This is the measured register for redundancy across the repository. It
 separates repeated contracts from distinct consumers, historical proof, and
 supporting evidence. A row is a candidate for collapse only when the artifacts
 assert the same contract or implement the same responsibility.
@@ -13,10 +13,10 @@ assert the same contract or implement the same responsibility.
 | Journals, timestamp authoring, branches, direct indexed queries | `engine-journal`, `engine-branches`, `engine-index`, exposed through `engine-api` | Game specializations and evidence |
 | State-first presentation contract | `engine-presentation` and the rendering contract | Game render projections and target sinks |
 | Passive input, storage, render, and package ports | `nworlds-host` | Target compositions and in-memory proofs |
-| Stage/Orchestrator application semantics | `caravan-demo`'s `engine_integration.rs`, `stage.rs`, `orchestrator.rs` | `stage-layer.md`, `caravan-orchestrator-anchor.md`, completed graphs |
-| Semantic input and transformation boundary | `caravan-demo`'s `input.rs`, `interaction.rs`, `transformation.rs` plus transport primitives | `input-and-interaction.md`, `transport-and-journal.md`, completed graphs |
+| Stage/Orchestrator application semantics | `caravan-demo`'s `engine_integration.rs`, `stage.rs`, `orchestrator.rs` | `stage-layer.md`, `caravan-orchestrator-anchor.md`, implementation and evidence records |
+| Semantic input and transformation boundary | `caravan-demo`'s `input.rs`, `interaction.rs`, `transformation.rs` plus transport primitives | `input-and-interaction.md`, `transport-and-journal.md`, implementation and evidence records |
 | Renderer-agnostic render vocabulary | `engine-presentation::RenderBatch`, exposed through `engine-api` | Caravan/voxel projections and target sinks are clients; target lifecycle remains separate |
-| Target/package/artifact resolution | `target-factory.vine` and `target-factory.md` | Support matrix, host proposal, CI evidence |
+| Target/package/artifact resolution | `target-factory.md` | Support matrix, host proposal, CI evidence |
 | Declared target regimes and support evidence | `support.vine` and `platform-support-matrix.md` | Target-factory resolution and CI records |
 | Native lifecycle/backend execution | Generic target composition (`nworlds-desktop`) | Caravan/voxel client render projections and historical host graph |
 | Reference-game meaning | `caravan-domain`, `caravan-vegetation`, `caravan-hazards`, `caravan-seeded`, `caravan-reference`, `caravan-persistence` | Demo, conformance, benchmarks |
@@ -28,7 +28,7 @@ assert the same contract or implement the same responsibility.
 ### R1: Temporal library contract
 
 **Observed artifacts:** `library-contract.md`, `spec/initial.md`,
-`roadmap.md`, `build.vine`, `engine-api`, `engine-sdk`, and the generic
+`roadmap.md`, `engine-api`, `engine-sdk`, and the generic
 consumer/purity tests.
 
 **Classification:** Mostly layered, not redundant. `spec/initial.md` owns the
@@ -42,12 +42,12 @@ advertised facade.
 ### R2: Host ports and presentation host
 
 **Observed artifacts:** `presentation-host.md`, `stage-layer.md`, `target-factory.md`,
-`host.vine`, `target-factory.vine`, `nworlds-host`, and Caravan host aliases.
+the host and target-factory proposals, `nworlds-host`, and Caravan host aliases.
 
 **Classification:** True prose overlap; implementation layering is distinct.
 `nworlds-host` is the implementation owner. `presentation-host.md` owns port
 roles; `target-factory.md` owns minting/resolution; `stage-layer.md` owns the
-application Stage boundary; completed `host.vine` is historical proof.
+application Stage boundary; the existing desktop host is historical proof.
 
 **Decision:** Collapse repeated port definitions into links to
 `presentation-host.md` and `nworlds-host`. Keep target-factory references
@@ -55,8 +55,8 @@ focused on package/artifact resolution. Do not create another host library.
 
 ### R3: Stage and Orchestrator
 
-**Observed artifacts:** `orchestrator.vine`, `proposals/stage-layer.md`,
-`proposals/caravan-orchestrator-anchor.md`, `host.vine`, `caravan-demo/src/stage.rs`,
+**Observed artifacts:** `proposals/stage-layer.md`,
+`proposals/caravan-orchestrator-anchor.md`, `nworlds-desktop`, `caravan-demo/src/stage.rs`,
 `caravan-demo/src/orchestrator.rs`, and `engine_integration.rs`.
 
 **Classification:** One application implementation with several historical and
@@ -70,7 +70,7 @@ VINEs as history. Remove duplicate full ownership prose from future docs.
 ### R4: Input and transport
 
 **Observed artifacts:** `input-and-interaction.md`,
-`transport-and-journal.md`, `transport.vine`, `orchestrator.vine`, `host.vine`,
+`transport-and-journal.md`, `nworlds-host`,
 `caravan-demo/src/input.rs`, `src/interaction.rs`, `src/host/input.rs`, and
 `nworlds-host` input ports.
 
@@ -85,8 +85,8 @@ than restate both. No new input abstraction is introduced.
 
 ### R5: Rendering and RenderBatch
 
-**Observed artifacts:** `rendering-contract.md`, `rendering.vine`,
-`presentation-host.md`, `target-factory.md`, `target-factory.vine`,
+**Observed artifacts:** `rendering-contract.md`,
+`presentation-host.md`, `target-factory.md`,
 `engine-presentation`, Caravan `render.rs`, the former voxel target sink, and
 `nworlds-desktop/src/wgpu.rs`.
 
@@ -97,23 +97,23 @@ lifecycle is now the shared implementation, while historical/client evidence
 remains separate.
 
 **Decision:** `rendering-contract.md` owns current state-first presentation;
-`target-factory.vine` owns the implemented `RenderBatch` and desktop-host
+`target-factory.md` owns the implemented `RenderBatch` and desktop-host
 remediation. Samples keep state-to-batch projection; `nworlds-desktop` owns
 generic lifecycle execution and both client compositions use it.
 
 ### R6: Target factory, support, and host target records
 
-**Observed artifacts:** `target-factory.md`, `target-factory.vine`,
+**Observed artifacts:** `target-factory.md`,
 `platform-support-matrix.md`, `support.vine`, `presentation-host.md`, and the
-completed Windows nodes in `host.vine`.
+completed Windows nodes in `nworlds-desktop`.
 
 **Classification:** Four axes are distinct: target minting, declared support
 regimes, runtime ports, and historical proof. The risk is repeated prose that
 makes them look like competing contracts.
 
-**Decision:** `target-factory.vine` is the only active future target/package
+**Decision:** `target-factory.md` is the only active future target/package
 plan. `support.vine` owns target status/evidence. `presentation-host.md` owns
-runtime port roles. `host.vine` remains historical proof and is not extended.
+runtime port roles. The existing desktop host remains historical proof and is not extended.
 
 ### R7: Code-level target composition
 
@@ -184,8 +184,8 @@ untracked directory with no manifest, workspace membership, or references.
 ## Collapse Order
 
 1. Complete this inventory and ownership map.
-2. Collapse future-plan overlap around `target-factory.vine`; leave completed
-   graphs historical and link them from the active plan.
+2. Keep future target/package work in `target-factory.md`; keep the active
+   proposals and evidence as the live records.
 3. Collapse proposal summaries so each boundary has one normative owner.
 4. Finish the existing Caravan integration-file reorganization and keep the
    voxel sample aligned with it.
