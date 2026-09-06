@@ -49,9 +49,10 @@ the host and target-factory proposals, `nworlds-host`, and Caravan host aliases.
 roles; `target-factory.md` owns minting/resolution; `stage-layer.md` owns the
 application Stage boundary; the existing desktop host is historical proof.
 
-**Decision:** Collapse repeated port definitions into links to
-`presentation-host.md` and `nworlds-host`. Keep target-factory references
-focused on package/artifact resolution. Do not create another host library.
+**Decision:** `presentation-host.md` owns port definitions. Secondary records
+link to it and keep only their boundary-specific constraints. Keep
+target-factory text focused on package/artifact resolution. Do not create
+another host library.
 
 ### R3: Stage and Orchestrator
 
@@ -97,9 +98,10 @@ lifecycle is now the shared implementation, while historical/client evidence
 remains separate.
 
 **Decision:** `rendering-contract.md` owns current state-first presentation;
-`target-factory.md` owns the implemented `RenderBatch` and desktop-host
-remediation. Samples keep state-to-batch projection; `nworlds-desktop` owns
-generic lifecycle execution and both client compositions use it.
+`engine-presentation::RenderBatch` owns the target vocabulary;
+`target-factory.md` records the factory-facing implementation constraint.
+Samples keep state-to-batch projection; `nworlds-desktop` owns generic lifecycle
+execution and both client compositions use it.
 
 ### R6: Target factory, support, and host target records
 
@@ -181,30 +183,16 @@ untracked directory with no manifest, workspace membership, or references.
 
 **Decision:** Removed during the audit. No `caravan-windows` crate is created.
 
-## Collapse Order
-
-1. Complete this inventory and ownership map.
-2. Keep future target/package work in `target-factory.md`; keep the active
-   proposals and evidence as the live records.
-3. Collapse proposal summaries so each boundary has one normative owner.
-4. Finish the existing Caravan integration-file reorganization and keep the
-   voxel sample aligned with it.
-5. Execute the remaining target-factory desktop-host remediation after the
-   shared RenderBatch contract is implemented.
-6. Deduplicate evidence rows and CI claims after the implementation paths are
-   stable.
-7. Delete only register-approved residue and rerun all graph, dependency,
-   workspace, conformance, purity, and target evidence.
-
-## Current Findings
+## Current State
 
 - Active production crate redundancy: **no confirmed duplicate**.
-- Active native target implementation overlap: **one confirmed overlap**
-   (`nworlds-desktop` versus `voxel-sample`), intentionally deferred until the
-   reusable desktop lifecycle/composition task is settled. Their game-to-target
-   render vocabulary is now shared through `RenderBatch`.
-- Normative prose/plan overlap: **confirmed**, concentrated in host,
-  Stage/Orchestrator, rendering, and target-factory records.
+- Generic host implementation count: **one** (`nworlds-host`).
+- Target-local client compositions: **two**, both using the shared desktop
+  lifecycle and `RenderBatch` vocabulary.
+- Normative prose overlap: **reduced**; host and rendering summaries link to
+  their owners, while the distinct input, transport, Stage, and target-factory
+  contracts remain separate.
 - Empty/unowned filesystem residue: **removed** (`caravan-windows`).
-- Generic host implementation count: **one** (`nworlds-host`); target-local
-  composition count: **two clients**, pending generic target-host extraction.
+- Remaining gaps are implementation or evidence work, not additional
+  abstractions: target runtime/device coverage, persistence evidence, and the
+  selected demo gameplay slice.

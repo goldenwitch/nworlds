@@ -448,6 +448,7 @@ name = "engine-api"
 version = "0.1.0"
 dependencies = [
  "engine-branches",
+ "engine-controls",
  "engine-index",
  "engine-journal",
  "engine-presentation",
@@ -476,6 +477,14 @@ dependencies = [
  "caravan-domain",
  "engine-journal",
  "engine-sdk",
+ "engine-time",
+]
+
+[[package]]
+name = "engine-controls"
+version = "0.1.0"
+dependencies = [
+ "engine-presentation",
  "engine-time",
 ]
 
@@ -2032,6 +2041,7 @@ name = "voxel-sample"
 version = "0.1.0"
 dependencies = [
  "engine-api",
+ "engine-controls",
  "nworlds-desktop",
  "nworlds-host",
  "winit",

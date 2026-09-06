@@ -1,6 +1,11 @@
 #![forbid(unsafe_code)]
 
 pub use engine_branches::{Branch, BranchError, BranchKind, Worldline};
+pub use engine_controls::{
+    ControlRect, ControlTarget, LogicalTimeDelta, NormalizedPoint, ParabolicProjection, Pixels,
+    PlaybackMode, PointerTarget, ScreenPoint, SliderFocus, StepDirection, TauDelta, TimelineAxis,
+    TimelineConfig, TimelineControls, TimelineError, TimelineLayout, Viewport,
+};
 pub use engine_index::{
     game_tick_boundary, game_tick_index, state, Breakpoint, BreakpointSource, DiscontinuityIndex,
     DiscontinuityIndexError, IndexedQuery, JournalSource, Piece, PieceBoundsError, QueryInput,

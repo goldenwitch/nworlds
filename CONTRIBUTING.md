@@ -37,9 +37,10 @@ Pull requests pass the required GitHub Actions checks: `Rust checks`,
 Also run `git diff --check` and validate any edited VINE graph. Keep manual
 Windows observations separate from automated test claims.
 
-## Public Game Commands
+## Planned Game Commands
 
-The public package workflow is target-neutral:
+The target-factory proposal defines this intended target-neutral package
+workflow:
 
 ```text
 nworlds test
@@ -47,15 +48,10 @@ nworlds run
 nworlds package
 ```
 
-`nworlds test` validates one discovered package and its semantic evidence.
-`nworlds run` resolves the local host, reuses or mints a compatible artifact,
-and launches the generated composition. `nworlds package` produces the
-artifacts allowed by host/distribution policy. These commands do not require
-target flags or platform knowledge in game code. Target/profile commands are
-reserved for host maintenance and debugging.
-
-The command contract, discovery rules, cache identity, phases, logs, and
-failure ownership live in [the target-factory proposal](proposals/target-factory.md).
+These commands are a design target, not a shipped CLI in the current research
+workspace. Their discovery rules, cache identity, phases, logs, and failure
+ownership live in [the target-factory proposal](proposals/target-factory.md).
+Target/profile commands are reserved for host maintenance and debugging.
 
 ## Pull Requests
 

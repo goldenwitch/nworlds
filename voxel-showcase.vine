@@ -1,0 +1,60 @@
+vine 1.2.0
+prefix: voxel-showcase
+title: Voxel showcase controls and matrix fire
+---
+[root] Build the voxel showcase control and fire slice (complete)
+Files: voxel-showcase.vine; proposals/voxel-showcase.md; crates/voxel-sample/**
+Do: Implement the first two sample tools through the complete architecture: journal-described tool selection and icons for removal, then a deterministic matrix-driven fire object with Tau animation. Preserve immutable worldline authority, direct logical-time queries, and target-neutral frame output. Keep wave function collapse as a measured follow-up rather than a hidden source of randomness.
+Accept: The proposal's control paths are implemented and evidenced; tool selection is a VoxelFact folded into VoxelState; Remove and Fire publish distinct immutable facts; redraw has no out-of-band tool input; matrix fire behavior is deterministic at LogicalTime; fire animation varies only with Tau; palette output is deterministic; and the workspace tests pass.
+-> control-path
+-> docs
+-> evidence
+-> fire-model
+-> proposal
+-> tool-vocabulary
+@guidance text/markdown proposals/voxel-showcase.md
+@guidance text/markdown proposals/input-and-interaction.md
+@guidance text/markdown proposals/rendering-contract.md
+@guidance text/markdown spec/cellular-automata-anchor.md
+---
+[proposal] Record the showcase boundary and first-slice decisions (complete)
+Files: proposals/voxel-showcase.md
+Do: Record the two-tool control vocabulary, input-to-journal propagation, journal-described selection state, deterministic 3x3 fire delay matrix, independent Tau animation, acceptance evidence, and the explicit WFC follow-up boundary.
+Accept: The proposal names ownership, pure functions, data paths, fixed constants, and non-goals without adding a generic engine abstraction.
+@artifact text/markdown proposals/voxel-showcase.md
+---
+[tool-vocabulary] Add sample-owned tools, palette slots, and icons (complete)
+Files: crates/voxel-sample/src/tool.rs; crates/voxel-sample/src/lib.rs
+Do: Define the closed Remove/Fire world vocabulary, fixed normalized palette geometry, deterministic slot hit testing, and target-neutral icon vertex projection. Export the sample-owned tool module; keep palette geometry disposable while the selected value is carried by journal-derived world state.
+Accept: Both tools have stable identities and icon geometry; palette hit testing and projection use the same slot layout; selected styling is deterministic; the module is exported; and focused tests cover the vocabulary and geometry.
+-> proposal
+---
+[fire-model] Add authoritative fire facts, pure matrix query, and Tau animation (complete)
+Files: crates/voxel-sample/src/world.rs; crates/voxel-sample/src/engine_integration.rs
+Do: Add SpawnFire, derived fire objects, the fixed 3x3 delay matrix, deterministic cascade/event derivation, and fire expiry to VoxelState querying. Extend the sample redraw projection so fire geometry and animation frames are derived from complete state and Tau while preserving the existing camera and worldline path. Integrate the tool palette into the sample frame projection without changing generic engine contracts.
+Accept: Fire is created only by a journal fact; queried fire state is repeatable at arbitrary LogicalTime; matrix delays and voxel removal are explicit; equal state/Tau inputs render equally; different Tau can change fire geometry; and existing voxel behavior remains green.
+-> proposal
+-> tool-vocabulary
+---
+[control-path] Route selection and actions through native input and package update (complete)
+Files: crates/voxel-sample/src/input.rs; crates/voxel-sample/src/package.rs
+Do: Add keyboard and palette selection packets, preserve existing camera controls, make left click dispatch the tool recovered from queried VoxelState after palette hit testing, publish SelectTool, Remove, or SpawnFire through JournalWriter, select the resulting complete state, and redraw without an extra tool argument. Keep camera controls presentation-only while keeping tool semantics in the worldline.
+Accept: Keys 1 and 2 and palette clicks publish SelectTool; Remove retains current behavior; Fire publishes SpawnFire; repeated direct queries recover the selected tool; camera controls still remain presentation-only; and package/input tests cover each path.
+-> fire-model
+-> fire-model
+-> proposal
+-> proposal
+-> tool-vocabulary
+-> tool-vocabulary
+---
+[evidence] Add showcase integration and deterministic acceptance evidence (complete)
+Files: crates/voxel-sample/tests/showcase.rs; evidence/clause-to-test.md
+Do: Add public-path tests for tool selection, parent isolation, fire matrix timing, non-monotonic direct queries, Tau-only animation changes, deterministic palette output, and the complete control-to-frame path. Record the relevant evidence mapping without depending on GPU pixels.
+Accept: Every proposal acceptance claim has a focused executable check or a named manual check; no test inspects renderer output as authoritative state; and the existing workspace evidence remains green.
+-> control-path
+---
+[docs] Update the runnable sample guide and architecture record (complete)
+Files: crates/voxel-sample/README.md; proposals/voxel-sample.md
+Do: Document the tool palette, controls, fire fact/state distinction, matrix timing, independent Tau animation, and the deferred WFC evaluation. Keep the engine/host/sample ownership table accurate.
+Accept: A developer can follow the control path from the README and proposal, run the sample, and distinguish authoritative LogicalTime behavior from Tau-only animation.
+-> evidence

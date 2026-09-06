@@ -5,6 +5,10 @@ into a runnable artifact. Game developers do not select operating systems,
 architectures, window systems, GPU backends, or recipient hardware as part of
 game composition.
 
+**Status:** design-only. `nworlds-host` and `nworlds-desktop` implement the
+supporting host boundaries, but no target-factory crate, generated entrypoint,
+or `nworlds` CLI is shipped by this workspace.
+
 This proposal owns target minting. The [presentation host](presentation-host.md)
 owns runtime ports and adapters. The [platform support matrix](platform-support-matrix.md)
 owns declared target regimes and evidence. The game owns its world and
@@ -38,7 +42,7 @@ game API. A target artifact may be native, packaged, or launched through a
 host-managed runtime; the recipient should not need to know its architecture
 or backend.
 
-## Developer Experience
+## Intended Developer Experience
 
 The public game-development path is target-neutral:
 
@@ -56,21 +60,10 @@ library, or GPU backend.
 
 These commands are the desired host contract. The current repository contains
 the isolated temporal library, the target-neutral host library, and the Caravan
-reference/demo proof client while the target factory is being designed;
-repository maintenance commands are not the public game-development path.
-
-The authoritative game boundaries remain unchanged:
-
-```text
-Worldline + LogicalTime -> GameState
-GameState + Tau -> minimal fire-and-forget renderer-agnostic render batch
-  -> Frame -> target RenderSink -> backend instructions
-```
-
-The target factory must not add journals, host state, device state, or platform
-metadata to game-state production or render-batch production. The render sink
-receives only the minimal renderer-agnostic batch and translates it into the
-appropriate target instructions.
+reference/demo proof client while the target factory is being designed. The
+temporal and presentation contracts it consumes are defined in
+[library-contract.md](library-contract.md) and
+[rendering-contract.md](rendering-contract.md).
 
 ## Recommended Shape
 
@@ -291,10 +284,9 @@ an explicit statement that the current proof package has no external assets.
   choices; it is not visible to game logic.
 - **TargetArtifact** is the build or distribution result for one resolved
   environment.
-- **RenderSink** receives the minimal renderer-agnostic render batch and
-  translates it into target/backend instructions.
-- **Presentation host** supplies runtime lifecycle, input, storage, and render
-  capabilities selected by the factory.
+- **RenderSink** receives the renderer-agnostic render batch and translates it
+  into target/backend instructions; its runtime role is defined by the
+  [presentation-host proposal](presentation-host.md).
 - **Platform matrix** records which profiles are supported and what evidence
   exists; it does not require each game to assemble those profiles.
 
@@ -302,10 +294,9 @@ The generated static composition is the factory's target-specific product. It
 owns the target entrypoint and adapter wiring for one resolved package/profile
 pair; it is not a second game package implementation.
 
-The reusable desktop lifecycle contract for those generated compositions is
-owned by the [presentation-host proposal](presentation-host.md). This proposal
-owns when the factory selects or generates that composition; the presentation
-host owns the runtime responsibility split inside it.
+The [presentation-host proposal](presentation-host.md) owns the reusable
+desktop lifecycle contract; this proposal owns when the factory selects or
+generates that composition.
 
 The target-factory concepts are distinct:
 
@@ -492,12 +483,12 @@ The CLI does not translate these into game facts, assign logical time, or ask a
 package to recover from a target failure. The command surface is a transport
 for the factory contract, not a second package or target API.
 
-## Decisions To Settle
+## Remaining Decision
 
 The game contract, package declaration, first render vocabulary, generated
 composition, resolution stages, artifact identity/evidence classes, and public
-CLI behavior are now settled in the implementation and evidence above. The
-remaining target-factory decisions are:
+CLI behavior are described here. They are not shipped factory behavior. The
+remaining target-factory decision is:
 
 1. **CI and artifacts**: Specify how CI mints, names, tests, publishes, and
   retains one artifact per supported profile, with device evidence separate
@@ -517,9 +508,3 @@ remaining target-factory decisions are:
 - Unsupported environments fail at the host boundary with an explicit result.
 - Existing Caravan composition remains a client of this contract; it is not
   the contract itself.
-
-## Deferred Implementation
-
-The design and implementation work remains deferred. No target-factory crate,
-generated entrypoint, or package manifest is implemented by this proposal;
-those are downstream artifacts of the decisions and acceptance evidence.

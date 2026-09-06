@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 engine-api = { path = "../engine-api" }
+engine-controls = { path = "../engine-controls" }
 nworlds-desktop = { path = "../nworlds-desktop" }
 nworlds-host = { path = "../nworlds-host" }
 winit = "0.30"

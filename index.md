@@ -19,6 +19,8 @@ it does not advance or mutate a hidden current state.
 
 ## Start Here
 
+- [Game developer guide](game-developer-guide.md) - the implemented engine
+  features and the path from game facts to a target-neutral package.
 - [Initial specification](spec/initial.md) - vocabulary, invariants, journal
   semantics, lookahead, branches, and presentation.
 - [Roadmap](roadmap.md) - settled constraints, the completed anchor, remaining
@@ -29,6 +31,10 @@ it does not advance or mutate a hidden current state.
   immutable breakpoint, piece-selection, and projection contract.
 - [Library contract](proposals/library-contract.md) - the supported temporal
   surface, ownership classes, and dependency-direction rules.
+- [Controls library proposal](proposals/controls-library.md) - the reusable
+  two-axis timeline controls, pointer semantics, and presentation ownership.
+- [Controls implementation plan](controls.vine) - the completed library-first
+  work graph and voxel integration evidence.
 - [Stage layer proposal](proposals/stage-layer.md) - the boundary between the
   canonical logical game experience and platform presentation plumbing.
 - [Presentation host proposal](proposals/presentation-host.md) - the platform
@@ -66,6 +72,7 @@ These crates provide the generic temporal engine and its public boundaries.
 | [`engine-journal`](crates/engine-journal) | Immutable journal storage and the journal-owned monotonic `JournalWriter`. |
 | [`engine-branches`](crates/engine-branches) | Immutable actual, counterfactual, and corrected branch construction from journal prefixes and suffixes. |
 | [`engine-index`](crates/engine-index) | Direct indexed-query kernel plus engine-neutral discontinuity breakpoints and half-open pieces. |
+| [`engine-controls`](crates/engine-controls) | Target-neutral timeline sliders, directional step controls, pointer mapping, automatic/manual mode, and owned control geometry. |
 | [`engine-presentation`](crates/engine-presentation) | State-plus-`Tau` render composition and frame values. |
 | [`engine-api`](crates/engine-api) | Generic facade for the supported temporal query, journal, branch, time, and presentation APIs. |
 | [`nworlds-host`](crates/nworlds-host) | Target-neutral `GamePackage` contract, independent host ports, and generic package/port composition. |
@@ -127,8 +134,8 @@ cargo run --manifest-path tests/conformance/Cargo.toml -- --report evidence/conf
 # Run compiler-boundary tests
 cargo test -p purity-tests
 
-# Check only the reusable temporal and host packages
-cargo check -p engine-time -p engine-sdk -p engine-journal -p engine-branches -p engine-index -p engine-presentation -p engine-api -p nworlds-host --locked
+# Check only the reusable temporal, controls, and host packages
+cargo check -p engine-time -p engine-sdk -p engine-journal -p engine-branches -p engine-index -p engine-controls -p engine-presentation -p engine-api -p nworlds-host --locked
 
 # Run the independent voxel sample
 cargo run --manifest-path crates/voxel-sample/Cargo.toml

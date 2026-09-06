@@ -30,7 +30,7 @@ authoritative interaction surface.
 
 ## Developer Path
 
-The public target-neutral game-development path is:
+The intended target-neutral game-development path is:
 
 ```text
 nworlds test
@@ -38,13 +38,9 @@ nworlds run
 nworlds package
 ```
 
-`nworlds test` discovers one package, validates its declaration and semantic
-evidence, and does not select a target. `nworlds run` resolves local host
-capabilities, mints or reuses a compatible artifact, and launches its generated
-static composition. `nworlds package` mints or reuses artifacts for the
-profiles permitted by host/distribution policy. Developers do not select
-operating systems, architectures, windowing libraries, or GPU backends in the
-normal workflow; raw target commands are maintenance/debug interfaces.
+The command surface is specified in the [target-factory proposal](proposals/target-factory.md)
+and is not yet a shipped CLI in this research workspace. The current executable
+checks and sample commands are listed in [index.md](index.md).
 
 The independent voxel sample is a separate consumer of the generic engine:
 
@@ -58,68 +54,18 @@ continuously. The recommended engine integration example is
 [`engine_integration.rs`](crates/voxel-sample/src/engine_integration.rs); the
 game-specific voxel model lives separately in `world.rs`.
 
-## Repository Checks
+## Repository Guide
 
-The current proof repository is maintained with:
+Game developers should start with the [Game Developer Guide](game-developer-guide.md),
+which walks through the engine features and the target-neutral composition path.
 
-```text
-cargo test --workspace --locked
-cargo test --manifest-path tests/conformance/Cargo.toml --locked
-```
+The structured workspace map, specifications, proposals, evidence, and common
+commands live in [index.md](index.md). Current work and deferred decisions are
+tracked in the [roadmap](roadmap.md) and the active VINE graph.
 
-The library-only boundary check is:
-
-```text
-cargo check -p engine-time -p engine-sdk -p engine-journal -p engine-branches -p engine-index -p engine-presentation -p engine-api -p nworlds-host --locked
-```
-
-Target-specific launch and device evidence belongs to host CI and the target
-factory, not to the game package's public workflow.
-
-## Repository Map
-
-- [Roadmap](roadmap.md) - current position, settled constraints, and deferred work.
-- [Initial specification](spec/initial.md) - temporal and immutable-state rules.
-- [Presentation host](proposals/presentation-host.md) - target and adapter ownership.
-- [Platform matrix](proposals/platform-support-matrix.md) - host-owned target profiles.
-- [Productization review](proposals/productization-review.md) - what is and is not production-bound.
-- [Evidence matrix](evidence/clause-to-test.md) - executable and manual acceptance evidence.
-- [Library contract](proposals/library-contract.md) - ownership classes,
-  public temporal surface, and dependency-direction rules.
-- [Desktop host](crates/nworlds-desktop/Cargo.toml) - generic target-local
-  `winit`/`wgpu` composition mapped over the target-neutral host contract;
-  Caravan and voxel connect through package-owned examples/composition.
-- [Voxel sample](crates/voxel-sample/Cargo.toml) - independent voxel cottage
-  consumer of the generic engine and target-neutral host surface.
-- [Voxel sample README](crates/voxel-sample/README.md) - colocated run guide
-  and file-by-file orientation for the sample.
-- [Voxel sample case study](proposals/voxel-sample.md) - the engine features
-  used by the sample and the recommended integration shape.
-- [Host runtime](crates/nworlds-host) - target-neutral package contract and
-  independent host-port composition.
-- [Target factory proposal](proposals/target-factory.md) - the desired
-  target-neutral developer path, CLI contract, and host-owned artifact minting.
-- [Support graph](support.vine) - committed desktop targets, explicit gaps, and
-  native or appropriate CI work.
-- [Demo gameplay plan](gameplay.vine) - the design-derived inventory and
-  ordered plan for the remaining player-facing demo loop.
-- [Caravan sample README](crates/caravan-sample/README.md) - colocated guide to
-  the reference-game organization, engine integration, native sample, and trace.
-
-## Development Checks
-
-Before opening a pull request, run:
-
-```text
-cargo fmt --all -- --check
-cargo clippy --workspace --all-targets --locked -- -D warnings
-cargo test --workspace --locked
-cargo test --manifest-path tests/conformance/Cargo.toml --locked
-cargo check --workspace --all-targets --locked
-```
-
-Target build and runtime evidence is host-owned and recorded separately from
-game-package semantics.
+Contributor workflow and required checks are in
+[CONTRIBUTING.md](CONTRIBUTING.md). Target and device observations remain
+separate from library and game-package evidence.
 
 ## Contributing
 

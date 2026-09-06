@@ -1,0 +1,45 @@
+vine 1.2.0
+prefix: controls
+title: Timeline controls library and voxel integration
+---
+[root] Add reusable timeline controls and validate them in the voxel sample (complete)
+Files: controls.vine; proposals/controls-library.md; crates/engine-controls/**; crates/nworlds-desktop/**; crates/voxel-sample/**; evidence/clause-to-test.md
+Do: Build a target-neutral screen-controls library first, then integrate two bottom sliders and four directional step controls into the voxel sample. Preserve immutable worldline authority, direct logical-time queries, explicit presentation state, and target-neutral render output. Keep screen pixels, normalized geometry, absolute times, and logical/Tau deltas in explicit unit types. Use a fixed-focus parabolic reprojection with the default sweet spot at 350/1000 so finite progressing times never hit a hard slider endpoint. Automatic progression is the default and advances once per host redraw step; input ingestion alone does not advance time. Slider and step interaction enters manual mode, while a world click resumes automatic progression.
+Accept: The library is independently tested before sample integration; typed screen and time units prevent coordinate/delta confusion; logical time and Tau can each be dragged and stepped in both directions; automatic progression advances both axes by configured fixed deltas; finite times remain inside the parabolic slider edges; manual timeline interaction pauses automatic progression; a world click resumes it; controls scale their layout from viewport units and use the same geometry for rendering and hit-testing; and workspace tests remain green.
+-> docs
+---
+[library] Implement the target-neutral controls library (complete)
+Files: crates/engine-controls/**; Cargo.toml
+Do: Add explicit Pixels, ScreenPoint, Viewport, LogicalTimeDelta, TauDelta, and SliderFocus units; normalized screen geometry, timeline-axis and step-direction vocabulary, two-slider/four-step layout, pointer hit-testing, fixed-focus ParabolicProjection for unbounded absolute times, deterministic inverse slider mapping, viewport-aware auto_scale for layout geometry, automatic/manual timeline state, resume semantics, and owned RenderBatch projection. Keep the crate independent of voxel/domain packages and native window/backend types.
+Accept: The library exposes explicit values and pure mapping/render functions; finite time values project strictly inside the slider edges with the default focus at 350/1000; exact endpoints map to the representable numeric limits; auto_scale derives resize-safe normalized rectangles from a fixed pixel design; rendering and hit-testing share that layout; it has no hidden clock, global state, worldline, journal, or host dependency; overflow behavior is explicit; and it compiles as a generic workspace member.
+---
+[library-evidence] Test the controls library in isolation (complete)
+Files: crates/engine-controls/src/**; crates/engine-controls/tests/**; evidence/clause-to-test.md
+Do: Add focused tests for typed screen/time units, fixed-focus parabolic projection and inverse endpoints, default automatic mode, both slider mappings, all four step directions, manual pause, world-resume behavior, deterministic geometry, viewport layout scaling, and time overflow/error handling.
+Accept: The controls tests demonstrate behavior without importing voxel types or starting a native host; equal inputs produce equal values and geometry; finite times do not saturate before the numeric endpoints; resize changes use the same layout for hit-testing and rendering; and the evidence matrix names the focused command.
+-> library
+---
+[host-tick] Provide idle update opportunities for automatic package progression (complete)
+Files: crates/nworlds-desktop/src/application.rs; crates/nworlds-desktop/src/**
+Do: Let the target-local desktop application invoke the target-neutral package update during its idle/redraw cycle so packages can advance fixed presentation control deltas without deriving authoritative time from a hidden renderer clock. Preserve existing event translation, redraw, shutdown, and generic host behavior.
+Accept: The desktop host remains package-neutral; idle update failures exit explicitly; the voxel package receives deterministic update opportunities while the window is open; and existing desktop tests remain green.
+-> library
+---
+[voxel-integration] Integrate timeline controls into the voxel package and frame projection (complete)
+Files: crates/voxel-sample/Cargo.toml; crates/voxel-sample/src/input.rs; crates/voxel-sample/src/package.rs; crates/voxel-sample/src/engine_integration.rs; crates/voxel-sample/src/tool.rs
+Do: Add pointer packets and timeline control dispatch, replace the duplicated presentation clock with the controls timeline where appropriate, query the selected VoxelState at the selected LogicalTime, render the two sliders and four step controls along the bottom, keep camera/tool ownership separate, and resume automatic progression on world clicks.
+Accept: The default sample advances logical time and Tau automatically; slider/step interaction freezes automatic progression; both axes move forward and backward; world clicks resume automatic progression and retain existing tool behavior; controls do not enter VoxelState or journal facts; and frame production remains a pure projection of selected state, explicit view state, Tau, and control geometry.
+-> host-tick
+-> library-evidence
+---
+[integration-evidence] Prove the complete control path (complete)
+Files: crates/voxel-sample/tests/**; crates/voxel-sample/src/**; crates/nworlds-desktop/src/**; evidence/clause-to-test.md
+Do: Add deterministic package-level tests for automatic progression, manual slider and step actions, world resume, selected-state scrubbing, control geometry presence, and parent-worldline isolation. Keep GPU pixels out of authoritative assertions.
+Accept: The complete input-to-control-to-query-to-frame path is executable without a GPU; all requested directions and mode transitions are covered; and existing showcase, purity, dependency, and conformance evidence remains green.
+-> voxel-integration
+---
+[docs] Document the controls library and sample workflow (complete)
+Files: game-developer-guide.md; crates/voxel-sample/README.md; proposals/controls-library.md; evidence/clause-to-test.md
+Do: Explain the control-state ownership rule, explicit pixel/viewport and logical/Tau delta units, fixed-focus parabolic time reprojection and its default 350/1000 sweet spot, the automatic/manual/resume lifecycle, the two time axes, viewport layout scaling, the screen layout, and how a game keeps controls and view state outside authoritative GameState.
+Accept: A developer can implement the same control path from the guide, distinguish logical time from Tau and absolute values from deltas, identify the generic library versus voxel-specific adaptation, and understand that slider geometry scaling and time reprojection are separate.
+-> integration-evidence

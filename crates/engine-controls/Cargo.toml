@@ -1,0 +1,8 @@
+[package]
+name = "engine-controls"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+engine-presentation = { path = "../engine-presentation" }
+engine-time = { path = "../engine-time" }

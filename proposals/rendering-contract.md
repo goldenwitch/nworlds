@@ -27,6 +27,12 @@ presentation sample. The Caravan inspection projection returns owned
 `RenderOutput` data; the target-facing renderer separately returns the shared
 `Frame<RenderBatch>` value.
 
+The generic `Renderer<S>` boundary receives only `GameState<S>` and `Tau`. A
+game-owned client projection may also receive an explicit presentation-only
+view value, such as a camera or viewport, before it constructs the target
+`RenderBatch`. That value must be an explicit input to a pure function; it is
+not hidden renderer state, authoritative `GameState`, or journal data.
+
 The target crossing is a separate client projection:
 
 ```text
@@ -70,7 +76,9 @@ missing facts.
 
 - `GameState<Snapshot>` owns the authoritative Caravan values being projected.
 - `Tau` selects presentation sampling and remains visible on `Frame`.
-- `GameState<Snapshot> + Tau` are the only inputs to render production.
+- `GameState<Snapshot> + Tau` are the only inputs to generic `Renderer` render
+  production; a client projection may add explicitly named presentation view
+  state.
 - `Renderer<Snapshot>` owns the pure projection from immutable state to owned
   rendering data.
 - `RenderOutput` is a Caravan-owned semantic inspection value; it does not
@@ -83,9 +91,10 @@ missing facts.
 - Interaction and transport/journal logic remain independent of render output.
 
 If a player-visible fact is absent from `GameState`, the missing work belongs
-in state production or the authoritative domain model. The renderer does not
-receive the journal, worldline, Orchestrator, input buffer, branch selector, or
-an auxiliary view context to recover it.
+in state production or the authoritative domain model. Neither the generic
+renderer nor a client projection may receive the journal, worldline,
+Orchestrator, input buffer, or branch selector to recover it. Client view state
+may affect projection only as an explicit presentation value.
 
 A renderer implementation is a trusted extension boundary: the trait receives
 immutable values and returns an owned value, while arbitrary implementation
@@ -110,17 +119,10 @@ selected Worldline + LogicalTime
 
 ## Host Crossing
 
-  The semantic rendering contract hands its client projection to the shared host
-  boundary:
-
-```text
-  Frame<RenderBatch>
-    -> RenderSink port
-    -> target backend, surface, or device
-```
-
-The render sink may copy, queue, submit, or discard the frame. It does not
-reinterpret authoritative game state or become a second renderer authority.
+After the client projection, `Frame<RenderBatch>` crosses the render sink
+defined by the [presentation-host proposal](presentation-host.md). The sink
+may copy, queue, submit, or discard the frame; it does not reinterpret
+authoritative state or become a second renderer authority.
 
 ## Non-Goals
 
@@ -128,7 +130,7 @@ This first contract does not define:
 
 - a GPU or `wgpu` architecture;
 - an operating-system window or surface API;
-- a camera, HUD, coordinate projection, or widget model;
+- a canonical camera, HUD, coordinate projection, or widget model;
 - asset, audio, or device-resource ownership;
 - a persistent GPU simulation or frame-history model;
 - a target-specific render command stream; or
@@ -148,8 +150,8 @@ The first implementation is sufficient when focused evidence proves:
 - actual, counterfactual, and corrected states use one rendering path; and
 - no render output is supplied to interaction reasoning or authoritative state
   evaluation; and
-- render production receives no input besides the selected `GameState` and
-  `Tau`.
+- generic `Renderer` production receives no input besides the selected
+  `GameState` and `Tau`; any client view input is explicit and presentation-only.
 
 The contract does not require a particular Rust struct layout beyond the
 existing `Renderer<Snapshot>` and `Frame` boundaries.

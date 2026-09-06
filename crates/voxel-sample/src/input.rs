@@ -3,12 +3,13 @@ use nworlds_host::PacketIngress;
 use winit::event::{ElementState, MouseButton, MouseScrollDelta, WindowEvent};
 use winit::keyboard::{KeyCode, PhysicalKey};
 
-use crate::package::VoxelInputPacket;
+use crate::{package::VoxelInputPacket, world::VoxelTool};
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct VoxelInputAdapter {
     cursor: Option<(i32, i32)>,
     orbit_anchor: Option<(i32, i32)>,
+    primary_down: bool,
 }
 
 impl DesktopInputAdapter for VoxelInputAdapter {
@@ -18,6 +19,12 @@ impl DesktopInputAdapter for VoxelInputAdapter {
         match event {
             WindowEvent::CursorMoved { position, .. } => {
                 let next = (position.x.round() as i32, position.y.round() as i32);
+                if self.primary_down {
+                    ingress.push(VoxelInputPacket::PointerMoved {
+                        x: next.0.max(0) as u32,
+                        y: next.1.max(0) as u32,
+                    });
+                }
                 if let Some(previous) = self.orbit_anchor {
                     ingress.push(VoxelInputPacket::CameraOrbit {
                         horizontal: next.0 - previous.0,
@@ -33,7 +40,21 @@ impl DesktopInputAdapter for VoxelInputAdapter {
                 ..
             } => {
                 if let Some((x, y)) = self.cursor {
-                    ingress.push(VoxelInputPacket::PrimaryClick {
+                    self.primary_down = true;
+                    ingress.push(VoxelInputPacket::PointerDown {
+                        x: x.max(0) as u32,
+                        y: y.max(0) as u32,
+                    });
+                }
+            }
+            WindowEvent::MouseInput {
+                state: ElementState::Released,
+                button: MouseButton::Left,
+                ..
+            } => {
+                self.primary_down = false;
+                if let Some((x, y)) = self.cursor {
+                    ingress.push(VoxelInputPacket::PointerUp {
                         x: x.max(0) as u32,
                         y: y.max(0) as u32,
                     });
@@ -83,6 +104,16 @@ impl VoxelInputAdapter {
         ingress: &mut dyn PacketIngress<VoxelInputPacket>,
     ) {
         let packet = match key {
+            PhysicalKey::Code(KeyCode::Digit1) | PhysicalKey::Code(KeyCode::Numpad1) => {
+                Some(VoxelInputPacket::SelectTool {
+                    tool: VoxelTool::Remove,
+                })
+            }
+            PhysicalKey::Code(KeyCode::Digit2) | PhysicalKey::Code(KeyCode::Numpad2) => {
+                Some(VoxelInputPacket::SelectTool {
+                    tool: VoxelTool::Fire,
+                })
+            }
             PhysicalKey::Code(KeyCode::KeyR) => Some(VoxelInputPacket::CameraReset),
             PhysicalKey::Code(KeyCode::Equal) | PhysicalKey::Code(KeyCode::NumpadAdd) => {
                 Some(VoxelInputPacket::CameraZoom {
@@ -151,6 +182,38 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec![VoxelInputPacket::CameraZoom {
                 distance_milli: -500
+            }]
+        );
+
+        let mut ingress = MemoryInputIngress::new();
+        adapter.translate_key(
+            winit::keyboard::PhysicalKey::Code(winit::keyboard::KeyCode::Digit1),
+            &mut ingress,
+        );
+        assert_eq!(
+            ingress
+                .drain()
+                .expect("remove selection should normalize")
+                .packets()
+                .collect::<Vec<_>>(),
+            vec![VoxelInputPacket::SelectTool {
+                tool: crate::world::VoxelTool::Remove
+            }]
+        );
+
+        let mut ingress = MemoryInputIngress::new();
+        adapter.translate_key(
+            winit::keyboard::PhysicalKey::Code(winit::keyboard::KeyCode::Digit2),
+            &mut ingress,
+        );
+        assert_eq!(
+            ingress
+                .drain()
+                .expect("fire selection should normalize")
+                .packets()
+                .collect::<Vec<_>>(),
+            vec![VoxelInputPacket::SelectTool {
+                tool: crate::world::VoxelTool::Fire
             }]
         );
     }

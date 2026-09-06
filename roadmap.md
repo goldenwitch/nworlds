@@ -4,40 +4,19 @@ The abstract model is defined in [spec/initial.md](spec/initial.md). The
 current implementation is complete for the anchor; canonical behavior lives in
 the specifications and active proposals that own each boundary.
 
-## Target
+## Model and Constraints
 
-The engine directly answers:
+The authoritative temporal model, vocabulary, invariants, and presentation
+composition live in the [initial specification](spec/initial.md). The fixed
+Caravan fixture and indexed projection are defined in the
+[cellular-automata anchor](spec/cellular-automata-anchor.md) and
+[discontinuity projection](spec/discontinuity-projection.md).
 
-```text
-state(worldline, t_) -> game_state
-```
-
-A temporal definition is indexed at `t_`; the engine does not evolve a prior
-state or depend on frame history. Presentation composes the query with the
-selected logical and presentation times:
-
-```text
-present(worldline, logical_time, tau) =
-  render(state(worldline, logical_time), tau)
-```
-
-## Settled Constraints
-
-- `LogicalTime` and `Tau` are distinct types backed by signed `i64` fixed-point
-  milliseconds. Tick scale and checked overflow behavior are centralized; one
-  automaton game tick remains one logical second.
-- Target-time events are included; equal-time events use journal append order.
-- Journal writing owns timestamps through a monotonic cursor:
-  `advance_to(t_)`, then `record(event)`.
-- A late fact creates an explicit corrected branch from a prefix. The actual
-  journal is never rewritten.
-- Actual, counterfactual, and corrected branches are immutable values.
-- Engine SDK objects remain separate from game-domain objects; `GameState` and
-  journal entries carry game-specific values without defining them as engine
-  primitives.
-- Sampling backward and arbitrary logical times are legal.
-- Networking, reconciliation, merging, looping, bounds, and final graphics
-  architecture are deferred until a concrete requirement activates them.
+The roadmap records project position rather than restating those contracts.
+The implementation must preserve immutable worldlines, direct queries at
+arbitrary logical times, journal-owned authoring, and state-first presentation.
+Networking, reconciliation, merging, looping, bounds, and final graphics
+architecture remain deferred until a concrete requirement activates them.
 
 ## Current Position
 

@@ -105,19 +105,10 @@ where
         }
     }
 
-    fn update(&mut self, event_loop: &ActiveEventLoop) {
+    fn step(&mut self, event_loop: &ActiveEventLoop) {
         if let Some(host) = &mut self.host {
-            if let Err(error) = host.update() {
-                eprintln!("desktop host update failed: {error:?}");
-                event_loop.exit();
-            }
-        }
-    }
-
-    fn present(&mut self, event_loop: &ActiveEventLoop) {
-        if let Some(host) = &mut self.host {
-            if let Err(error) = host.present() {
-                eprintln!("desktop host presentation failed: {error:?}");
+            if let Err(error) = host.step() {
+                eprintln!("desktop host step failed: {error:?}");
                 event_loop.exit();
             }
         }
@@ -148,12 +139,6 @@ where
         event: WindowEvent,
     ) {
         self.translate_event(&event);
-        if !matches!(
-            event,
-            WindowEvent::RedrawRequested | WindowEvent::CloseRequested
-        ) {
-            self.update(event_loop);
-        }
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::Resized(_) => {
@@ -181,7 +166,7 @@ where
                     window.request_redraw();
                 }
             }
-            WindowEvent::RedrawRequested => self.present(event_loop),
+            WindowEvent::RedrawRequested => self.step(event_loop),
             _ => {}
         }
     }

@@ -50,8 +50,9 @@ target selection.
 | `engine-journal` | Temporal library | Generic journal mechanics over opaque payloads; Caravan payloads are dev/test consumer values only. |
 | `engine-branches` | Temporal library | Generic immutable branch mechanics over opaque context and journal payloads; Caravan specialization is owned by the reference layer. |
 | `engine-index` | Temporal library | Generic direct query/index kernel over opaque journal sources and query results. |
+| `engine-controls` | Temporal library | Target-neutral `Pixels`/`Viewport` units, timeline slider/step mapping, typed logical/Tau deltas, fixed-focus parabolic time reprojection, viewport layout scaling, and automatic/manual presentation control values; no game or host types. |
 | `engine-presentation` | Temporal library | Production renderer contract is generic; current Caravan dependencies are dev-dependencies used by tests. |
-| `engine-api` | Temporal library | Generic facade for time, SDK envelopes, journal/branch/index mechanics, and state-first presentation. |
+| `engine-api` | Temporal library | Generic facade for time, SDK envelopes, journal/branch/index mechanics, controls, and state-first presentation. |
 | `nworlds-host` | Host library | Dependency-free target-neutral ports and `ApplicationHost` composition. |
 | `caravan-domain` | Caravan reference implementation | Caravan geometry, values, and closed journal payloads. |
 | `caravan-vegetation` | Caravan reference implementation | Farmer, wheat, forester, forest, and wood rules. |
@@ -126,6 +127,8 @@ The following are constraints for the next graph tasks, not alternate designs:
 - Direct state queries accept arbitrary logical times and remain independent of
   query order.
 - Presentation accepts only `GameState` and `Tau`, then returns owned output.
+- Screen-control state remains explicit presentation/control state; it does not
+  become authoritative game state or a hidden renderer clock.
 - Host ports transport values and bytes but do not add host clock or device
   state to game-state or render production.
 - The public facade must be consumable without importing `caravan-sample`,
@@ -146,6 +149,7 @@ The first isolated library surface is deliberately small:
 | `engine-journal` | `Journal<P>` and `JournalWriter<P>` with monotonic authoring and immutable publication | `P` is generic; timestamp assignment is library-owned. Branching requires a cloneable payload. |
 | `engine-branches` | `Branch<C, P>`, `Worldline<C, P>`, branch kind, immutable inclusive-prefix construction, and branch errors | `C` and `P` are generic; no game entry conversion. |
 | `engine-index` | `JournalSource`, `QueryInput<C, P>`, `IndexedQuery<C, P>`, direct indexed state evaluation, and generic discontinuity pieces | Breakpoint payloads and query results are opaque. |
+| `engine-controls` | Explicit screen units, normalized control geometry, timeline slider/step mapping, typed `LogicalTime`/`Tau` deltas, fixed-focus parabolic time reprojection, viewport layout scaling, and automatic/manual control values | No game, worldline, journal, host, or backend types. |
 | `engine-presentation` | `Renderer<S>` and `present(GameState<S>, Tau) -> Frame<F>` | Renderer output is owned; only state and `Tau` enter production. |
 | `engine-api` | A generic re-export facade for the supported temporal surface, if it removes real consumer friction | It may not re-export Caravan types. |
 

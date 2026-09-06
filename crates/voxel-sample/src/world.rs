@@ -85,6 +85,26 @@ impl Voxel {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct Fire {
+    position: VoxelPosition,
+    age: u8,
+}
+
+impl Fire {
+    pub(crate) const fn new(position: VoxelPosition, age: u8) -> Self {
+        Self { position, age }
+    }
+
+    pub const fn position(self) -> VoxelPosition {
+        self.position
+    }
+
+    pub const fn age(self) -> u8 {
+        self.age
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct VoxelScale(u16);
 
 impl VoxelScale {
@@ -113,6 +133,28 @@ impl Default for VoxelScale {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+pub enum VoxelTool {
+    #[default]
+    Remove,
+    Fire,
+}
+
+impl VoxelTool {
+    pub const ALL: [Self; 2] = [Self::Remove, Self::Fire];
+
+    pub const fn index(self) -> usize {
+        match self {
+            Self::Remove => 0,
+            Self::Fire => 1,
+        }
+    }
+
+    pub const fn all() -> [Self; 2] {
+        Self::ALL
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum VoxelFact {
     Place {
@@ -122,10 +164,20 @@ pub enum VoxelFact {
     Remove {
         position: VoxelPosition,
     },
+    SpawnFire {
+        position: VoxelPosition,
+    },
+    SelectTool {
+        tool: VoxelTool,
+    },
     SetScale {
         scale: VoxelScale,
     },
 }
+
+pub const FIRE_SPREAD_MATRIX: [[u8; 3]; 3] = [[2, 1, 2], [1, 0, 1], [2, 1, 2]];
+pub const FIRE_TICK_TICKS: i64 = 1_000;
+pub const FIRE_LIFETIME_TICKS: i64 = 3;
 
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub struct VoxelContext;
@@ -133,20 +185,40 @@ pub struct VoxelContext;
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct VoxelState {
     voxels: Vec<Voxel>,
+    fires: Vec<Fire>,
     scale: VoxelScale,
+    tool: VoxelTool,
 }
 
 impl VoxelState {
-    pub(crate) fn from_parts(voxels: Vec<Voxel>, scale: VoxelScale) -> Self {
-        Self { voxels, scale }
+    pub(crate) fn from_parts(
+        voxels: Vec<Voxel>,
+        fires: Vec<Fire>,
+        scale: VoxelScale,
+        tool: VoxelTool,
+    ) -> Self {
+        Self {
+            voxels,
+            fires,
+            scale,
+            tool,
+        }
     }
 
     pub fn voxels(&self) -> &[Voxel] {
         &self.voxels
     }
 
+    pub fn fires(&self) -> &[Fire] {
+        &self.fires
+    }
+
     pub const fn scale(&self) -> VoxelScale {
         self.scale
+    }
+
+    pub const fn tool(&self) -> VoxelTool {
+        self.tool
     }
 
     #[cfg(test)]

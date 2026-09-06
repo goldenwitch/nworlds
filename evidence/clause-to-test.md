@@ -28,6 +28,7 @@ below and are not treated as generic library evidence.
 | Presentation remains state-first | `no_extra_renderer_input`; `render_packets_are_owned_static_send_and_sync_data`; `repeated_equal_state_and_tau_inputs_project_equal_output` | `cargo test -p purity-tests --test boundary --locked` and `cargo test -p engine-presentation --test presentation --locked` | Render production accepts only `GameState + Tau`, returns owned output, and remains deterministic for equal inputs. |
 | Host-owned RenderBatch is generic owned draw intent | `render_batch::tests::batch_is_owned_triangle_data`; `render_batch::tests::batch_is_send_sync_static_data`; Caravan and voxel `Frame<RenderBatch>` client builds | `cargo test -p engine-presentation --locked`, `cargo check -p caravan-sample --locked`, and `cargo check -p voxel-sample --locked` | The shared batch contains only owned clip-space vertices/colors; current clients project into it and target sinks no longer consume game-specific render models. |
 | Host ports remain target-neutral | `composition_delegates_to_a_target_neutral_package` and the generic `ApplicationHost` unit suite | `cargo test -p nworlds-host --locked` | Input, storage, render, and package composition are tested with non-Caravan test values; host code owns transport only. |
+| Timeline controls remain generic and presentation-only | `engine-controls` unit tests; `package_timeline_advances_automatically_by_default`; `slider_and_step_controls_pause_and_move_both_time_axes`; `world_click_resumes_automatic_progression_and_controls_are_rendered` | `cargo test -p engine-controls --locked` and `cargo test -p voxel-sample --test showcase --locked` | Typed pixel/viewport units, logical/Tau delta units, fixed-focus parabolic time reprojection, two-axis sliders, four directional steps, automatic/manual mode, world resume, viewport layout scaling, deterministic geometry, and selected-state frame integration are exercised without GPU pixels or voxel facts in the controls library. |
 
 The current retained dependency gap is intentionally empty for production
 library dependencies. Caravan appears in selected engine test/dev-dependencies
@@ -140,3 +141,26 @@ existing compile jobs as a stronger claim.
 - Generic target-artifact minting, manifest/checksum inspection, and publication
   are not yet implemented by the target factory; existing host build jobs are
   compile evidence only.
+
+## Voxel Showcase Evidence
+
+| Claim | Primary evidence | Coverage |
+| --- | --- | --- |
+| Tool selection is journal-described and queryable | `selecting_fire_publishes_authoritative_tool_state`, `palette_click_selects_fire_through_the_worldline`, `public_tool_selection_is_recovered_from_logical_state` | `cargo test -p voxel-sample --test showcase` and `cargo test -p voxel-sample`; selection publishes `SelectTool`, direct queries recover it, and the parent worldline remains unchanged |
+| Remove and Fire use distinct immutable publication paths | `center_click_publishes_a_removal`, `fire_selection_publishes_a_spawn_fire_fact_on_world_click`, `public_publication_keeps_parent_history_unchanged` | `cargo test -p voxel-sample`; parent and child queries remain distinct |
+| Matrix fire behavior is deterministic at explicit logical times | `fire_matrix_is_query_derived_at_explicit_logical_times`, `public_fire_queries_are_repeatable_and_matrix_timed` | `cargo test -p voxel-sample --test showcase`; orthogonal and diagonal delays, cascade lifetime, and non-monotonic queries are covered |
+| Fire animation is independent presentation data | `fire_animation_uses_tau_without_changing_queried_state`, `public_redraw_is_deterministic_and_tau_drives_only_fire_presentation` | `cargo test -p voxel-sample`; equal state/Tau inputs repeat and Tau-only samples differ in render geometry |
+| The public control-to-frame path reaches the selected tool | `package_selection_and_control_path_are_publicly_selectable` | `cargo test -p voxel-sample --test showcase`; package selection, Fire click, and owned frame production cross the sample boundary |
+| Native tool controls normalize into semantic packets | `camera_keyboard_controls_emit_packets` | `cargo test -p voxel-sample`; keys 1 and 2 emit `SelectTool` packets without host-specific meaning beyond translation |
+
+The palette and native window appearance remain a manual smoke check because
+the current target evidence does not claim GPU pixel testing:
+
+```text
+cargo run --manifest-path crates/voxel-sample/Cargo.toml
+```
+
+Verify that the Remove and Fire icons are visible, keys 1/2 and palette clicks
+change the selected slot, a Remove click removes one voxel, and a Fire click
+shows an independently animating flame before matrix-spread changes become
+visible at later logical samples.

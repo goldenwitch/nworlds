@@ -47,12 +47,9 @@ Rust/API spellings. The owning concepts are:
 > authoritative game-state model.
 >
 
-The target-specific entrypoint is an OS- or runtime-specific executable
-composition root minted by the nworlds target factory. `ApplicationHost` may
-name a target-local bundle of concrete ports, but it is not a generic engine
-layer or a required abstraction. Game packages do not construct or select the
-entrypoint. The presentation-host vocabulary and port roles are owned by
-[presentation-host.md](presentation-host.md).
+Target entrypoints and host port roles are defined by the
+[presentation-host proposal](presentation-host.md). This document only defines
+what Stage owns after those ports are composed around it.
 
 ## Stage Responsibilities
 
@@ -138,19 +135,11 @@ The Orchestrator chooses `Tau` samples and owns their meaning. Explicit
 `LogicalTime` and `Tau` values remain valid for scrubbing, replay, testing, and
 deterministic presentation.
 
-## Presentation host responsibilities
+## Presentation host boundary
 
-The presentation host owns platform and execution concerns that do not define the
-logical game experience. The detailed host boundary is maintained in the
-[Presentation Host proposal](presentation-host.md).
-
-The host must not decide which worldline or branch is canonical for a Stage,
-which independent `LogicalTime` and `Tau` samples the Stage selects, or what a
-Caravan domain value means.
-
-The target factory composes the target-specific entrypoint with concrete Stage
-dependencies and narrow host ports at compile time. The entrypoint remains
-plumbing around Stage rather than the owner of the game experience.
+The [presentation-host proposal](presentation-host.md) owns host port roles,
+target entrypoints, and platform execution. Stage consumes those ports without
+delegating worldline selection, time sampling, or domain meaning to the host.
 
 ## Static Composition
 
@@ -180,20 +169,18 @@ These are boundary sketches, not an instruction to introduce these exact
 structs or to make every helper a trait. The useful constraint is that a
 concrete game composition is visible in types and invalid combinations are
 rejected before runtime where practical. Target-entrypoint composition and
-independent presentation-host ports are defined in
-[presentation-host.md](presentation-host.md).
+host ports are defined in [presentation-host.md](presentation-host.md).
 
 The Orchestrator invokes the engine's state operation for an already-selected
 worldline and logical time. That operation owns indexed evaluation semantics;
 the Orchestrator owns selection and control flow, not a second authoritative
 state model.
 
-`Renderer` belongs to Stage's logical presentation composition. The eventual
-backend that turns renderer output into device or surface work may remain host
-plumbing. The boundary keeps owned rendering objects downstream: game reasoning
-never consumes them as an alternate state model. Game-facing persistence
-similarly operates on semantic immutable values before a host storage port
-transports encoded bytes.
+`Renderer` belongs to Stage's logical presentation composition. The rendering
+contract and host crossing are defined in
+[rendering-contract.md](rendering-contract.md) and
+[presentation-host.md](presentation-host.md). Game-facing persistence likewise
+operates on immutable values before a host storage port transports bytes.
 
 ## Reserved Levers
 
