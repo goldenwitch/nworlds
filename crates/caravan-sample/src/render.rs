@@ -7,6 +7,55 @@ use crate::engine_integration::{GameState, LogicalTime, RenderBatch, RenderVerte
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub struct CaravanRenderer;
 
+/// Presentation controls for the two-dimensional Caravan projection.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct CaravanView {
+    zoom: f32,
+    offset: [f32; 2],
+}
+
+impl Default for CaravanView {
+    fn default() -> Self {
+        Self {
+            zoom: 1.0,
+            offset: [0.0, 0.0],
+        }
+    }
+}
+
+impl CaravanView {
+    pub const MIN_ZOOM: f32 = 0.5;
+    pub const MAX_ZOOM: f32 = 2.0;
+
+    pub fn new(zoom: f32, offset: [f32; 2]) -> Self {
+        Self {
+            zoom: zoom.clamp(Self::MIN_ZOOM, Self::MAX_ZOOM),
+            offset,
+        }
+    }
+
+    pub const fn zoom(self) -> f32 {
+        self.zoom
+    }
+
+    pub const fn offset(self) -> [f32; 2] {
+        self.offset
+    }
+
+    pub fn zoom_by(&mut self, delta: f32) {
+        self.zoom = (self.zoom + delta).clamp(Self::MIN_ZOOM, Self::MAX_ZOOM);
+    }
+
+    pub fn pan_by(&mut self, x_delta: f32, y_delta: f32) {
+        self.offset[0] += x_delta;
+        self.offset[1] += y_delta;
+    }
+
+    pub fn reset(&mut self) {
+        *self = Self::default();
+    }
+}
+
 /// Owned rendering data for one sampled Caravan state.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct RenderOutput {
@@ -144,13 +193,18 @@ pub fn project_output(state: &GameState<Snapshot>) -> RenderOutput {
 }
 
 fn render_batch(output: &RenderOutput) -> RenderBatch {
+    render_batch_with_view(output, CaravanView::default())
+}
+
+/// Projects one Caravan render output through an explicit disposable view.
+pub fn render_batch_with_view(output: &RenderOutput, view: CaravanView) -> RenderBatch {
     let mut vertices = Vec::with_capacity(output.tiles().len() * 18);
     for tile in output.tiles() {
-        let center = tile_center(tile);
+        let center = tile_center(tile, view);
         let color = tile_color(tile);
         for corner in 0..6 {
-            let first = hex_corner(center, corner);
-            let second = hex_corner(center, corner + 1);
+            let first = hex_corner(center, corner, view.zoom());
+            let second = hex_corner(center, corner + 1, view.zoom());
             vertices.extend([
                 RenderVertex::new(
                     [center[0], center[1], 0.0],
@@ -170,19 +224,23 @@ fn render_batch(output: &RenderOutput) -> RenderBatch {
     RenderBatch::new(vertices)
 }
 
-fn tile_center(tile: &RenderTile) -> [f32; 2] {
+fn tile_center(tile: &RenderTile, view: CaravanView) -> [f32; 2] {
     const HEX_RADIUS: f32 = 0.095;
     let q = tile.tile().q() as f32;
     let r = tile.tile().r() as f32;
-    [HEX_RADIUS * 1.732 * (q + r * 0.5), HEX_RADIUS * 1.5 * r]
+    let offset = view.offset();
+    [
+        HEX_RADIUS * 1.732 * (q + r * 0.5) * view.zoom() + offset[0],
+        HEX_RADIUS * 1.5 * r * view.zoom() + offset[1],
+    ]
 }
 
-fn hex_corner(center: [f32; 2], index: usize) -> [f32; 2] {
+fn hex_corner(center: [f32; 2], index: usize, zoom: f32) -> [f32; 2] {
     const HEX_RADIUS: f32 = 0.095;
     let angle = (30.0 + 60.0 * (index % 6) as f32).to_radians();
     [
-        center[0] + HEX_RADIUS * angle.cos(),
-        center[1] + HEX_RADIUS * angle.sin(),
+        center[0] + HEX_RADIUS * zoom * angle.cos(),
+        center[1] + HEX_RADIUS * zoom * angle.sin(),
     ]
 }
 

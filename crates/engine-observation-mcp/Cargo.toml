@@ -15,5 +15,7 @@ serde_json = "1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 [dev-dependencies]
+engine-branches = { path = "../engine-branches" }
 engine-presentation = { path = "../engine-presentation" }
+engine-journal = { path = "../engine-journal" }
 engine-sdk = { path = "../engine-sdk" }

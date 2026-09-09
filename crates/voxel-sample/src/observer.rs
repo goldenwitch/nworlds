@@ -1,13 +1,10 @@
 use std::convert::Infallible;
 
 use engine_api::{
-    AppendPreview, AppendRequest, AppendResult, BranchDescriptor, BranchId, BranchSession,
-    CameraPose, Frame, GameSurface, JournalView, LogicalTime, Revision, SurfaceManifest,
-    SurfaceSnapshotRequest, Tau,
+    CameraPose, Frame, GameSession, GameSurface, LogicalTime, RenderSnapshot, RenderSource,
+    SurfaceManifest, SurfaceSnapshotRequest, Tau,
 };
 use engine_observation::snapshot;
-use engine_observation::RenderSnapshot;
-use engine_observation::RenderSource;
 use serde_json::{json, Value};
 
 use crate::camera::Camera;
@@ -54,51 +51,21 @@ impl RenderSource for VoxelObservationSource {
     }
 }
 
-/// The voxel package's GameSurface implementation for generic agent tooling.
-pub struct VoxelGameSurface {
-    session: BranchSession<VoxelContext, VoxelFact>,
-    camera: Camera,
+/// The voxel package's GameSurface definition for generic agent tooling.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct VoxelSurface;
+
+pub type VoxelGameSession = GameSession<VoxelSurface>;
+
+pub fn new_game_session() -> VoxelGameSession {
+    let (worldline, _) = cottage_worldline();
+    GameSession::new(VoxelSurface, worldline).expect("cottage worldline is actual")
 }
 
-impl VoxelGameSurface {
-    pub fn new() -> Self {
-        let (worldline, _) = cottage_worldline();
-        Self {
-            session: BranchSession::new(worldline).expect("cottage worldline is actual"),
-            camera: Camera::default(),
-        }
-    }
-
-    fn decode_facts(facts: Vec<Value>) -> Result<Vec<VoxelFact>, String> {
-        facts.into_iter().map(decode_fact).collect()
-    }
-
-    fn snapshot_for(&self, request: SurfaceSnapshotRequest) -> Result<RenderSnapshot, String> {
-        let branch = self
-            .session
-            .branch(request.branch_id)
-            .map_err(|error| error.to_string())?;
-        let source = VoxelBranchSource {
-            worldline: branch,
-            camera: self.camera,
-        };
-        snapshot(
-            &source,
-            request.logical_time,
-            request.tau,
-            request.observation,
-        )
-        .map_err(|error| error.to_string())
-    }
-}
-
-impl Default for VoxelGameSurface {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl GameSurface for VoxelGameSurface {
+impl GameSurface for VoxelSurface {
+    type Context = VoxelContext;
+    type Fact = VoxelFact;
+    type View = Camera;
     type Error = String;
 
     fn manifest(&self) -> SurfaceManifest {
@@ -141,11 +108,15 @@ impl GameSurface for VoxelGameSurface {
         }
     }
 
-    fn view(&self) -> Result<Value, Self::Error> {
-        Ok(encode_view(self.camera))
+    fn default_view(&self) -> Self::View {
+        Camera::default()
     }
 
-    fn update_view(&mut self, update: Value) -> Result<Value, Self::Error> {
+    fn view(&self, view: &Self::View) -> Result<Value, Self::Error> {
+        Ok(encode_view(*view))
+    }
+
+    fn update_view(&self, view: &mut Self::View, update: Value) -> Result<Value, Self::Error> {
         let object = update
             .as_object()
             .ok_or_else(|| "view update must be an object".to_owned())?;
@@ -154,12 +125,10 @@ impl GameSurface for VoxelGameSurface {
             .and_then(Value::as_str)
             .ok_or_else(|| "view update requires an operation".to_owned())?;
         match operation {
-            "orbit" => self
-                .camera
-                .orbit(number(object, "yaw_delta")?, number(object, "pitch_delta")?),
-            "zoom" => self.camera.zoom(number(object, "distance_delta")?),
-            "reset" => self.camera.reset(),
-            "set_pose" => self.camera.set_pose(CameraPose::new(
+            "orbit" => view.orbit(number(object, "yaw_delta")?, number(object, "pitch_delta")?),
+            "zoom" => view.zoom(number(object, "distance_delta")?),
+            "reset" => view.reset(),
+            "set_pose" => view.set_pose(CameraPose::new(
                 decode_target(object.get("target"))?,
                 number(object, "yaw")?,
                 number(object, "pitch")?,
@@ -167,89 +136,34 @@ impl GameSurface for VoxelGameSurface {
             )),
             _ => return Err(format!("unsupported view operation: {operation}")),
         }
-        Ok(encode_view(self.camera))
+        Ok(encode_view(*view))
     }
 
-    fn observe(&self, request: SurfaceSnapshotRequest) -> Result<RenderSnapshot, Self::Error> {
-        self.snapshot_for(request)
+    fn encode_fact(&self, fact: &Self::Fact) -> Value {
+        encode_fact(fact)
     }
 
-    fn journal(&self, branch_id: BranchId) -> Result<JournalView, Self::Error> {
-        let descriptor = self
-            .session
-            .descriptor(branch_id)
-            .map_err(|error| error.to_string())?;
-        let facts = self
-            .session
-            .branch(branch_id)
-            .map_err(|error| error.to_string())?
-            .journal()
-            .iter()
-            .map(|entry| {
-                json!({
-                    "logical_time_ticks": entry.logical_time().ticks(),
-                    "fact": encode_fact(entry.payload()),
-                })
-            })
-            .collect();
-        Ok(JournalView { descriptor, facts })
+    fn decode_fact(&self, value: Value) -> Result<Self::Fact, Self::Error> {
+        decode_fact(value)
     }
 
-    fn begin_counterfactual(
-        &mut self,
-        parent_id: BranchId,
-        expected_revision: Revision,
-        fork_boundary: LogicalTime,
-    ) -> Result<BranchDescriptor, Self::Error> {
-        self.session
-            .begin_counterfactual(parent_id, expected_revision, fork_boundary)
-            .map_err(|error| error.to_string())
-    }
-
-    fn preview_append(&self, request: AppendRequest) -> Result<AppendPreview, Self::Error> {
-        let fact_count = request.facts.len();
-        let facts = Self::decode_facts(request.facts)?;
-        let descriptor = self
-            .session
-            .preview_append(
-                request.branch_id,
-                request.expected_revision,
-                request.logical_time,
-                facts,
-            )
-            .map_err(|error| error.to_string())?;
-        Ok(AppendPreview {
-            branch_id: descriptor.branch_id,
-            current_revision: request.expected_revision,
-            logical_time: request.logical_time,
-            fact_count,
-        })
-    }
-
-    fn commit_append(&mut self, request: AppendRequest) -> Result<AppendResult, Self::Error> {
-        let fact_count = request.facts.len();
-        let facts = Self::decode_facts(request.facts)?;
-        let descriptor = self
-            .session
-            .append(
-                request.branch_id,
-                request.expected_revision,
-                request.logical_time,
-                facts,
-            )
-            .map_err(|error| error.to_string())?;
-        Ok(AppendResult {
-            branch_id: descriptor.branch_id,
-            new_revision: descriptor.revision,
-            logical_time: request.logical_time,
-            fact_count,
-        })
-    }
-
-    fn discard_branch(&mut self, branch_id: BranchId) -> Result<(), Self::Error> {
-        self.session
-            .discard(branch_id)
-            .map_err(|error| error.to_string())
+    fn observe(
+        &self,
+        worldline: &VoxelWorldline,
+        view: &Self::View,
+        request: SurfaceSnapshotRequest,
+    ) -> Result<RenderSnapshot, Self::Error> {
+        let source = VoxelBranchSource {
+            worldline,
+            camera: *view,
+        };
+        snapshot(
+            &source,
+            request.logical_time,
+            request.tau,
+            request.observation,
+        )
+        .map_err(|error| error.to_string())
     }
 }
 
@@ -426,16 +340,14 @@ fn decode_target(value: Option<&Value>) -> Result<[f32; 3], String> {
 
 #[cfg(test)]
 mod render_tests {
-    use super::VoxelGameSurface;
-    use engine_api::{
-        AppendRequest, BranchSession, GameSurface, LogicalTime, SurfaceSnapshotRequest,
-    };
+    use super::new_game_session;
+    use engine_api::{AppendRequest, LogicalTime, SurfaceSnapshotRequest};
     use engine_observation::ObservationRequest;
     use serde_json::json;
 
     #[test]
     fn voxel_surface_preview_does_not_mutate_actual_history() {
-        let surface = VoxelGameSurface::default();
+        let surface = new_game_session();
         let manifest = surface.manifest();
         assert!(manifest
             .capabilities
@@ -443,9 +355,7 @@ mod render_tests {
             .any(|capability| capability == "preview-append"));
         let preview = surface
             .preview_append(AppendRequest {
-                branch_id:
-                    BranchSession::<crate::world::VoxelContext, crate::world::VoxelFact>::actual_id(
-                    ),
+                branch_id: 0,
                 expected_revision: 0,
                 logical_time: LogicalTime::zero(),
                 facts: vec![json!({
@@ -469,7 +379,7 @@ mod render_tests {
 
 #[cfg(test)]
 mod surface_tests {
-    use super::{VoxelGameSurface, VoxelObservationSource};
+    use super::{new_game_session, VoxelObservationSource};
     use engine_api::{LogicalTime, Tau};
     use engine_observation::{snapshot, ObservationRequest};
 
@@ -490,10 +400,9 @@ mod surface_tests {
 
     #[test]
     fn view_updates_change_presentation_without_touching_history() {
-        use engine_api::GameSurface;
         use serde_json::json;
 
-        let mut surface = VoxelGameSurface::default();
+        let mut surface = new_game_session();
         let before = surface.view().expect("view should be readable");
         let updated = surface
             .update_view(json!({
@@ -516,10 +425,9 @@ mod surface_tests {
 
     #[test]
     fn view_rejects_values_that_overflow_f32_without_mutating_camera() {
-        use engine_api::GameSurface;
         use serde_json::json;
 
-        let mut surface = VoxelGameSurface::default();
+        let mut surface = new_game_session();
         let before = surface.view().expect("view should be readable");
 
         let error = surface
@@ -530,7 +438,7 @@ mod surface_tests {
             }))
             .expect_err("values outside f32 should be rejected");
 
-        assert!(error.contains("finite yaw_delta"));
+        assert!(error.to_string().contains("finite yaw_delta"));
         assert_eq!(surface.view().expect("view should remain readable"), before);
     }
 }

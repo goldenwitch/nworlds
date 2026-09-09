@@ -78,8 +78,8 @@ These crates provide the generic temporal engine and its public boundaries.
 | [`engine-controls`](crates/engine-controls) | Target-neutral timeline sliders, directional step controls, pointer mapping, automatic/manual mode, and owned control geometry. |
 | [`engine-presentation`](crates/engine-presentation) | State-plus-`Tau` render composition and frame values. |
 | [`engine-observation`](crates/engine-observation) | Generic explicit-time render-source observation and deterministic PNG snapshots. |
-| [`engine-surface`](crates/engine-surface) | Generic immutable branch sessions and GameSurface authoring values. |
-| [`engine-observation-mcp`](crates/engine-observation-mcp) | Generic MCP adapter for GameSurface manifests, views, journal and branch authoring, and PNG observations. |
+| [`engine-surface`](crates/engine-surface) | GameSurface definitions, local GameSession state, immutable branches, views, and authoring values. |
+| [`engine-observation-mcp`](crates/engine-observation-mcp) | Generic MCP adapter for GameSurface manifests, local ordered batches, views, journal and branch authoring, and PNG observations. |
 | [`engine-api`](crates/engine-api) | Generic facade for the supported temporal query, journal, branch, time, and presentation APIs. |
 | [`nworlds-host`](crates/nworlds-host) | Target-neutral `GamePackage` contract, independent host ports, and generic package/port composition. |
 
@@ -100,7 +100,7 @@ These crates define the concrete game fixture and its indexed rules.
 
 | Component | Description |
 | --- | --- |
-| [`caravan-sample`](crates/caravan-sample) | Native Caravan sample and explicit `caravan-trace` evidence binary; its [colocated README](crates/caravan-sample/README.md) presents the engine integration example and file ownership. |
+| [`caravan-sample`](crates/caravan-sample) | Native Caravan sample, explicit `caravan-trace` evidence binary, and `caravan-observer-mcp` GameSurface adapter; its [colocated README](crates/caravan-sample/README.md) presents the engine integration and surface entrypoints. |
 | [`nworlds-desktop`](crates/nworlds-desktop/Cargo.toml) | Generic target-local desktop composition over `nworlds-host`; it contains no Caravan, voxel, or package-owned state construction. |
 | [`voxel-sample`](crates/voxel-sample/Cargo.toml) | Independent voxel cottage package using the shared desktop composition; its [colocated README](crates/voxel-sample/README.md) is the practical guide, and [`engine_integration.rs`](crates/voxel-sample/src/engine_integration.rs) demonstrates generic state, journal, query, branch, and presentation usage with sample-defined types. |
 | [`engine-benchmarks`](crates/engine-benchmarks) | Non-published release-build measurements for direct queries, scrubbing, branches, and frame production. |

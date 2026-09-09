@@ -83,6 +83,20 @@ The native sample opens the Caravan scene. Press `Space` to publish the first
 sample interaction, press backquote/tilde to toggle the target-owned developer
 console, and press `Escape` or close the window to exit.
 
+The same package can run through the generic GameSurface MCP adapter. The
+`CaravanSurface` definition supplies Caravan fact and projection meaning, and
+the local `CaravanGameSession` owns its in-memory branches and view:
+
+```text
+cargo run --quiet --manifest-path crates/caravan-sample/Cargo.toml --bin caravan-observer-mcp --
+```
+
+VS Code Chat can select the `caravan-observation` workspace server and use the
+shared manifest, ordered `surface_batch`, journal, branch, authoring, view,
+comparison, discard, and PNG snapshot tools. This is a standalone in-memory
+Caravan session that shares the game implementation with the desktop sample;
+it does not attach to the desktop process.
+
 The deterministic console evidence is a separate binary:
 
 ```text

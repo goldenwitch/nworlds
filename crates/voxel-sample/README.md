@@ -46,7 +46,8 @@ at explicit times.
 The [game developer guide](../../game-developer-guide.md) teaches this path.
 
 The [voxel observer](src/observer.rs) implements the reusable `GameSurface`
-contract over the same render path. VS Code Chat can call the workspace MCP
+definition over the same render path. `GameSession<VoxelSurface>` owns the
+local branches and view. VS Code Chat can call the workspace MCP
 server for `game_manifest`, view control, journal reads, branch creation,
 preview, speculative and actual append, branch comparison, discard, and
 `image/png` snapshots. The surface keeps speculative histories separate from
@@ -54,9 +55,9 @@ the actual line and the observer consumes `Frame<RenderBatch>` without
 entering package game state.
 
 The configured MCP server is a standalone stdio development session. It
-constructs its own `VoxelGameSurface` and in-memory worldline; it shares the
-sample's game code with the desktop executable but does not attach to that
-executable's live state. The complete protocol workflow is documented in the
+constructs a `VoxelSurface` definition and a local session over an in-memory
+worldline; it shares the sample's game code with the desktop executable but
+does not attach to that executable's live state. The complete protocol workflow is documented in the
 [Game Developer Guide](../../game-developer-guide.md).
 
 The same surface exposes `view_read` and `view_update` for the disposable

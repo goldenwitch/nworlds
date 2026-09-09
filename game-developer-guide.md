@@ -60,12 +60,14 @@ state(worldline, logical_time) -> GameState
 present(game_state, tau) -> Frame
 ```
 
-Use `GameSurface` as the agent-facing composition boundary. The game supplies
-its `IndexedQuery` and fact schema; the surface supplies explicit observation,
-journal, branch, preview, commit, and discard operations:
+Use `GameSurface` as the game-definition boundary and `GameSession` as the
+local stateful composition. The game surface supplies its context and fact
+meaning, schemas, view semantics, and projection; the session supplies explicit
+observation, journal, branch, preview, commit, and discard operations:
 
 ```text
-GameSurface
+GameSurface definition + Context
+  -> GameSession
   manifest + fact schema
   branch handle + LogicalTime + Tau -> observation
   branch handle + revision + facts -> preview or new revision
@@ -75,7 +77,7 @@ GameSurface
 
 | Feature | Use it for | Current owner |
 | --- | --- | --- |
-| `GameSurface` | Expose explicit-time observation, journal reads, revision-checked authoring, and speculative branch lifecycle to tools and agents. | [`engine-surface`](crates/engine-surface) |
+| `GameSurface` and `GameSession` | Keep game meaning in a package-owned definition and actual/speculative history plus view state in a local session. | [`engine-surface`](crates/engine-surface) |
 | `LogicalTime` and `Tau` | Keep authoritative time distinct from presentation time. | [`engine-time`](crates/engine-time) |
 | `engine-camera` | Canonical presentation camera pose, projection, screen rays, and orbit/zoom operations. | [`engine-camera`](crates/engine-camera) |
 | `Context`, `Journal`, `Worldline`, `GameState`, and `Frame` | Carry immutable game-owned values through the engine boundaries. | [`engine-sdk`](crates/engine-sdk), [`engine-branches`](crates/engine-branches) |
@@ -125,14 +127,17 @@ fn main() -> Result<(), engine_api::BranchError> {
 }
 ```
 
-The direct query path is the low-level engine contract. `GameSurface` composes
-that path with manifest, journal, branch, preview, commit, and discard tools.
+The direct query path is the low-level engine contract. `GameSurface` defines
+the package-owned fact, view, and observation semantics; `GameSession` composes
+that definition with one context, immutable histories, revisions, and a
+disposable view.
 
-### 2. Observe and author through GameSurface
+### 2. Observe and author through a GameSession
 
-`GameSurface::observe` accepts an explicit branch, `LogicalTime`, and `Tau`.
-Each call samples immutable history directly. The voxel package queries the
-selected branch through this surface for both interaction and presentation.
+`GameSession::observe` accepts an explicit branch, `LogicalTime`, and `Tau`.
+Each call samples immutable history directly. The package-owned `GameSurface`
+definition supplies the projection while the session selects the branch and
+view.
 
 Journal authoring is revision-checked. `branch_preview_append` validates facts
 against a speculative branch without changing it; `branch_append` commits to a
@@ -148,10 +153,10 @@ the engine preserves immutable parent history and inclusive-prefix rules.
 
 ### Guarantees and costs
 
-`GameSurface` owns the agent-facing session boundary while the engine preserves
-immutable history and branch-prefix rules. Game rule bodies, renderers, and
-payloads are trusted Rust extension points; ordinary owned data and
-deterministic rules provide the intended game authoring discipline.
+`GameSession` owns the local agent-facing state boundary while the engine
+preserves immutable history and branch-prefix rules. Game rule bodies,
+renderers, and payloads are trusted Rust extension points; ordinary owned data
+and deterministic rules provide the intended game authoring discipline.
 
 Publication currently rebuilds a journal snapshot, with work proportional to
 history plus new facts. Direct sampling also retains the existing query's
@@ -188,20 +193,22 @@ change subsequent snapshots while leaving branches, revisions, and journal
 facts unchanged. A game supplies view semantics and schema; the engine supplies
 the camera value and projection math.
 
-The workspace MCP configuration starts the voxel adapter as a stdio child
-process:
+The workspace MCP configuration starts the sample adapters as stdio child
+processes:
 
 ```text
 cargo run --quiet --manifest-path crates/voxel-sample/Cargo.toml --bin voxel-observer-mcp --
+cargo run --quiet --manifest-path crates/caravan-sample/Cargo.toml --bin caravan-observer-mcp --
 ```
 
-The MCP adapter constructs one package-owned `VoxelGameSurface` for that
-process. The surface owns its in-memory actual and speculative branches, its
-disposable presentation view, and its initial cottage worldline. The desktop
-sample and the MCP process currently run separate package sessions while
-sharing the same game code; the MCP path is therefore a deterministic
+Each MCP adapter constructs one package-owned definition and one local
+`GameSession` for its process. The session owns its in-memory actual and
+speculative branches, disposable presentation view, and initial worldline. The
+desktop sample and each MCP process currently run separate package sessions
+while sharing the same game code; the MCP path is therefore a deterministic
 development surface rather than a connection to an already-running desktop
-instance.
+instance. The voxel definition reports `voxel-sample`; the Caravan definition
+reports `caravan-sample`.
 
 MCP discovery has two steps. The protocol handshake discovers the server and
 its tools. The `game_manifest` tool then returns the package-owned surface name,
@@ -210,6 +217,7 @@ capabilities, fact schema, and view schema. The current GameSurface tool set is:
 | Tool | Purpose |
 | --- | --- |
 | `game_manifest` | Describe the game surface and its schemas. |
+| `surface_batch` | Execute existing surface calls in order under one local session lock. |
 | `view_read`, `view_update` | Read or change disposable presentation state. |
 | `journal_read` | Read one branch's descriptor and package-encoded facts. |
 | `branch_open` | Create a counterfactual branch from a checked revision. |
@@ -228,13 +236,21 @@ The normal authoring sequence is `game_manifest`, `journal_read`,
 append carries an expected revision, and every snapshot carries an explicit
 branch, `LogicalTime`, `Tau`, width, and height. The requested image dimensions
 are observation inputs, so the same surface can produce small probes or larger
-PNG artifacts without changing the game source.
+PNG artifacts without changing the game source. Dependent calls should await
+the preceding response when using individual tools. For a dependent sequence,
+`surface_batch` accepts the same tool names and argument objects and executes
+them in order under one local session lock. Native JSON-RPC batching does not
+provide that guarantee. The batch is an ordering and synchronization boundary,
+not a rollback promise: if a call fails, earlier completed calls remain
+applied and the response identifies the failed call.
 
-The source is generic; voxel supplies its worldline, camera, query, fact
-decoder, and schemas. Another game can use the same MCP server by supplying a
-different `GameSurface` implementation. PNG snapshots are the first visual
-artifact; frame sequences and video can build on the same explicit-time source
-later.
+The source is generic; each game supplies its worldline, view, query, fact
+decoder, and schemas. The Caravan surface uses the same tools with a
+two-dimensional zoom/pan view over its hex projection, while the voxel surface
+uses the canonical orbit camera. Another game can use the same MCP server by
+supplying a different `GameSurface` implementation. PNG snapshots are the
+first visual artifact; frame sequences and video can build on the same
+explicit-time source later.
 
 ### View state and animation instances
 

@@ -12,6 +12,19 @@
         "voxel-observer-mcp",
         "--"
       ]
+    },
+    "caravan-observation": {
+      "type": "stdio",
+      "command": "cargo",
+      "args": [
+        "run",
+        "--quiet",
+        "--manifest-path",
+        "${workspaceFolder}/crates/caravan-sample/Cargo.toml",
+        "--bin",
+        "caravan-observer-mcp",
+        "--"
+      ]
     }
   }
 }

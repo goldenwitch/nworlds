@@ -280,8 +280,10 @@ dependencies = [
  "caravan-reference",
  "caravan-seeded",
  "engine-api",
+ "engine-observation-mcp",
  "nworlds-desktop",
  "nworlds-host",
+ "serde_json",
  "winit",
 ]
 
@@ -607,6 +609,8 @@ name = "engine-observation-mcp"
 version = "0.1.0"
 dependencies = [
  "base64",
+ "engine-branches",
+ "engine-journal",
  "engine-observation",
  "engine-presentation",
  "engine-sdk",

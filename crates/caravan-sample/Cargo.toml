@@ -8,7 +8,9 @@ caravan-domain = { path = "../caravan-domain" }
 caravan-reference = { path = "../caravan-reference" }
 caravan-seeded = { path = "../caravan-seeded" }
 engine-api = { path = "../engine-api" }
+engine-observation-mcp = { path = "../engine-observation-mcp" }
 caravan-persistence = { path = "../caravan-persistence" }
 nworlds-host = { path = "../nworlds-host" }
 nworlds-desktop = { path = "../nworlds-desktop" }
+serde_json = "1"
 winit = "0.30"

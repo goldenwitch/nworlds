@@ -3,38 +3,13 @@ use engine_observation::{snapshot, ObservationRequest, RenderSource};
 use engine_presentation::{RenderBatch, RenderVertex};
 use engine_sdk::{Context, Frame};
 use engine_surface::{
-    AppendPreview, AppendRequest, AppendResult, BranchDescriptor, BranchId, BranchSession,
-    GameSurface, JournalView, Revision, SurfaceManifest, SurfaceSnapshotRequest,
+    AppendRequest, GameSession, GameSurface, SurfaceManifest, SurfaceSnapshotRequest,
 };
 use engine_time::{LogicalTime, Tau};
 use serde_json::{json, Value};
 
-struct SyntheticSurface {
-    session: BranchSession<(), u8>,
-}
-
-impl SyntheticSurface {
-    fn new() -> Self {
-        Self {
-            session: BranchSession::new(Branch::new(
-                Context::new(()),
-                engine_journal::Journal::empty(),
-            ))
-            .expect("synthetic actual should initialize"),
-        }
-    }
-
-    fn decode_facts(facts: Vec<Value>) -> Result<Vec<u8>, String> {
-        facts
-            .into_iter()
-            .map(|fact| {
-                fact.as_u64()
-                    .and_then(|value| u8::try_from(value).ok())
-                    .ok_or_else(|| "synthetic facts are u8 JSON numbers".to_owned())
-            })
-            .collect()
-    }
-}
+#[derive(Clone, Copy, Debug, Default)]
+struct SyntheticSurface;
 
 struct SyntheticSource<'a> {
     branch: &'a engine_branches::Branch<(), u8>,
@@ -62,6 +37,9 @@ impl RenderSource for SyntheticSource<'_> {
 }
 
 impl GameSurface for SyntheticSurface {
+    type Context = ();
+    type Fact = u8;
+    type View = ();
     type Error = String;
 
     fn manifest(&self) -> SurfaceManifest {
@@ -76,22 +54,33 @@ impl GameSurface for SyntheticSurface {
         }
     }
 
-    fn view(&self) -> Result<Value, Self::Error> {
+    fn default_view(&self) -> Self::View {}
+
+    fn view(&self, _view: &Self::View) -> Result<Value, Self::Error> {
         Ok(json!({ "kind": "synthetic" }))
     }
 
-    fn update_view(&mut self, update: Value) -> Result<Value, Self::Error> {
+    fn update_view(&self, _view: &mut Self::View, update: Value) -> Result<Value, Self::Error> {
         Ok(update)
+    }
+
+    fn encode_fact(&self, fact: &Self::Fact) -> Value {
+        json!(fact)
+    }
+
+    fn decode_fact(&self, value: Value) -> Result<Self::Fact, Self::Error> {
+        value
+            .as_u64()
+            .and_then(|value| u8::try_from(value).ok())
+            .ok_or_else(|| "synthetic facts are u8 JSON numbers".to_owned())
     }
 
     fn observe(
         &self,
+        branch: &Branch<(), u8>,
+        _view: &Self::View,
         request: SurfaceSnapshotRequest,
     ) -> Result<engine_observation::RenderSnapshot, Self::Error> {
-        let branch = self
-            .session
-            .branch(request.branch_id)
-            .map_err(|error| error.to_string())?;
         snapshot(
             &SyntheticSource { branch },
             request.logical_time,
@@ -100,85 +89,16 @@ impl GameSurface for SyntheticSurface {
         )
         .map_err(|error| error.to_string())
     }
-
-    fn journal(&self, branch_id: BranchId) -> Result<JournalView, Self::Error> {
-        let descriptor = self
-            .session
-            .descriptor(branch_id)
-            .map_err(|error| error.to_string())?;
-        let facts = self
-            .session
-            .branch(branch_id)
-            .map_err(|error| error.to_string())?
-            .journal()
-            .iter()
-            .map(|entry| json!({ "logical_time_ticks": entry.logical_time().ticks(), "fact": entry.payload() }))
-            .collect();
-        Ok(JournalView { descriptor, facts })
-    }
-
-    fn begin_counterfactual(
-        &mut self,
-        parent_id: BranchId,
-        expected_revision: Revision,
-        fork_boundary: LogicalTime,
-    ) -> Result<BranchDescriptor, Self::Error> {
-        self.session
-            .begin_counterfactual(parent_id, expected_revision, fork_boundary)
-            .map_err(|error| error.to_string())
-    }
-
-    fn preview_append(&self, request: AppendRequest) -> Result<AppendPreview, Self::Error> {
-        let facts = Self::decode_facts(request.facts)?;
-        let fact_count = facts.len();
-        let descriptor = self
-            .session
-            .preview_append(
-                request.branch_id,
-                request.expected_revision,
-                request.logical_time,
-                facts,
-            )
-            .map_err(|error| error.to_string())?;
-        Ok(AppendPreview {
-            branch_id: descriptor.branch_id,
-            current_revision: request.expected_revision,
-            logical_time: request.logical_time,
-            fact_count,
-        })
-    }
-
-    fn commit_append(&mut self, request: AppendRequest) -> Result<AppendResult, Self::Error> {
-        let facts = Self::decode_facts(request.facts)?;
-        let fact_count = facts.len();
-        let descriptor = self
-            .session
-            .append(
-                request.branch_id,
-                request.expected_revision,
-                request.logical_time,
-                facts,
-            )
-            .map_err(|error| error.to_string())?;
-        Ok(AppendResult {
-            branch_id: descriptor.branch_id,
-            new_revision: descriptor.revision,
-            logical_time: request.logical_time,
-            fact_count,
-        })
-    }
-
-    fn discard_branch(&mut self, branch_id: BranchId) -> Result<(), Self::Error> {
-        self.session
-            .discard(branch_id)
-            .map_err(|error| error.to_string())
-    }
 }
 
 #[test]
 fn generic_surface_can_party_on_a_branch_and_return_to_actual_history() {
-    let mut surface = SyntheticSurface::new();
-    let actual = surface
+    let mut session = GameSession::new(
+        SyntheticSurface,
+        Branch::new(Context::new(()), engine_journal::Journal::empty()),
+    )
+    .expect("synthetic actual should initialize");
+    let actual = session
         .commit_append(AppendRequest {
             branch_id: 0,
             expected_revision: 0,
@@ -186,10 +106,10 @@ fn generic_surface_can_party_on_a_branch_and_return_to_actual_history() {
             facts: vec![json!(1)],
         })
         .expect("actual append should commit");
-    let branch = surface
+    let branch = session
         .begin_counterfactual(0, actual.new_revision, LogicalTime::zero())
         .expect("counterfactual should open");
-    let preview = surface
+    let preview = session
         .preview_append(AppendRequest {
             branch_id: branch.branch_id,
             expected_revision: branch.revision,
@@ -199,7 +119,7 @@ fn generic_surface_can_party_on_a_branch_and_return_to_actual_history() {
         .expect("preview should validate");
     assert_eq!(preview.current_revision, branch.revision);
 
-    surface
+    session
         .commit_append(AppendRequest {
             branch_id: branch.branch_id,
             expected_revision: branch.revision,
@@ -207,9 +127,9 @@ fn generic_surface_can_party_on_a_branch_and_return_to_actual_history() {
             facts: vec![json!(2)],
         })
         .expect("branch append should commit");
-    assert_eq!(surface.journal(0).expect("actual exists").facts.len(), 1);
+    assert_eq!(session.journal(0).expect("actual exists").facts.len(), 1);
     assert_eq!(
-        surface
+        session
             .journal(branch.branch_id)
             .expect("branch exists")
             .facts
@@ -217,7 +137,7 @@ fn generic_surface_can_party_on_a_branch_and_return_to_actual_history() {
         2
     );
     assert_eq!(
-        surface
+        session
             .observe(SurfaceSnapshotRequest {
                 branch_id: branch.branch_id,
                 logical_time: LogicalTime::from_ticks(1),
@@ -229,11 +149,11 @@ fn generic_surface_can_party_on_a_branch_and_return_to_actual_history() {
         1
     );
 
-    surface
+    session
         .discard_branch(branch.branch_id)
         .expect("branch should discard");
     assert_eq!(
-        surface
+        session
             .journal(0)
             .expect("actual should remain")
             .facts

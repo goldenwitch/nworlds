@@ -21,6 +21,7 @@ pub use engine_presentation::{
 pub use engine_sdk::{Context, Frame, GameState, QueryResult};
 pub use engine_surface::{
     AppendPreview, AppendRequest, AppendResult, BranchDescriptor, BranchId, BranchSession,
-    GameSurface, JournalView, Revision, SurfaceError, SurfaceManifest, SurfaceSnapshotRequest,
+    GameSession, GameSessionError, GameSurface, JournalView, Revision, SurfaceError,
+    SurfaceManifest, SurfaceSnapshotRequest,
 };
 pub use engine_time::{LogicalTime, Tau, GAME_TICK_PERIOD, TICKS_PER_LOGICAL_SECOND};

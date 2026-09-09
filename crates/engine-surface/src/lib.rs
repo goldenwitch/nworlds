@@ -5,7 +5,7 @@ use std::{error::Error, fmt};
 use engine_branches::{Branch, BranchError, BranchKind};
 use engine_observation::{ObservationRequest, RenderSnapshot};
 use engine_time::{LogicalTime, Tau};
-use serde_json::Value;
+use serde_json::{json, Value};
 
 pub type BranchId = u64;
 pub type Revision = u64;
@@ -62,6 +62,27 @@ impl Error for SurfaceError {}
 impl From<BranchError> for SurfaceError {
     fn from(error: BranchError) -> Self {
         Self::Branch(error)
+    }
+}
+
+#[derive(Debug)]
+pub enum GameSessionError<E> {
+    Surface(SurfaceError),
+    Definition(E),
+}
+
+impl<E: fmt::Display> fmt::Display for GameSessionError<E> {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Surface(error) => error.fmt(formatter),
+            Self::Definition(error) => error.fmt(formatter),
+        }
+    }
+}
+
+impl<E> From<SurfaceError> for GameSessionError<E> {
+    fn from(error: SurfaceError) -> Self {
+        Self::Surface(error)
     }
 }
 
@@ -263,24 +284,165 @@ pub struct AppendResult {
     pub fact_count: usize,
 }
 
-/// The package-owned semantic surface consumed by generic agent tooling.
+/// The package-owned definition of a game surface.
 pub trait GameSurface {
+    type Context;
+    type Fact: Clone;
+    type View: Clone;
     type Error: fmt::Display;
 
     fn manifest(&self) -> SurfaceManifest;
-    fn view(&self) -> Result<Value, Self::Error>;
-    fn update_view(&mut self, update: Value) -> Result<Value, Self::Error>;
-    fn observe(&self, request: SurfaceSnapshotRequest) -> Result<RenderSnapshot, Self::Error>;
-    fn journal(&self, branch_id: BranchId) -> Result<JournalView, Self::Error>;
-    fn begin_counterfactual(
+    fn default_view(&self) -> Self::View;
+    fn view(&self, view: &Self::View) -> Result<Value, Self::Error>;
+    fn update_view(&self, view: &mut Self::View, update: Value) -> Result<Value, Self::Error>;
+    fn encode_fact(&self, fact: &Self::Fact) -> Value;
+    fn decode_fact(&self, value: Value) -> Result<Self::Fact, Self::Error>;
+    fn observe(
+        &self,
+        branch: &Branch<Self::Context, Self::Fact>,
+        view: &Self::View,
+        request: SurfaceSnapshotRequest,
+    ) -> Result<RenderSnapshot, Self::Error>;
+}
+
+/// A local session combining one game-surface definition with context, history, and view state.
+pub struct GameSession<S>
+where
+    S: GameSurface,
+{
+    surface: S,
+    histories: BranchSession<S::Context, S::Fact>,
+    view: S::View,
+}
+
+impl<S> GameSession<S>
+where
+    S: GameSurface,
+{
+    pub fn new(surface: S, actual: Branch<S::Context, S::Fact>) -> Result<Self, SurfaceError> {
+        let view = surface.default_view();
+        Ok(Self {
+            surface,
+            histories: BranchSession::new(actual)?,
+            view,
+        })
+    }
+
+    pub fn definition(&self) -> &S {
+        &self.surface
+    }
+
+    pub fn manifest(&self) -> SurfaceManifest {
+        self.surface.manifest()
+    }
+
+    pub fn view(&self) -> Result<Value, GameSessionError<S::Error>> {
+        self.surface
+            .view(&self.view)
+            .map_err(GameSessionError::Definition)
+    }
+
+    pub fn update_view(&mut self, update: Value) -> Result<Value, GameSessionError<S::Error>> {
+        self.surface
+            .update_view(&mut self.view, update)
+            .map_err(GameSessionError::Definition)
+    }
+
+    pub fn observe(
+        &self,
+        request: SurfaceSnapshotRequest,
+    ) -> Result<RenderSnapshot, GameSessionError<S::Error>> {
+        let branch = self.histories.branch(request.branch_id)?;
+        self.surface
+            .observe(branch, &self.view, request)
+            .map_err(GameSessionError::Definition)
+    }
+
+    pub fn journal(&self, branch_id: BranchId) -> Result<JournalView, GameSessionError<S::Error>> {
+        let descriptor = self.histories.descriptor(branch_id)?;
+        let facts = self
+            .histories
+            .branch(branch_id)?
+            .journal()
+            .iter()
+            .map(|entry| {
+                json!({
+                    "logical_time_ticks": entry.logical_time().ticks(),
+                    "fact": self.surface.encode_fact(entry.payload()),
+                })
+            })
+            .collect();
+        Ok(JournalView { descriptor, facts })
+    }
+
+    pub fn begin_counterfactual(
         &mut self,
         parent_id: BranchId,
         expected_revision: Revision,
         fork_boundary: LogicalTime,
-    ) -> Result<BranchDescriptor, Self::Error>;
-    fn preview_append(&self, request: AppendRequest) -> Result<AppendPreview, Self::Error>;
-    fn commit_append(&mut self, request: AppendRequest) -> Result<AppendResult, Self::Error>;
-    fn discard_branch(&mut self, branch_id: BranchId) -> Result<(), Self::Error>;
+    ) -> Result<BranchDescriptor, GameSessionError<S::Error>> {
+        Ok(self
+            .histories
+            .begin_counterfactual(parent_id, expected_revision, fork_boundary)?)
+    }
+
+    pub fn preview_append(
+        &self,
+        request: AppendRequest,
+    ) -> Result<AppendPreview, GameSessionError<S::Error>> {
+        let fact_count = request.facts.len();
+        let facts = request
+            .facts
+            .into_iter()
+            .map(|fact| self.surface.decode_fact(fact))
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(GameSessionError::Definition)?;
+        let descriptor = self.histories.preview_append(
+            request.branch_id,
+            request.expected_revision,
+            request.logical_time,
+            facts,
+        )?;
+        Ok(AppendPreview {
+            branch_id: descriptor.branch_id,
+            current_revision: request.expected_revision,
+            logical_time: request.logical_time,
+            fact_count,
+        })
+    }
+
+    pub fn commit_append(
+        &mut self,
+        request: AppendRequest,
+    ) -> Result<AppendResult, GameSessionError<S::Error>> {
+        let fact_count = request.facts.len();
+        let facts = request
+            .facts
+            .into_iter()
+            .map(|fact| self.surface.decode_fact(fact))
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(GameSessionError::Definition)?;
+        let descriptor = self.histories.append(
+            request.branch_id,
+            request.expected_revision,
+            request.logical_time,
+            facts,
+        )?;
+        Ok(AppendResult {
+            branch_id: descriptor.branch_id,
+            new_revision: descriptor.revision,
+            logical_time: request.logical_time,
+            fact_count,
+        })
+    }
+
+    pub fn discard_branch(
+        &mut self,
+        branch_id: BranchId,
+    ) -> Result<(), GameSessionError<S::Error>> {
+        self.histories.discard(branch_id)?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]

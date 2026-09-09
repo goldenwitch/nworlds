@@ -3,6 +3,7 @@
 pub mod engine_integration;
 pub mod input;
 pub mod interaction;
+pub mod observer;
 pub mod orchestrator;
 pub mod package;
 pub mod publication;
@@ -18,7 +19,8 @@ pub mod host {
 }
 
 pub use interaction::CaravanInteraction;
+pub use observer::{new_game_session, CaravanGameSession, CaravanSurface};
 pub use orchestrator::{CaravanOrchestrator, OrchestratorError};
 pub use package::{sample_package, CaravanPackage};
-pub use render::{CaravanRenderer, RenderActor, RenderOutput, RenderTile};
+pub use render::{CaravanRenderer, CaravanView, RenderActor, RenderOutput, RenderTile};
 pub use stage::CaravanStage;
