@@ -1,8 +1,9 @@
 use std::convert::Infallible;
 
 use engine_api::{
-    AppendPreview, AppendRequest, AppendResult, BranchDescriptor, BranchId, BranchSession, Frame,
-    GameSurface, JournalView, LogicalTime, Revision, SurfaceManifest, SurfaceSnapshotRequest, Tau,
+    AppendPreview, AppendRequest, AppendResult, BranchDescriptor, BranchId, BranchSession,
+    CameraPose, Frame, GameSurface, JournalView, LogicalTime, Revision, SurfaceManifest,
+    SurfaceSnapshotRequest, Tau,
 };
 use engine_observation::snapshot;
 use engine_observation::RenderSnapshot;
@@ -105,6 +106,7 @@ impl GameSurface for VoxelGameSurface {
             name: "voxel-sample".to_owned(),
             capabilities: vec![
                 "explicit-observation".to_owned(),
+                "view-control".to_owned(),
                 "journal-read".to_owned(),
                 "counterfactual-branches".to_owned(),
                 "preview-append".to_owned(),
@@ -122,7 +124,50 @@ impl GameSurface for VoxelGameSurface {
                     { "properties": { "kind": { "const": "SetScale" }, "milli": { "type": "integer", "minimum": 350, "maximum": 1650 } }, "required": ["kind", "milli"] }
                 ]
             }),
+            view_schema: json!({
+                "type": "object",
+                "properties": {
+                    "operation": { "enum": ["orbit", "zoom", "reset", "set_pose"] },
+                    "yaw_delta": { "type": "number" },
+                    "pitch_delta": { "type": "number" },
+                    "distance_delta": { "type": "number" },
+                    "target": { "type": "object" },
+                    "yaw": { "type": "number" },
+                    "pitch": { "type": "number" },
+                    "distance": { "type": "number" }
+                },
+                "required": ["operation"]
+            }),
         }
+    }
+
+    fn view(&self) -> Result<Value, Self::Error> {
+        Ok(encode_view(self.camera))
+    }
+
+    fn update_view(&mut self, update: Value) -> Result<Value, Self::Error> {
+        let object = update
+            .as_object()
+            .ok_or_else(|| "view update must be an object".to_owned())?;
+        let operation = object
+            .get("operation")
+            .and_then(Value::as_str)
+            .ok_or_else(|| "view update requires an operation".to_owned())?;
+        match operation {
+            "orbit" => self
+                .camera
+                .orbit(number(object, "yaw_delta")?, number(object, "pitch_delta")?),
+            "zoom" => self.camera.zoom(number(object, "distance_delta")?),
+            "reset" => self.camera.reset(),
+            "set_pose" => self.camera.set_pose(CameraPose::new(
+                decode_target(object.get("target"))?,
+                number(object, "yaw")?,
+                number(object, "pitch")?,
+                number(object, "distance")?,
+            )),
+            _ => return Err(format!("unsupported view operation: {operation}")),
+        }
+        Ok(encode_view(self.camera))
     }
 
     fn observe(&self, request: SurfaceSnapshotRequest) -> Result<RenderSnapshot, Self::Error> {
@@ -339,6 +384,46 @@ fn encode_position(position: VoxelPosition) -> Value {
     })
 }
 
+fn encode_view(camera: Camera) -> Value {
+    let pose = camera.pose();
+    let target = pose.target();
+    json!({
+        "camera": {
+            "target": { "x": target[0], "y": target[1], "z": target[2] },
+            "yaw": pose.yaw(),
+            "pitch": pose.pitch(),
+            "distance": pose.distance(),
+            "aspect": camera.aspect()
+        }
+    })
+}
+
+fn number(object: &serde_json::Map<String, Value>, name: &str) -> Result<f32, String> {
+    let value = object
+        .get(name)
+        .and_then(Value::as_f64)
+        .ok_or_else(|| format!("view update requires numeric {name}"))?;
+    if !value.is_finite() {
+        return Err(format!("view update requires finite {name}"));
+    }
+    let value = value as f32;
+    if !value.is_finite() {
+        return Err(format!("view update requires finite {name}"));
+    }
+    Ok(value)
+}
+
+fn decode_target(value: Option<&Value>) -> Result<[f32; 3], String> {
+    let object = value
+        .and_then(Value::as_object)
+        .ok_or_else(|| "set_pose requires target".to_owned())?;
+    Ok([
+        number(object, "x")?,
+        number(object, "y")?,
+        number(object, "z")?,
+    ])
+}
+
 #[cfg(test)]
 mod render_tests {
     use super::VoxelGameSurface;
@@ -384,7 +469,7 @@ mod render_tests {
 
 #[cfg(test)]
 mod surface_tests {
-    use super::VoxelObservationSource;
+    use super::{VoxelGameSurface, VoxelObservationSource};
     use engine_api::{LogicalTime, Tau};
     use engine_observation::{snapshot, ObservationRequest};
 
@@ -401,5 +486,51 @@ mod surface_tests {
         assert!(result.vertex_count() > 0);
         assert!(result.triangle_count() > 0);
         assert_eq!(&result.png()[..8], b"\x89PNG\r\n\x1a\n");
+    }
+
+    #[test]
+    fn view_updates_change_presentation_without_touching_history() {
+        use engine_api::GameSurface;
+        use serde_json::json;
+
+        let mut surface = VoxelGameSurface::default();
+        let before = surface.view().expect("view should be readable");
+        let updated = surface
+            .update_view(json!({
+                "operation": "orbit",
+                "yaw_delta": 0.5,
+                "pitch_delta": -0.15
+            }))
+            .expect("orbit should update the view");
+
+        assert_ne!(before, updated);
+        assert_eq!(
+            surface
+                .journal(0)
+                .expect("actual history should remain readable")
+                .descriptor
+                .revision,
+            0
+        );
+    }
+
+    #[test]
+    fn view_rejects_values_that_overflow_f32_without_mutating_camera() {
+        use engine_api::GameSurface;
+        use serde_json::json;
+
+        let mut surface = VoxelGameSurface::default();
+        let before = surface.view().expect("view should be readable");
+
+        let error = surface
+            .update_view(json!({
+                "operation": "orbit",
+                "yaw_delta": 1e39,
+                "pitch_delta": 0.0
+            }))
+            .expect_err("values outside f32 should be rejected");
+
+        assert!(error.contains("finite yaw_delta"));
+        assert_eq!(surface.view().expect("view should remain readable"), before);
     }
 }

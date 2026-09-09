@@ -222,6 +222,7 @@ pub struct SurfaceManifest {
     pub name: String,
     pub capabilities: Vec<String>,
     pub fact_schema: Value,
+    pub view_schema: Value,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -267,6 +268,8 @@ pub trait GameSurface {
     type Error: fmt::Display;
 
     fn manifest(&self) -> SurfaceManifest;
+    fn view(&self) -> Result<Value, Self::Error>;
+    fn update_view(&mut self, update: Value) -> Result<Value, Self::Error>;
     fn observe(&self, request: SurfaceSnapshotRequest) -> Result<RenderSnapshot, Self::Error>;
     fn journal(&self, branch_id: BranchId) -> Result<JournalView, Self::Error>;
     fn begin_counterfactual(

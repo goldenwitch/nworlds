@@ -70,6 +70,7 @@ These crates provide the generic temporal engine and its public boundaries.
 | Crate | Description |
 | --- | --- |
 | [`engine-time`](crates/engine-time) | Distinct `LogicalTime` and `Tau` fixed-point time types, checked arithmetic, and tick conversions. |
+| [`engine-camera`](crates/engine-camera) | Canonical target-neutral presentation camera pose, projection, and screen-ray math. |
 | [`engine-sdk`](crates/engine-sdk) | Generic immutable envelopes for contexts, journals, worldlines, game states, and frames. |
 | [`engine-journal`](crates/engine-journal) | Immutable journal storage and the journal-owned monotonic `JournalWriter`. |
 | [`engine-branches`](crates/engine-branches) | Immutable actual, counterfactual, and corrected branch construction from journal prefixes and suffixes. |

@@ -77,6 +77,7 @@ GameSurface
 | --- | --- | --- |
 | `GameSurface` | Expose explicit-time observation, journal reads, revision-checked authoring, and speculative branch lifecycle to tools and agents. | [`engine-surface`](crates/engine-surface) |
 | `LogicalTime` and `Tau` | Keep authoritative time distinct from presentation time. | [`engine-time`](crates/engine-time) |
+| `engine-camera` | Canonical presentation camera pose, projection, screen rays, and orbit/zoom operations. | [`engine-camera`](crates/engine-camera) |
 | `Context`, `Journal`, `Worldline`, `GameState`, and `Frame` | Carry immutable game-owned values through the engine boundaries. | [`engine-sdk`](crates/engine-sdk), [`engine-branches`](crates/engine-branches) |
 | `JournalWriter` | Assign monotonic logical timestamps and publish immutable journal snapshots. | [`engine-journal`](crates/engine-journal) |
 | `IndexedQuery` and `state` | Reconstruct a complete game state at any requested logical time. | [`engine-index`](crates/engine-index) |
@@ -180,6 +181,12 @@ The reusable `engine-observation` boundary accepts any source that produces a
 `Frame<RenderBatch>` for an explicit `LogicalTime` and `Tau`. It rasterizes the
 same target-neutral triangle vocabulary into PNG bytes and reports the sampled
 times, dimensions, vertex count, and triangle count alongside the image.
+
+`GameSurface::view` and `GameSurface::update_view` control disposable
+presentation state such as the canonical `engine-camera::Camera`. View updates
+change subsequent snapshots while leaving branches, revisions, and journal
+facts unchanged. A game supplies view semantics and schema; the engine supplies
+the camera value and projection math.
 
 The workspace MCP configuration connects VS Code Chat to the voxel adapter:
 

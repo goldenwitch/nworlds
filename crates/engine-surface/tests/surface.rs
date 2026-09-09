@@ -72,7 +72,16 @@ impl GameSurface for SyntheticSurface {
                 "commit-append".to_owned(),
             ],
             fact_schema: json!({ "type": "integer", "minimum": 0, "maximum": 255 }),
+            view_schema: json!({ "type": "object" }),
         }
+    }
+
+    fn view(&self) -> Result<Value, Self::Error> {
+        Ok(json!({ "kind": "synthetic" }))
+    }
+
+    fn update_view(&mut self, update: Value) -> Result<Value, Self::Error> {
+        Ok(update)
     }
 
     fn observe(

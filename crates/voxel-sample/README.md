@@ -52,6 +52,10 @@ PNG snapshot tools. The surface keeps speculative histories separate from the
 actual line and the observer consumes `Frame<RenderBatch>` without entering
 package game state.
 
+The same surface exposes `view_read` and `view_update` for the disposable
+canonical camera. Orbit, zoom, reset, and absolute pose updates change the
+rendering view without writing journal facts.
+
 Read [engine_integration.rs](src/engine_integration.rs) first. It is the
 lower-level query and presentation example for this sample. Its writer-based
 helpers remain available for fixtures and direct engine demonstrations:

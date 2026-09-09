@@ -177,7 +177,8 @@ impl VoxelPackage {
     fn world_click(&mut self, x: u32, y: u32) -> Result<bool, VoxelPackageError> {
         self.synchronize_world_interaction_time();
         let selected = state(&self.world, self.logical_time());
-        let position = self.camera.pick(
+        let position = crate::camera::pick(
+            self.camera,
             x as f32,
             y as f32,
             self.viewport.width().max_one().get() as f32,

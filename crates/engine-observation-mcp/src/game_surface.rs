@@ -91,6 +91,11 @@ pub struct BranchCompareRequest {
     pub right: SurfaceSnapshotToolRequest,
 }
 
+#[derive(Clone, Debug, Deserialize, schemars::JsonSchema)]
+pub struct ViewUpdateRequest {
+    pub update: Value,
+}
+
 /// Generic MCP tools for a package-owned GameSurface.
 #[derive(Clone)]
 pub struct GameSurfaceServer<S> {
@@ -147,8 +152,26 @@ where
             "name": manifest.name,
             "capabilities": manifest.capabilities,
             "fact_schema": manifest.fact_schema,
+            "view_schema": manifest.view_schema,
         }))
         .map_err(|error| McpError::internal_error(error.to_string(), None))
+    }
+
+    #[tool(description = "Read the current throwaway presentation view")]
+    fn view_read(&self) -> Result<String, McpError> {
+        let view = self.with_surface(|surface| surface.view())?;
+        serde_json::to_string(&view)
+            .map_err(|error| McpError::internal_error(error.to_string(), None))
+    }
+
+    #[tool(description = "Update the throwaway presentation view without writing the journal")]
+    fn view_update(
+        &self,
+        Parameters(request): Parameters<ViewUpdateRequest>,
+    ) -> Result<String, McpError> {
+        let view = self.with_surface_mut(|surface| surface.update_view(request.update))?;
+        serde_json::to_string(&view)
+            .map_err(|error| McpError::internal_error(error.to_string(), None))
     }
 
     #[tool(description = "Read the package-owned journal view for one branch")]

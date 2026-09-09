@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 engine-branches = { path = "../engine-branches" }
+engine-camera = { path = "../engine-camera" }
 engine-controls = { path = "../engine-controls" }
 engine-index = { path = "../engine-index" }
 engine-journal = { path = "../engine-journal" }

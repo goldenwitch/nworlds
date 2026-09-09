@@ -6,6 +6,7 @@ title: Make GameSurface the reusable agent-facing game surface
 Goal: A game can expose deterministic observation, journal authoring, and speculative branch work to an agent through one generic MCP surface.
 Question: Which part of that surface belongs in the reusable engine, and which part remains game meaning supplied by the package?
 Accept: The surface supports explicit-time observation, journal read/write, branch creation, preview, commit, comparison, and discard. Actual history remains independently recoverable after speculative work. A synthetic consumer and the voxel sample use the same MCP server.
+-> camera
 -> docs
 > GameSurface owns the agent-facing capability boundary; it does not become a second domain model.
 > The actual worldline remains immutable. MCP session state selects and names histories; it does not mutate published values in place.
@@ -42,4 +43,11 @@ Accept: The same generic MCP tools can open a voxel counterfactual, append a val
 Files: game-developer-guide.md; index.md; crates/voxel-sample/README.md; evidence/clause-to-test.md
 Do: Replace the wrapper-first experimental guidance with the GameSurface workflow. Link the old pure-engine reports as historical evidence and document actual-line versus speculative-branch writes, preview, revision checks, and discard.
 Accept: One guide names the generic GameSurface contract and one MCP configuration; no superseded pure-api graph remains referenced.
+-> voxel
+---
+[camera] Add canonical presentation camera and disposable view control (complete)
+Files: crates/engine-camera; crates/engine-surface; crates/engine-observation-mcp; crates/voxel-sample/src/camera.rs; crates/voxel-sample/src/observer.rs; game-developer-guide.md; index.md
+Do: Move projection and screen-ray math into a shared engine camera value. Keep voxel picking game-specific. Expose view_read/view_update through GameSurface and verify orbit updates change snapshots without changing journal revision.
+Accept: Shared camera tests, voxel view regression, MCP view_read/view_update protocol evidence, and full workspace gates pass.
+-> mcp
 -> voxel

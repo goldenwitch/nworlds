@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 pub use engine_branches::{Branch, BranchError, BranchKind, Worldline};
+pub use engine_camera::{Camera, CameraPose, Matrix4, Ray, Vec3};
 pub use engine_controls::{
     ControlRect, ControlTarget, LogicalTimeDelta, NormalizedPoint, ParabolicProjection, Pixels,
     PlaybackMode, PointerTarget, ScreenPoint, SliderFocus, StepDirection, TauDelta, TimelineAxis,
