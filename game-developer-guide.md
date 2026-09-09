@@ -175,7 +175,7 @@ vertices and colors required for the current frame. Journal history, input
 transport, device resources, and host scheduling remain owned by their
 respective layers.
 
-### Observe a render in Chat
+### Use the current MCP surface
 
 The reusable `engine-observation` boundary accepts any source that produces a
 `Frame<RenderBatch>` for an explicit `LogicalTime` and `Tau`. It rasterizes the
@@ -188,17 +188,53 @@ change subsequent snapshots while leaving branches, revisions, and journal
 facts unchanged. A game supplies view semantics and schema; the engine supplies
 the camera value and projection math.
 
-The workspace MCP configuration connects VS Code Chat to the voxel adapter:
+The workspace MCP configuration starts the voxel adapter as a stdio child
+process:
 
 ```text
-metadata(logical_time_ticks, tau_ticks, width, height)
-snapshot(logical_time_ticks, tau_ticks, width, height)
+cargo run --quiet --manifest-path crates/voxel-sample/Cargo.toml --bin voxel-observer-mcp --
 ```
 
-The source is generic; voxel supplies its worldline, camera, and query. The
-same MCP server can observe another game by replacing that source adapter. PNG
-snapshots are the first visual artifact; frame sequences and video can build on
-the same explicit-time source later.
+The MCP adapter constructs one package-owned `VoxelGameSurface` for that
+process. The surface owns its in-memory actual and speculative branches, its
+disposable presentation view, and its initial cottage worldline. The desktop
+sample and the MCP process currently run separate package sessions while
+sharing the same game code; the MCP path is therefore a deterministic
+development surface rather than a connection to an already-running desktop
+instance.
+
+MCP discovery has two steps. The protocol handshake discovers the server and
+its tools. The `game_manifest` tool then returns the package-owned surface name,
+capabilities, fact schema, and view schema. The current GameSurface tool set is:
+
+| Tool | Purpose |
+| --- | --- |
+| `game_manifest` | Describe the game surface and its schemas. |
+| `view_read`, `view_update` | Read or change disposable presentation state. |
+| `journal_read` | Read one branch's descriptor and package-encoded facts. |
+| `branch_open` | Create a counterfactual branch from a checked revision. |
+| `branch_preview_append` | Validate facts without mutating the branch. |
+| `branch_append` | Commit facts to a speculative branch. |
+| `actual_append` | Commit facts to the actual line explicitly. |
+| `surface_snapshot` | Render an explicit branch sample as metadata plus `image/png`. |
+| `branch_compare` | Compare two explicit branch samples. |
+| `branch_discard` | Remove a speculative branch and retain the actual line. |
+
+The normal authoring sequence is `game_manifest`, `journal_read`,
+`branch_open`, `branch_preview_append`, `branch_append`, and
+`surface_snapshot`. `branch_compare` inspects alternatives and
+`branch_discard` returns the session to the actual line. Actual-line writes use
+`actual_append` so they remain visibly distinct from speculative work. Every
+append carries an expected revision, and every snapshot carries an explicit
+branch, `LogicalTime`, `Tau`, width, and height. The requested image dimensions
+are observation inputs, so the same surface can produce small probes or larger
+PNG artifacts without changing the game source.
+
+The source is generic; voxel supplies its worldline, camera, query, fact
+decoder, and schemas. Another game can use the same MCP server by supplying a
+different `GameSurface` implementation. PNG snapshots are the first visual
+artifact; frame sequences and video can build on the same explicit-time source
+later.
 
 ### View state and animation instances
 

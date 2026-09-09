@@ -79,7 +79,7 @@ These crates provide the generic temporal engine and its public boundaries.
 | [`engine-presentation`](crates/engine-presentation) | State-plus-`Tau` render composition and frame values. |
 | [`engine-observation`](crates/engine-observation) | Generic explicit-time render-source observation and deterministic PNG snapshots. |
 | [`engine-surface`](crates/engine-surface) | Generic immutable branch sessions and GameSurface authoring values. |
-| [`engine-observation-mcp`](crates/engine-observation-mcp) | Generic MCP tools for observation metadata and PNG image results. |
+| [`engine-observation-mcp`](crates/engine-observation-mcp) | Generic MCP adapter for GameSurface manifests, views, journal and branch authoring, and PNG observations. |
 | [`engine-api`](crates/engine-api) | Generic facade for the supported temporal query, journal, branch, time, and presentation APIs. |
 | [`nworlds-host`](crates/nworlds-host) | Target-neutral `GamePackage` contract, independent host ports, and generic package/port composition. |
 
