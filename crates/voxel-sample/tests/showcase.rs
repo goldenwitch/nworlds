@@ -192,6 +192,31 @@ fn ingesting_input_does_not_advance_automatic_time_without_update() {
 }
 
 #[test]
+fn arbitrary_samples_do_not_change_live_controls_or_subsequent_publication() {
+    let mut sampled = VoxelPackage::new();
+    let mut untouched = VoxelPackage::new();
+    let controls = sampled.controls();
+    let before = sampled.present().unwrap();
+    let future = sampled.present_at(LogicalTime::from_ticks(10_000), Tau::from_ticks(125));
+    sampled.present_at(LogicalTime::from_ticks(-10), Tau::from_ticks(-20));
+    assert_eq!(
+        sampled.present_at(LogicalTime::from_ticks(10_000), Tau::from_ticks(125)),
+        future
+    );
+    assert_eq!(sampled.controls(), controls);
+    assert_eq!(sampled.present().unwrap(), before);
+    let action = VoxelInputPacket::SelectTool {
+        tool: VoxelTool::Fire,
+    };
+    sampled.ingest_batch(batch(action)).unwrap();
+    untouched.ingest_batch(batch(action)).unwrap();
+    sampled.update().unwrap();
+    untouched.update().unwrap();
+    assert_eq!(sampled.controls(), untouched.controls());
+    assert_eq!(sampled.present().unwrap(), untouched.present().unwrap());
+}
+
+#[test]
 fn slider_and_step_controls_pause_and_move_both_time_axes() {
     let mut package = VoxelPackage::new();
     let layout = package.controls().layout();

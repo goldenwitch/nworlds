@@ -1,0 +1,10 @@
+[package]
+name = "engine-observation"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+engine-presentation = { path = "../engine-presentation" }
+engine-sdk = { path = "../engine-sdk" }
+engine-time = { path = "../engine-time" }
+image = { version = "0.25", default-features = false, features = ["png"] }

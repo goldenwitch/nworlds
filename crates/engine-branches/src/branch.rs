@@ -116,6 +116,37 @@ impl<C, P: Clone> Branch<C, P> {
         self.fork_boundary
     }
 
+    /// Appends facts through a local writer while preserving branch identity.
+    /// Rejects backward timestamps and facts at or before a child's fork boundary.
+    pub fn append_at(
+        &self,
+        logical_time: LogicalTime,
+        facts: impl IntoIterator<Item = P>,
+    ) -> Result<Self, BranchError> {
+        if let Some(fork_boundary) = self.fork_boundary {
+            if logical_time <= fork_boundary {
+                return Err(BranchError::SuffixNotAfterFork {
+                    fork_boundary,
+                    entry_time: logical_time,
+                });
+            }
+        }
+        let mut writer = JournalWriter::new();
+        for entry in self.journal.iter() {
+            append_entry(&mut writer, entry)?;
+        }
+        writer.advance_to(logical_time)?;
+        for fact in facts {
+            writer.record(fact);
+        }
+        Ok(Self {
+            context: Arc::clone(&self.context),
+            journal: writer.finish(),
+            kind: self.kind,
+            fork_boundary: self.fork_boundary,
+        })
+    }
+
     /// Builds a counterfactual child from the inclusive parent prefix and a strict suffix.
     pub fn counterfactual(
         &self,
@@ -184,7 +215,7 @@ fn build_child_journal<P: Clone>(
 fn append_entry<P: Clone>(
     writer: &mut JournalWriter<P>,
     entry: &JournalEntry<P>,
-) -> Result<(), BranchError> {
+) -> Result<(), JournalWriterError> {
     writer.advance_to(entry.logical_time())?;
     writer.record(entry.payload().clone());
     Ok(())

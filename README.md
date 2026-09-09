@@ -6,8 +6,9 @@ the product boundary. **Caravan of Seasons** is the contained reference game
 and sample consumer used to exercise immutable worldlines, indexed state
 queries, semantic input, presentation, and persistence.
 
-This repository is an active proof-of-life and research implementation. It is
-not a production game, a released engine SDK, or a release distribution.
+This repository is an active proof-of-life and research implementation. It
+currently serves as the reference game, engine experiment, and evidence base
+for the library-first design.
 
 ## Core Model
 
@@ -25,8 +26,8 @@ GameState + Tau -> Frame<RenderBatch>
 
 The game-facing path is independent of transport and device choices. Native
 input is normalized into ordered observations and then into a payload-only
-`SemanticInputBatch`. Rendering consumes owned output; it does not become an
-authoritative interaction surface.
+`SemanticInputBatch`. Rendering consumes owned output as a downstream
+projection, while interaction reads authoritative `GameState` values.
 
 ## Developer Path
 
@@ -38,9 +39,9 @@ nworlds run
 nworlds package
 ```
 
-The command surface is specified in the [target-factory proposal](proposals/target-factory.md)
-and is not yet a shipped CLI in this research workspace. The current executable
-checks and sample commands are listed in [index.md](index.md).
+The command surface is specified in the [target-factory proposal](proposals/target-factory.md).
+This research workspace currently exposes the executable checks and sample
+commands listed in [index.md](index.md).
 
 The independent voxel sample is a separate consumer of the generic engine:
 
@@ -64,14 +65,13 @@ commands live in [index.md](index.md). Current work and deferred decisions are
 tracked in the [roadmap](roadmap.md) and the active VINE graph.
 
 Contributor workflow and required checks are in
-[CONTRIBUTING.md](CONTRIBUTING.md). Target and device observations remain
-separate from library and game-package evidence.
+[CONTRIBUTING.md](CONTRIBUTING.md). Target and device observations have their
+own evidence records alongside library and game-package evidence.
 
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the branch, review, testing, and
-design-record practices. Security reports belong in [SECURITY.md](SECURITY.md),
-not in public issues.
+design-record practices. Use [SECURITY.md](SECURITY.md) for security reports.
 
 ## License
 

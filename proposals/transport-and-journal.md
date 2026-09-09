@@ -4,9 +4,9 @@ This proposal defines the reusable logical layer between source-specific
 transport and the game-facing Stage/Orchestrator composition. It is the
 pattern shared by local input, replay input, and future network input.
 
-The layer encapsulates transport logistics and journal operations without
-making transport metadata authoritative game state and without making source
-platforms or network protocols part of the game description.
+The layer encapsulates transport logistics and journal operations. Transport
+metadata supports delivery and recovery, while the game description remains
+owned by Stage and the domain model.
 
 ## Position
 
@@ -21,7 +21,7 @@ local device / network / replay source
     -> Stage / Orchestrator
 ```
 
-The same layer must support the inverse authoritative path:
+The same layer supports the authoritative path:
 
 ```text
 Input observation
@@ -42,22 +42,22 @@ introduced.
 > **observation payload**: The platform-neutral game-facing value carried by
 > one input observation. The current prototype spelling is `InputPacket`.
 >
-> **transport envelope**: Source and delivery metadata surrounding an observation
-> payload. It may carry source identity, stream identity, observation identity,
-> sequence information, and delivery status. It is not authoritative game time
-> and is not part of `GameState`.
+> **transport envelope**: Source and delivery metadata surrounding an
+> observation payload. It may carry source identity, stream identity,
+> observation identity, sequence information, and delivery status. `LogicalTime`
+> and `GameState` remain the authoritative game-time surfaces.
 >
 > **ordered input batch**: The deterministic semantic collection supplied to one
 > interaction step. It preserves observation identity and an explicit order
 > relation. Equal payloads with different identities remain distinct.
 >
-> **membership view**: A derived set view of an ordered input batch for an
-> interaction that only needs packet presence. The current `InputPacketSet` is
-> this prototype-shaped specialization.
+> **membership view**: A derived set view of an ordered input batch for a
+> membership-oriented interaction. The current `InputPacketSet` is this
+> prototype-shaped specialization.
 >
 > **input buffer**: Orchestrator-owned pending retention for normalized
 > observations. It accepts batches, captures windows, and applies explicit
-> resolution without interpreting packet meaning.
+> resolution while interaction definitions interpret packet meaning.
 >
 > **input window**: An immutable snapshot of exactly the observations supplied
 > to one interaction attempt. Later arrivals are not silently included in that
@@ -69,26 +69,27 @@ introduced.
 >
 > **journal operation**: A value-producing operation that admits an accepted
 > transformation through `JournalWriter`, counterfactual construction, or
-> corrected-branch construction. It does not mutate an existing journal.
+> corrected-branch construction. Each operation returns a new immutable
+> journal or branch value.
 
 ## Ordered Batch Semantics
 
-The reusable input collection is not an unordered set. Its canonical properties
-are:
+The reusable input collection is an ordered semantic batch. Its canonical
+properties are:
 
 - each observation has stable identity within its source stream;
-- order is explicit rather than inherited from hash-map or arrival iteration;
+- order is explicit and independent of hash-map or arrival iteration;
 - duplicate identities are handled by transport policy;
 - equal payloads with different identities are not silently deduplicated;
-- a source may deliver observations out of order, but the semantic batch is
-  normalized before interaction reasoning;
-- multiple sources require an explicit merge order rather than accidental host
-  arrival order; and
-- the batch is replayable without the original device or network connection.
+- a source may deliver observations out of order, with normalization before
+  interaction reasoning;
+- multiple sources use an explicit merge order; and
+- the batch is replayable from its value independently of the original device
+  or network connection.
 
-An interaction that only needs membership may derive a set view. An interaction
-that needs press/release order, repeated actions, or deterministic event
-replay consumes the ordered batch instead.
+An interaction may derive a set view for membership. Interactions that use
+press/release order, repeated actions, or deterministic event replay consume
+the ordered batch.
 
 The derived compatibility view remains valid as a narrow specialization:
 
@@ -98,8 +99,8 @@ InputPacket
     -> InteractionDefinition
 ```
 
-It must not become the canonical reusable collection for network or replay
-semantics because it intentionally discards order and repeated equal payloads.
+The ordered batch remains the canonical reusable collection for network and
+replay semantics; the set view intentionally specializes membership.
 
 The Orchestrator-facing lifecycle is separate from transport delivery:
 
@@ -113,25 +114,25 @@ InputIngress
   -> InputBuffer::resolve(window, resolution)
 ```
 
-The buffer does not consume arrivals that occur after a window is captured.
-`Retain` leaves the captured observations pending, while `Consume` and
-`Discard` remove only that window's identities.
+The buffer keeps arrivals that occur after a window is captured for a later
+window. `Retain` keeps the captured observations pending, while `Consume` and
+`Discard` remove that window's identities.
 
 ## Transport Metadata
 
 Transport metadata exists to make delivery deterministic and recoverable. It
 may support duplicate suppression, ordering, acknowledgement, replay, and late
-arrival handling. It must not become a hidden game clock or an alternate source
-of authority.
+arrival handling. `LogicalTime` remains the game clock and journal publication
+remains the source of authority.
 
-The game-facing interaction seam receives semantic observations, not socket
-handles, operating-system events, host timestamps, acknowledgement state, or
-network connection objects.
+The game-facing interaction seam receives semantic observations. Socket
+handles, operating-system events, host timestamps, acknowledgement state, and
+network connection objects remain with source adapters.
 
 When a transport observation is accepted as an authoritative game change, the
 Orchestrator chooses the journal authoring time and publishes through the
-existing journal/branch APIs. A source sequence number can explain identity and
-ordering; it does not assign `LogicalTime`.
+existing journal/branch APIs. A source sequence number explains identity and
+ordering, while `JournalWriter` assigns `LogicalTime`.
 
 ## Journal Operations
 
@@ -148,14 +149,14 @@ ordered input batch
     -> new immutable worldline value
 ```
 
-The actual journal is never rewritten in place. A late or corrected input uses
-the existing immutable branch machinery. A rejected transformation leaves the
-selected worldline unchanged.
+Journal operations return new immutable values. A late or corrected input uses
+the existing immutable branch machinery. A rejected transformation preserves
+the selected worldline value.
 
 `JournalWriter` remains the timestamp authority. `engine-journal` and
 `engine-branches` remain the current publication machinery. The transport and
-journal layer coordinates them; it does not replace their immutable values or
-introduce a mutable current board.
+journal layer coordinates them around immutable values; the game query derives
+the current board from those values.
 
 ## Source Independence
 
@@ -186,19 +187,19 @@ three different interaction APIs.
 - `JournalWriter` owns game-facing timestamp assignment.
 - Branch construction owns immutable prefix/suffix behavior.
 - The engine/domain evaluator owns the meaning of the resulting worldline.
-- The host does not interpret packets or write authoritative journal facts.
+- The host transports packets; Stage and the Orchestrator interpret them and
+  publish authoritative journal facts.
 
-## Non-Goals
+## Current Boundary
 
-This proposal does not define:
+This proposal currently establishes:
 
-- an operating-system event model;
-- a socket, replication, acknowledgement, or wire protocol;
-- host time or input timestamps;
-- a universal game command or interactable-object model;
-- a generic engine Orchestrator trait or loop API;
-- branch merging or multiplayer authority semantics; or
-- a required serialization format for transport or persistence.
+- source and stream identity for normalized observations;
+- ordered semantic batches and membership views;
+- input-buffer and input-window lifecycle;
+- journal and branch admission operations over immutable values; and
+- application-owned choices for wire formats, host scheduling, multiplayer
+  authority, and Orchestrator composition.
 
 ## Acceptance Shape
 
@@ -211,10 +212,10 @@ A future implementation of this layer is complete when focused evidence proves:
 - membership views reproduce the current set-based interaction behavior;
 - captured windows resolve deterministically as retain, consume, or discard;
 - publication and projection failures retain the captured window for retry;
-- out-of-order delivery does not become accidental semantic order;
+- out-of-order delivery resolves through the explicit semantic order;
 - accepted inputs publish immutable journal or branch values;
-- late inputs do not mutate the published parent;
-- transport metadata never supplies authoritative `LogicalTime`; and
+- late inputs produce new immutable branch values;
+- transport metadata explains delivery while `LogicalTime` remains authoritative;
 - the existing direct-query, branch, persistence, and purity evidence remains
   green.
 

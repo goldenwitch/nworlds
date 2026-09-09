@@ -6,6 +6,9 @@ edition = "2021"
 [dependencies]
 engine-api = { path = "../engine-api" }
 engine-controls = { path = "../engine-controls" }
+engine-observation = { path = "../engine-observation" }
+engine-observation-mcp = { path = "../engine-observation-mcp" }
 nworlds-desktop = { path = "../nworlds-desktop" }
 nworlds-host = { path = "../nworlds-host" }
+serde_json = "1"
 winit = "0.30"

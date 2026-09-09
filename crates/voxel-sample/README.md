@@ -39,9 +39,22 @@ state or presentation camera state.
 
 ## Start Here
 
+The live [package](src/package.rs) uses an immutable `Worldline<VoxelContext,
+VoxelFact>` and `Branch::append_at`. The GameSurface observer owns the
+agent-facing branch session; interaction and presentation sample complete state
+at explicit times.
+The [game developer guide](../../game-developer-guide.md) teaches this path.
+
+The [voxel observer](src/observer.rs) implements the reusable `GameSurface`
+contract over the same render path. VS Code Chat can call the workspace MCP
+server for manifest, journal, branch, preview, commit, discard, metadata, and
+PNG snapshot tools. The surface keeps speculative histories separate from the
+actual line and the observer consumes `Frame<RenderBatch>` without entering
+package game state.
+
 Read [engine_integration.rs](src/engine_integration.rs) first. It is the
-single engine-facing example for this sample. It shows how a game specializes
-engine types and uses the recommended boundaries:
+lower-level query and presentation example for this sample. Its writer-based
+helpers remain available for fixtures and direct engine demonstrations:
 
 - `Worldline<VoxelContext, VoxelFact>` for immutable history;
 - `JournalWriter<VoxelFact>` for authoritative fact publication;
@@ -70,7 +83,7 @@ native click, slider, or tool key
   -> VoxelInputAdapter
   -> VoxelPackage
   -> TimelineControls or VoxelFact
-  -> JournalWriter when authoritative
+  -> Branch::append_at when authoritative
   -> selected LogicalTime
   -> state(worldline, logical_time)
   -> GameState<VoxelState> + Tau + Camera
@@ -83,8 +96,8 @@ The sample owns tool meaning, picking, removal, fire spawning, and scale
 adjustment. Tool selection is an authoritative `VoxelFact::SelectTool` and is
 therefore reconstructed into `VoxelState` at `LogicalTime`. The engine
 supplies immutable fact history and direct query shape. The generic desktop
-target supplies event delivery and pixels without inspecting voxel state or
-block kinds.
+target supplies event delivery and pixels; the sample supplies voxel meaning
+and state-to-frame projection.
 
 `redraw` is the pure presentation composition. `LogicalTime` selects the
 complete authoritative voxel state from the immutable worldline; `Tau` labels
@@ -92,9 +105,11 @@ the independent presentation sample. `VoxelPackage::present_at` exposes the
 same path for explicit scrubbing without changing the package's selected
 sample or camera.
 
-The camera is explicit presentation state, not part of `VoxelState` or the
-journal. `VoxelPackage::present` projects its selected complete state with the
-current camera and visual `Tau` through the pure `frame_with_camera` path.
+The camera is explicit presentation state alongside `VoxelState` and the
+journal. `VoxelPackage::present` samples the world at the control's logical
+time and projects the result with camera, Tau, and controls through
+`frame_with_camera_and_controls`. Each presentation request evaluates the
+selected complete state directly.
 Interactive camera changes update that view value only. A visual animation
 with an independent phase should carry its own presentation-time value and be
 sampled by a pure function; a camera becomes such an animation only when it
@@ -104,8 +119,9 @@ The bottom controls are presentation state. `TimelineControls` starts in
 automatic mode and advances both axes by fixed package-configured deltas during
 idle updates. Slider and step input switches to manual mode. A pointer-down
 outside the control rectangles reports a world interaction and resumes
-automatic mode before the voxel package applies its selected tool. Neither the
-control mode, slider drag, camera, nor `Tau` is placed in `VoxelState`.
+automatic mode before the voxel package applies its selected tool. Control
+mode, slider drag, camera, and `Tau` remain explicit presentation values while
+`VoxelState` carries the game meaning.
 
 The controls use `Viewport` and `ScreenPoint` for native pixel input,
 `LogicalTimeDelta` and `TauDelta` for movement units, and

@@ -14,6 +14,20 @@ test additionally checks the complete stdout trace against
 
 ## Library Boundary Evidence
 
+`cargo test -p engine-surface --locked` covers immutable branch-session
+publication, failed-append isolation, revision checks, preview immutability,
+and discard recovery. Voxel's
+`presentation_samples_control_time_without_a_refresh_step` and
+`arbitrary_samples_do_not_change_live_controls_or_subsequent_publication`
+cover direct integration and independent temporal queries. The generic MCP
+surface additionally covers manifest, branch, preview, commit, snapshot, and
+discard through its stdio protocol.
+
+ `cargo run --release --bin pure-scaling --manifest-path crates/engine-benchmarks/Cargo.toml -- --iterations 1000 --warmup 100 --report evidence/benchmarks/pure-scaling-report.json`
+ produces the [pure engine scaling packet](pure-engine-scaling.md). It measures
+ visible-fact count, actor-count, a consequence-horizon proxy, and
+ immutable publication-history copy cost separately from semantic correctness.
+
 This section is the reusable-library proof package. Caravan rules, the Caravan
 reference oracle, the demo, and native desktop behavior are recorded separately
 below and are not treated as generic library evidence.

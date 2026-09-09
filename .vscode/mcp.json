@@ -1,0 +1,17 @@
+{
+  "servers": {
+    "nworlds-observation": {
+      "type": "stdio",
+      "command": "cargo",
+      "args": [
+        "run",
+        "--quiet",
+        "--manifest-path",
+        "${workspaceFolder}/crates/voxel-sample/Cargo.toml",
+        "--bin",
+        "voxel-observer-mcp",
+        "--"
+      ]
+    }
+  }
+}

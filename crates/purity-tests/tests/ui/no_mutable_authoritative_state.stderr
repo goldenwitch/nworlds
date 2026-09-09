@@ -1,4 +1,4 @@
-error[E0599]: no method named `journal_mut` found for struct `Branch<C, P>` in the current scope
+error[E0599]: no method named `journal_mut` found for struct `engine_api::Branch<C, P>` in the current scope
  --> tests/ui/no_mutable_authoritative_state.rs:8:15
   |
 8 |     worldline.journal_mut().clear();

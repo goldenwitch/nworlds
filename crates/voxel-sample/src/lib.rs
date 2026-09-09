@@ -3,6 +3,7 @@
 pub mod camera;
 pub mod engine_integration;
 mod input;
+pub mod observer;
 mod package;
 pub mod tool;
 pub mod world;

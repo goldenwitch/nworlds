@@ -3,8 +3,8 @@
 This proposal defines the boundary between the canonical logical game
 experience and the platform plumbing that hosts it. It introduces a
 developer-authored **Orchestrator** as ordinary mutable control code inside the
-**Stage** composition; it does not change the authoritative **worldline**,
-**game state**, or rendering contract in [spec/initial.md](../spec/initial.md).
+**Stage** composition; it works alongside the authoritative **worldline**,
+**game state**, and rendering contract in [spec/initial.md](../spec/initial.md).
 
 ## Boundary
 
@@ -25,13 +25,12 @@ Stage
 **Stage** defines what the game experience is for the selected view. The
 target-specific entrypoint supplies the independent presentation-host ports
 needed by a particular operating system, device, window, surface, or rendering
-environment. The presentation host is plumbing, not a second game-facing
-layer.
+environment. The presentation host supplies environmental plumbing while Stage
+supplies the game-facing experience.
 
-The **Stage** is canonical within presentation. It does not replace the domain
-model or the reference oracle: those define game meaning and authoritative
-state. Stage composes those values into the logical experience a user is
-viewing.
+The **Stage** is canonical within presentation. The domain model and reference
+oracle define game meaning and authoritative state; Stage composes those values
+into the logical experience a user is viewing.
 
 ## Vocabulary
 
@@ -40,16 +39,17 @@ Rust/API spellings. The owning concepts are:
 
 > **Stage**: The canonical logical game experience for a selected view. It
 > owns the selected worldline, logical and presentation times, Orchestrator,
-> and presentation composition, but it is not a generic engine type yet.
+> and presentation composition. The current Stage is an application-layer
+> composition.
 >
 > **Orchestrator**: Developer-authored ordinary mutable control code inside a
-> Stage. It owns orchestration state and decisions, but it cannot own a second
-> authoritative game-state model.
+> Stage. It owns orchestration state and decisions while the selected
+> worldline remains the authoritative game-state source.
 >
 
 Target entrypoints and host port roles are defined by the
-[presentation-host proposal](presentation-host.md). This document only defines
-what Stage owns after those ports are composed around it.
+[presentation-host proposal](presentation-host.md). This document defines
+Stage ownership after those ports are composed around it.
 
 ## Stage Responsibilities
 
@@ -68,19 +68,19 @@ Stage owns the selected game view and its temporal policy:
 
 Stage ownership means that these values and policies belong to the game-facing
 composition. The `Orchestrator` is the single mutable owner of Stage control
-state, but it may not mutate a published `Worldline`, `Journal`, or
-`GameState`. It may replace the selected worldline with a new immutable value
-after journal publication or branch construction, while each query remains a
-direct evaluation of immutable inputs.
+state. Authoritative history remains an immutable `Worldline`, `Journal`, or
+`GameState`; publication and branch construction produce replacement values,
+and each query evaluates immutable inputs directly.
 
 ## Orchestrator
 
 The `Orchestrator` is where the developer writes ordinary game control code.
 It may use a literal `while (true)` loop, a pull loop over independent
 presentation-host ports, a replay driver, or another application-specific
-control shape. The engine does not impose a universal loop API at this stage.
+control shape. The engine supplies temporal and presentation primitives while
+the application chooses its loop shape.
 
-The Orchestrator owns decisions that are not yet reusable abstractions:
+The Orchestrator owns these application-specific decisions:
 
 - which `Tau` to sample and whether presentation time advances;
 - which `LogicalTime` and `Tau` values are selected for a sample;
@@ -92,10 +92,10 @@ The Orchestrator owns decisions that are not yet reusable abstractions:
 - which values to save; and
 - which samples to present.
 
-The Orchestrator may mutate its own control state. It may not own an imperative
-board, actor set, resource counter, effect layer, or other parallel source of
-authoritative game state. The only authoritative ingress remains publication of
-new immutable journal/worldline values.
+The Orchestrator may mutate its own control state. Authoritative game state
+comes from publication of new immutable journal/worldline values; boards,
+actor sets, resource counters, and effect layers are derived through the game
+query.
 
 In the current Caravan prototype, these decisions are exercised through
 application methods on `CaravanStage` and `CaravanOrchestrator`. The target
@@ -106,8 +106,8 @@ submission, storage transport, or lifecycle/resource information.
 The pure interaction query and journal-publication path are owned by
 [input-and-interaction.md](input-and-interaction.md). Stage composes that path
 with the selected worldline and the Orchestrator's admission decisions;
-`InteractionDefinition` remains unable to construct timestamped journal
-entries directly.
+`InteractionDefinition` returns untimestamped transformations, while the
+Orchestrator and journal machinery supply admission and timestamp authority.
 
 The current Caravan prototype exposes these operations on different concrete
 types:
@@ -118,8 +118,9 @@ CaravanOrchestrator.lookahead_at(logical_time)
     -> GameState
 ```
 
-A future generic Stage may provide a direct `sample(logical_time)` convenience
-operation; that is not part of the current application API.
+The current application API exposes sampling through the concrete Orchestrator;
+a future generic Stage may provide a direct `sample(logical_time)` convenience
+operation.
 
 Rendering composes with the selected state through the existing presentation
 boundary:
@@ -138,8 +139,8 @@ deterministic presentation.
 ## Presentation host boundary
 
 The [presentation-host proposal](presentation-host.md) owns host port roles,
-target entrypoints, and platform execution. Stage consumes those ports without
-delegating worldline selection, time sampling, or domain meaning to the host.
+target entrypoints, and platform execution. Stage consumes those ports while
+retaining worldline selection, time sampling, and domain meaning.
 
 ## Static Composition
 
@@ -165,16 +166,15 @@ struct Orchestrator<W, I> {
 }
 ```
 
-These are boundary sketches, not an instruction to introduce these exact
-structs or to make every helper a trait. The useful constraint is that a
+These sketches show the boundary shape; concrete games can choose the types
+and helpers that express their own composition. The useful constraint is that a
 concrete game composition is visible in types and invalid combinations are
 rejected before runtime where practical. Target-entrypoint composition and
 host ports are defined in [presentation-host.md](presentation-host.md).
 
 The Orchestrator invokes the engine's state operation for an already-selected
-worldline and logical time. That operation owns indexed evaluation semantics;
-the Orchestrator owns selection and control flow, not a second authoritative
-state model.
+worldline and logical time. The engine owns indexed evaluation semantics; the
+Orchestrator owns selection and control flow around that operation.
 
 `Renderer` belongs to Stage's logical presentation composition. The rendering
 contract and host crossing are defined in
@@ -184,8 +184,8 @@ operates on immutable values before a host storage port transports bytes.
 
 ## Reserved Levers
 
-The following concerns are intentionally reserved and are not settled by this
-proposal:
+The following concerns remain reserved extension points for later concrete
+consumers:
 
 ### Input
 
@@ -193,16 +193,15 @@ The Orchestrator requests abstract `InputPacket` values from the input ingress
 port.
 The Stage's Orchestrator owns the `InteractionDefinition` that reasons over a
 `SemanticInputBatch`, as well as the input orchestration that constructs that
-batch. `InputPacketSet` remains only a derived membership compatibility view.
+batch. `InputPacketSet` remains a derived membership compatibility view.
 Packets may be delivered directly or retained across calls. The canonical
 query takes the selected read-only `GameState`, semantic batch, and `Tau`; its boundary is recorded in
 [input-and-interaction.md](input-and-interaction.md).
 
 ### Camera and HUD
 
-Camera and HUD are not currently assigned to Stage, Host, or a third view layer.
-They remain reserved extension points until their state, time, and rendering
-relationships are discussed explicitly.
+Camera and HUD remain reserved extension points until their state, time, and
+rendering relationships are discussed explicitly.
 
 ### Rendering backend
 
@@ -210,28 +209,27 @@ Stage owns the logical renderer abstraction and composition. The current
 generic boundary is `Renderer<S>::render(GameState<S>, Tau) -> Output` followed
 by `Frame<Output>`. The completed rendering contract defines the concrete
 owned rendering-object output and its division from host-owned device
-execution. Gameplay-specific presentation may add only minimal fire-and-forget
-render data projected from `GameState`; it does not add a renderer input or
-move rendering into authoritative game reasoning.
+execution. Gameplay-specific presentation adds minimal fire-and-forget render
+data projected from `GameState`; client view state enters as an explicit
+presentation value.
 
 ### Host time
 
-Host clock is outside this model. No host-time or clock port is part of the
-Stage, Orchestrator, or presentation-host contract.
+Stage and Orchestrator use `LogicalTime` and `Tau`. Host scheduling remains a
+presentation-host concern and supplies redraw opportunities around those
+explicit values.
 
-## Non-Goals
+## Current Boundaries
 
-This proposal does not:
+This proposal currently establishes:
 
-- add `Stage` or `Orchestrator` types to the generic engine; the experimental
-    `CaravanStage` and `CaravanOrchestrator` live in the application layer;
-- change `spec/initial.md`;
-- redefine `Worldline`, `LogicalTime`, `Tau`, `GameState`, or
-  `Frame`;
-- settle input commands or input timestamps;
-- settle camera or HUD ownership;
-- choose a GPU, windowing, asset, or device architecture; or
-- introduce runtime dependency injection.
+- `CaravanStage` and `CaravanOrchestrator` as application-layer compositions;
+- the existing `Worldline`, `LogicalTime`, `Tau`, `GameState`, and `Frame`
+    contracts from `spec/initial.md`;
+- input ownership through the semantic input proposal;
+- camera and HUD as reserved presentation extension points;
+- target execution through the presentation-host boundary; and
+- static Rust composition at genuine variation boundaries.
 
 ## Open Questions
 

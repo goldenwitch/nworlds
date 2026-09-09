@@ -11,8 +11,15 @@ pub use engine_index::{
     DiscontinuityIndexError, IndexedQuery, JournalSource, Piece, PieceBoundsError, QueryInput,
 };
 pub use engine_journal::{Journal, JournalWriter, JournalWriterError};
+pub use engine_observation::{
+    snapshot, ObservationError, ObservationRequest, RenderSnapshot, RenderSource,
+};
 pub use engine_presentation::{
     present, PresentationDriver, PresentationError, RenderBatch, RenderVertex, Renderer, SamplePlan,
 };
 pub use engine_sdk::{Context, Frame, GameState, QueryResult};
+pub use engine_surface::{
+    AppendPreview, AppendRequest, AppendResult, BranchDescriptor, BranchId, BranchSession,
+    GameSurface, JournalView, Revision, SurfaceError, SurfaceManifest, SurfaceSnapshotRequest,
+};
 pub use engine_time::{LogicalTime, Tau, GAME_TICK_PERIOD, TICKS_PER_LOGICAL_SECOND};

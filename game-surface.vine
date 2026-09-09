@@ -1,0 +1,45 @@
+vine 1.2.0
+prefix: game-surface
+title: Make GameSurface the reusable agent-facing game surface
+---
+[root] Make GameSurface the reusable agent-facing game surface (complete)
+Goal: A game can expose deterministic observation, journal authoring, and speculative branch work to an agent through one generic MCP surface.
+Question: Which part of that surface belongs in the reusable engine, and which part remains game meaning supplied by the package?
+Accept: The surface supports explicit-time observation, journal read/write, branch creation, preview, commit, comparison, and discard. Actual history remains independently recoverable after speculative work. A synthetic consumer and the voxel sample use the same MCP server.
+-> docs
+> GameSurface owns the agent-facing capability boundary; it does not become a second domain model.
+> The actual worldline remains immutable. MCP session state selects and names histories; it does not mutate published values in place.
+> Branch writes use an expected revision and return a new revision. Actual-line writes are visibly distinct from speculative branch writes.
+@guidance text/markdown proposals/library-contract.md
+@guidance text/markdown proposals/rendering-contract.md
+@file text/markdown evidence/pure-engine-experiment.md
+@file text/markdown evidence/pure-engine-scaling.md
+---
+[contract] Define the typed history and GameSurface contract (complete)
+Files: crates/engine-surface/Cargo.toml; crates/engine-surface/src/lib.rs; crates/engine-api/Cargo.toml; crates/engine-api/src/lib.rs
+Do: Add immutable branch-session handles, revisions, branch descriptors, JSON fact requests, preview/commit result values, and the GameSurface trait. Keep branch storage generic over context and fact payload; keep JSON/schema at the agent-facing boundary. Preserve actual history when branches are discarded.
+Accept: Unit tests cover actual and counterfactual handles, fork-boundary protection, stale-revision rejection, preview immutability, commit replacement, and discard recovery. No voxel or Caravan types enter the contract.
+---
+[synthetic] Prove the surface with a generic typed consumer (complete)
+Files: crates/engine-surface/tests/surface.rs; crates/engine-observation-mcp/src/lib.rs
+Do: Implement a small synthetic surface over byte facts or color facts. Exercise manifest, journal read, branch open, JSON fact validation, preview, commit, metadata/snapshot, comparison inputs, and discard through the generic server types.
+Accept: The synthetic surface proves branch work changes only the selected branch, the actual revision remains stable, stale writes fail, and the generic MCP server exposes the same tools used by voxel.
+-> contract
+---
+[mcp] Add generic GameSurface MCP tools (complete)
+Files: crates/engine-observation-mcp/Cargo.toml; crates/engine-observation-mcp/src/lib.rs
+Do: Extend the generic stdio server with manifest, journal read, branch open, preview append, append, compare, and discard tools. Return structured text plus PNG content where a render exists. Keep write tools explicit and revision-checked; keep observation tools usable for read-only surfaces.
+Accept: `tools/list` exposes the surface tools; raw protocol tests can initialize, read metadata, open a branch, preview a fact, commit it, observe it, discard it, and observe the actual line again.
+-> synthetic
+---
+[voxel] Move voxel onto GameSurface (complete)
+Files: crates/voxel-sample/src/observer.rs; crates/voxel-sample/src/bin/voxel-observer-mcp.rs; crates/voxel-sample/src/world.rs; crates/voxel-sample/README.md
+Do: Replace the render-only voxel observer with a GameSurface implementation. Describe voxel facts with a package-owned schema, decode validated JSON facts, render selected histories, expose branch lifecycle, and retain the current explicit-time PNG path.
+Accept: The same generic MCP tools can open a voxel counterfactual, append a validated voxel fact, render the result, discard it, and recover the actual cottage image. Invalid facts and stale revisions leave history unchanged.
+-> mcp
+---
+[docs] Record the reusable authoring workflow (complete)
+Files: game-developer-guide.md; index.md; crates/voxel-sample/README.md; evidence/clause-to-test.md
+Do: Replace the wrapper-first experimental guidance with the GameSurface workflow. Link the old pure-engine reports as historical evidence and document actual-line versus speculative-branch writes, preview, revision checks, and discard.
+Accept: One guide names the generic GameSurface contract and one MCP configuration; no superseded pure-api graph remains referenced.
+-> voxel

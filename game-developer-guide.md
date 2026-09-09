@@ -2,8 +2,8 @@
 
 This is the current implementation guide for building a target-neutral game
 consumer in this workspace. It describes the generic Rust engine and the host
-boundary that exists today. It does not define a new engine contract or imply
-that the proposed `nworlds` CLI is shipped.
+boundary that exists today, while the proposed `nworlds` CLI remains a design
+surface.
 
 ## Start Here
 
@@ -35,8 +35,9 @@ cargo test --manifest-path tests/conformance/Cargo.toml --locked
 
 ## Core Model
 
-The engine evaluates complete values directly. A game does not keep a hidden
-mutable board that is advanced, rewound, or synchronized with rendering.
+The engine evaluates complete values directly. A game represents authoritative
+history as an immutable worldline and derives the selected complete state for
+each request.
 
 ```text
 immutable Worldline<C, P> + LogicalTime
@@ -59,23 +60,22 @@ state(worldline, logical_time) -> GameState
 present(game_state, tau) -> Frame
 ```
 
-The actual generic query function receives the worldline's context and journal
-separately so the game can supply an `IndexedQuery` implementation:
+Use `GameSurface` as the agent-facing composition boundary. The game supplies
+its `IndexedQuery` and fact schema; the surface supplies explicit observation,
+journal, branch, preview, commit, and discard operations:
 
-```rust
-let sampled = state(
-    worldline.context(),
-    worldline.journal(),
-    logical_time,
-    MyQuery,
-);
-let frame = present::<MyState, MyRenderer>(&sampled, tau);
+```text
+GameSurface
+  manifest + fact schema
+  branch handle + LogicalTime + Tau -> observation
+  branch handle + revision + facts -> preview or new revision
 ```
 
 ## Engine Features
 
 | Feature | Use it for | Current owner |
 | --- | --- | --- |
+| `GameSurface` | Expose explicit-time observation, journal reads, revision-checked authoring, and speculative branch lifecycle to tools and agents. | [`engine-surface`](crates/engine-surface) |
 | `LogicalTime` and `Tau` | Keep authoritative time distinct from presentation time. | [`engine-time`](crates/engine-time) |
 | `Context`, `Journal`, `Worldline`, `GameState`, and `Frame` | Carry immutable game-owned values through the engine boundaries. | [`engine-sdk`](crates/engine-sdk), [`engine-branches`](crates/engine-branches) |
 | `JournalWriter` | Assign monotonic logical timestamps and publish immutable journal snapshots. | [`engine-journal`](crates/engine-journal) |
@@ -83,158 +83,115 @@ let frame = present::<MyState, MyRenderer>(&sampled, tau);
 | `Branch` | Produce actual, counterfactual, and corrected immutable histories. | [`engine-branches`](crates/engine-branches) |
 | `Renderer` and `present` | Project one `GameState` plus one `Tau` into owned output. | [`engine-presentation`](crates/engine-presentation) |
 | `RenderBatch` | Carry target-neutral triangle draw data to a host render sink. | `engine-presentation` and [`nworlds-host`](crates/nworlds-host) |
+| `engine-observation` | Sample any `RenderSource` at explicit times and produce deterministic PNG metadata and image bytes. | [`engine-observation`](crates/engine-observation) |
+| `engine-observation-mcp` | Expose generic observation and GameSurface operations through MCP stdio tools. | [`engine-observation-mcp`](crates/engine-observation-mcp) |
 | `engine-controls` | Map typed screen input to two time sliders, four directional steps, automatic/manual mode, fixed-focus parabolic time reprojection, viewport layout scaling, and owned control geometry. | [`engine-controls`](crates/engine-controls) |
 | `GamePackage` and host ports | Connect game meaning to input, storage, lifecycle, and rendering without exposing target types. | [`nworlds-host`](crates/nworlds-host) |
 
 ## Build A Game
 
-### 1. Define game-owned values
+### 1. Define a query and publish facts
 
-A game starts by defining its own context, journal fact vocabulary, and queried
-state. These are not engine primitives.
-
-```rust
-struct MyContext {
-    // Immutable definitions and configuration owned by the game.
-}
-
-enum MyFact {
-    // Authoritative events such as creation, input, or an action.
-}
-
-struct MyState {
-    // The complete game result at one LogicalTime.
-}
-```
-
-The engine never invents a fact or interprets a domain value. The query is the
-place where a game turns its context and visible facts into its complete state.
-
-### 2. Author facts through `JournalWriter`
-
-Use `JournalWriter` for game-facing authoring. It owns timestamp assignment and
-preserves append order for equal-time facts.
+The game supplies context, fact payloads, and an `IndexedQuery`. The query
+receives immutable inputs and returns a complete result. This small example
+uses byte facts to show the API without a game-specific rule system:
 
 ```rust
-let mut writer = JournalWriter::<MyFact>::new();
-writer.record(MyFact::CreateWorld);
-writer.advance_to(LogicalTime::from_ticks(1))?;
-writer.record(MyFact::PlaceActor);
+use engine_api::{Branch, Context, IndexedQuery, Journal, LogicalTime, QueryInput};
 
-let worldline = Branch::new(Context::new(MyContext {}), writer.snapshot());
-```
+struct Facts;
 
-`advance_to` can move the cursor forward or keep it at the same time. Moving
-backward is an explicit error. `JournalEntry::from_assigned_time` and direct
-journal construction are low-level interoperability paths, not the normal game
-API.
+impl IndexedQuery<(), u8> for Facts {
+  type Result = Vec<u8>;
 
-### 3. Implement direct state evaluation
-
-Implement `IndexedQuery<C, P>` for the game's query type. It receives an
-immutable `QueryInput` containing the context, exact logical time, and journal
-entries visible at or before that time.
-
-```rust
-struct MyQuery;
-
-impl IndexedQuery<MyContext, MyFact> for MyQuery {
-    type Result = MyState;
-
-    fn query(&self, input: QueryInput<'_, MyContext, MyFact>) -> Self::Result {
-        let mut state = MyState::default();
-        for entry in input.visible_entries() {
-            state = state.apply(entry.payload(), entry.logical_time());
-        }
-        state
-    }
+  fn query(&self, input: QueryInput<'_, (), u8>) -> Self::Result {
+    input.visible_entries().map(|entry| *entry.payload()).collect()
+  }
 }
-```
 
-The `apply` operation above is game code. It may derive effects, movement,
-resources, or other values from the visible facts, but it should return the
-complete result for the selected time rather than mutate a shared board.
-
-Evaluate it with the generic `state` function:
-
-```rust
-let at_start = state(worldline.context(), worldline.journal(), LogicalTime::zero(), MyQuery);
-let in_the_future = state(
+fn main() -> Result<(), engine_api::BranchError> {
+  let worldline = Branch::new(Context::new(()), Journal::empty());
+  let future = engine_api::state(
     worldline.context(),
     worldline.journal(),
-    LogicalTime::from_ticks(10),
-    MyQuery,
-);
+    LogicalTime::from_ticks(100),
+    Facts,
+  );
+  let past = engine_api::state(worldline.context(), worldline.journal(), LogicalTime::zero(), Facts);
+  assert!(future.payload().is_empty());
+  assert!(past.payload().is_empty());
+  Ok(())
+}
 ```
 
-The second query is independent of the first. Sampling backward, repeating a
-sample, or querying beyond the latest authored fact follows the same path.
+The direct query path is the low-level engine contract. `GameSurface` composes
+that path with manifest, journal, branch, preview, commit, and discard tools.
 
-### 4. Publish new immutable values
+### 2. Observe and author through GameSurface
 
-A new authoritative action produces a new journal snapshot and a new
-worldline value. It does not mutate a previously published worldline.
+`GameSurface::observe` accepts an explicit branch, `LogicalTime`, and `Tau`.
+Each call samples immutable history directly. The voxel package queries the
+selected branch through this surface for both interaction and presentation.
 
-```rust
-writer.record(MyFact::PlayerAction);
-let next_worldline = Branch::new(
-    worldline.context().clone(),
-    writer.snapshot(),
-);
-```
+Journal authoring is revision-checked. `branch_preview_append` validates facts
+against a speculative branch without changing it; `branch_append` commits to a
+speculative branch; and `actual_append` is the visibly separate actual-line
+write. Each commit returns a new revision. Branch discard restores the actual
+line without reconstructing it.
 
-Keep the writer and selected worldline together in the game application layer.
-The writer is mutable authoring control; the worldline and every `GameState`
-are immutable values.
+### 3. Use lower-level branches and codecs when needed
 
-### 5. Create counterfactual or corrected histories
+Lower-level `Worldline` and branch APIs remain available inside a game surface.
+The MCP-facing path names branch handles, fork boundaries, and revisions while
+the engine preserves immutable parent history and inclusive-prefix rules.
 
-Use the branch APIs when the parent history must remain available:
+### Guarantees and costs
 
-```rust
-let mut suffix_writer = JournalWriter::<MyFact>::new();
-suffix_writer.advance_to(LogicalTime::from_ticks(2))?;
-suffix_writer.record(MyFact::AlternateAction);
-let suffix = suffix_writer.finish();
+`GameSurface` owns the agent-facing session boundary while the engine preserves
+immutable history and branch-prefix rules. Game rule bodies, renderers, and
+payloads are trusted Rust extension points; ordinary owned data and
+deterministic rules provide the intended game authoring discipline.
 
-let counterfactual = worldline.counterfactual(
-    LogicalTime::from_ticks(1),
-    &suffix,
-)?;
-```
+Publication currently rebuilds a journal snapshot, with work proportional to
+history plus new facts. Direct sampling also retains the existing query's
+cost. The sample uses direct sampling to keep synchronization obligations out
+of the application path; performance remains a separate measured concern.
 
-A counterfactual keeps the parent's inclusive prefix and adds a strict suffix.
-A corrected branch uses `corrected_suffix` with the same boundary rules. Neither
-operation rewrites the parent.
-
-### 6. Project state into presentation
+### 4. Project state into presentation
 
 Implement `Renderer<S>` for the game state and return an owned output. The
-renderer receives only the selected `GameState` and `Tau`.
+renderer receives the selected `GameState` and `Tau` as its semantic input.
 
-```rust
-struct MyRenderer;
+The [voxel renderer](crates/voxel-sample/src/engine_integration.rs) implements
+`Renderer<VoxelState>` with `Output = RenderBatch`. It demonstrates both the
+generic renderer with a fixed camera and the sample's explicit camera/control
+projection. The [package](crates/voxel-sample/src/package.rs) samples its
+immutable `Worldline` and passes that complete value into the projection.
 
-impl Renderer<MyState> for MyRenderer {
-    type Output = RenderBatch;
+The sample renderer uses `Tau` for animation while `LogicalTime` selects the
+authoritative state. `RenderBatch` is disposable draw intent containing the
+vertices and colors required for the current frame. Journal history, input
+transport, device resources, and host scheduling remain owned by their
+respective layers.
 
-    fn render(state: &GameState<MyState>, tau: Tau) -> Self::Output {
-        let vertex = RenderVertex::new(
-            [0.0, 0.0, 0.0],
-            [1.0, 1.0, 1.0, 1.0],
-        );
-        let _ = (state, tau);
-        RenderBatch::new([vertex, vertex, vertex])
-    }
-}
+### Observe a render in Chat
 
-let frame = present::<MyState, MyRenderer>(&sampled, Tau::zero());
+The reusable `engine-observation` boundary accepts any source that produces a
+`Frame<RenderBatch>` for an explicit `LogicalTime` and `Tau`. It rasterizes the
+same target-neutral triangle vocabulary into PNG bytes and reports the sampled
+times, dimensions, vertex count, and triangle count alongside the image.
+
+The workspace MCP configuration connects VS Code Chat to the voxel adapter:
+
+```text
+metadata(logical_time_ticks, tau_ticks, width, height)
+snapshot(logical_time_ticks, tau_ticks, width, height)
 ```
 
-The sample renderer may use `Tau` for animation, but it must not use `Tau` to
-select another logical state, publish a fact, or depend on a previous frame.
-`RenderBatch` is disposable draw intent: it contains vertices and colors, not a
-journal, worldline, input queue, device, or host clock.
+The source is generic; voxel supplies its worldline, camera, and query. The
+same MCP server can observe another game by replacing that source adapter. PNG
+snapshots are the first visual artifact; frame sequences and video can build on
+the same explicit-time source later.
 
 ### View state and animation instances
 
@@ -250,15 +207,14 @@ fn project(
 ) -> RenderBatch
 ```
 
-The projection must be deterministic for equal inputs. It must not read or
-mutate package fields, global clocks, device state, or prior frames.
+The projection is deterministic for equal inputs and receives the view snapshot
+alongside the selected state and `Tau`. Its result is independent of package
+fields, global clocks, device state, and prior frames.
 
 An animation instance is an explicit value with its own local presentation
 coordinate and immutable parameters. A pure sampling function turns that value
-and the selected `GameState` into presentation data. If several animations
-need independent clocks, store their local `Tau` values in explicit
-presentation control state. Do not put a hidden mutable clock inside a
-renderer.
+and the selected `GameState` into presentation data. Several animations can
+carry independent local `Tau` values in explicit presentation control state.
 
 A camera is a view value by default, not an animation merely because it affects
 projection. An animated camera can be an animation instance whose pure sample
@@ -268,7 +224,7 @@ movement is part of game meaning. The Voxel sample's
 `render_batch_at(state, camera, tau)` function demonstrates this explicit pure
 projection.
 
-### 7. Connect the game to the host
+### 5. Connect the game to the host
 
 A target-neutral game package implements `nworlds_host::GamePackage`:
 
@@ -292,7 +248,7 @@ The current native desktop composition is in
 [`nworlds-desktop`](crates/nworlds-desktop). It owns window, device, backend,
 and native event details. The game package remains target neutral.
 
-### 8. Add timeline controls
+### 6. Add timeline controls
 
 Use `engine-controls::TimelineControls` when a game needs screen controls for
 the two time axes. Configure fixed-focus parabolic projection horizons and
@@ -313,10 +269,11 @@ presentation. Render the returned control geometry alongside the game batch.
 The desktop host applies one package update/presentation step per redraw; input
 ingestion itself does not advance either time axis.
 Finite absolute times remain inside the slider edges through the fixed-focus
-parabolic projection; the slider is never used as a gameplay bound. Call
+parabolic projection; the slider represents a view of time while gameplay
+meaning remains in the selected logical sample. Call
 `TimelineLayout::auto_scale(viewport)` or `TimelineControls::with_viewport(viewport)`
-whenever the viewport changes. The library owns no worldline, journal, host
-clock, or game meaning. The default `SliderFocus` is `350/1000`, so the
+whenever the viewport changes. The library owns timeline geometry and control
+values. The default `SliderFocus` is `350/1000`, so the
 currently focused time sits at 35% of each track with extra room ahead of it.
 The voxel sample demonstrates the complete adapter in
 [`package.rs`](crates/voxel-sample/src/package.rs) and
@@ -324,7 +281,8 @@ The voxel sample demonstrates the complete adapter in
 
 ## Input And Persistence
 
-Input is a game-facing value pipeline, not an automatic journal mutation:
+Input is a game-facing value pipeline whose accepted transformations become
+journal or branch publications:
 
 ```text
 native event
@@ -343,8 +301,9 @@ they mean and which accepted result becomes authoritative. See the
 boundaries.
 
 Persistence has the same ownership split. The game encodes and decodes its
-context and facts; `StorageTransport` only moves owned bytes. A host file path,
-device handle, or backend type must not enter `GameState` or render production.
+context and facts; `StorageTransport` moves owned bytes. `GameState` and render
+production carry game values and presentation data, while file paths, device
+handles, and backend types stay with the host.
 
 ## Ownership Rules
 
@@ -356,19 +315,15 @@ Keep these rules visible while adding a feature:
   preparation, branch construction, and state-first presentation in the engine.
 - Put native event translation, input transport, byte transport, lifecycle, and
   backend execution in the host.
-- Query complete state directly; do not add a mutable shadow state for speed or
-  rendering convenience.
-- Mutable orchestration state is allowed for selected values, view state, and
-  presentation clocks, but it must remain explicit and never replace
-  `GameState`.
-- Automatic/manual playback mode and screen-control drag state are explicit
-  presentation control state; they do not belong in authoritative facts unless
-  the game deliberately makes them game meaning.
-- Keep physical pixels, normalized clip-space coordinates, absolute times, and
-  time deltas in their named unit types; do not pass bare tuples or raw tick
-  integers across the controls boundary.
-- Treat render output as downstream and disposable; interaction logic reads
-  `GameState`, not a frame.
+- Query complete state directly from the selected worldline and logical time.
+- Keep selected values, view state, and presentation clocks as explicit
+  orchestration values alongside `GameState`.
+- Keep automatic/manual playback mode and screen-control drag state in
+  presentation control values; authoritative facts carry game meaning.
+- Carry physical pixels, normalized clip-space coordinates, absolute times, and
+  time deltas in their named unit types across the controls boundary.
+- Treat render output as downstream and disposable; interaction logic reads the
+  selected `GameState`.
 - Use the facade in `engine-api` and promote a lower-level crate only when a
   concrete consumer needs it.
 

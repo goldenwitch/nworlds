@@ -635,7 +635,10 @@ mod tests {
     fn programmatic_tau_advance_preserves_automatic_mode() {
         let mut controls = controls();
         assert_eq!(controls.mode(), PlaybackMode::Automatic);
-        assert_eq!(controls.advance_tau(Tau::from_ticks(7)), Ok(Tau::from_ticks(7)));
+        assert_eq!(
+            controls.advance_tau(Tau::from_ticks(7)),
+            Ok(Tau::from_ticks(7))
+        );
         assert_eq!(controls.mode(), PlaybackMode::Automatic);
     }
 }

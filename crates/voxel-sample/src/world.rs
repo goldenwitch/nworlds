@@ -112,9 +112,16 @@ impl VoxelScale {
     pub const MAX_MILLI: u16 = 1_650;
     pub const DEFAULT_MILLI: u16 = 1_000;
 
-    #[cfg(test)]
     pub const fn milli(self) -> u16 {
         self.0
+    }
+
+    pub const fn from_milli(milli: u16) -> Option<Self> {
+        if milli < Self::MIN_MILLI || milli > Self::MAX_MILLI {
+            None
+        } else {
+            Some(Self(milli))
+        }
     }
 
     pub const fn as_f32(self) -> f32 {

@@ -1,9 +1,9 @@
 # Target Factory Proposal
 
 This proposal defines the nworlds host that turns a target-neutral game package
-into a runnable artifact. Game developers do not select operating systems,
-architectures, window systems, GPU backends, or recipient hardware as part of
-game composition.
+into a runnable artifact. Game composition supplies package meaning and
+requirements; the target factory resolves operating systems, architectures,
+window systems, GPU backends, and recipient hardware at the host boundary.
 
 **Status:** design-only. `nworlds-host` and `nworlds-desktop` implement the
 supporting host boundaries, but no target-factory crate, generated entrypoint,
@@ -14,7 +14,7 @@ owns runtime ports and adapters. The [platform support matrix](platform-support-
 owns declared target regimes and evidence. The game owns its world and
 meaning. The reusable temporal and host-library boundary is recorded in
 [library-contract.md](library-contract.md); this proposal consumes that
-boundary and does not define it.
+boundary while focusing on factory resolution.
 
 ## Boundary
 
@@ -36,11 +36,10 @@ GamePackage
 ```
 
 The game package is target-neutral. The host supplies every environmental
-capability the game needs through `HostContract`; the game does not select or
-construct those capabilities. A target profile is host-owned metadata, not a
-game API. A target artifact may be native, packaged, or launched through a
-host-managed runtime; the recipient should not need to know its architecture
-or backend.
+capability the game needs through `HostContract`. A target profile is
+host-owned metadata. A target artifact may be native, packaged, or launched
+through a host-managed runtime; the recipient experiences the package through
+the resolved host environment.
 
 ## Intended Developer Experience
 
@@ -55,8 +54,8 @@ nworlds package
 `nworlds test` validates the game package and its semantic evidence. `nworlds
 run` resolves the local environment, mints or reuses a compatible artifact,
 and launches it. `nworlds package` mints artifacts for supported environments.
-Normal use does not require a target flag, architecture name, windowing
-library, or GPU backend.
+Normal use presents one target-neutral command surface while the host resolves
+the target profile internally.
 
 These commands are the desired host contract. The current repository contains
 the isolated temporal library, the target-neutral host library, and the Caravan
@@ -68,8 +67,7 @@ temporal and presentation contracts it consumes are defined in
 ## Recommended Shape
 
 Use static host composition behind a target-neutral command surface. The first
-implementation should not require a plugin ABI, dynamic game loading, or a
-runtime object registry:
+implementation uses generated Rust composition with ordinary static linking:
 
 ```text
 nworlds test
@@ -98,15 +96,14 @@ the selected target adapters, then invokes the normal Rust build/run/package
 toolchain. The generated crate owns the target `main`, lifecycle, input
 translation, storage transport, and render execution wiring.
 
-The generated crate is a build artifact, not a new source-level package
-boundary. It contains no game meaning and does not become a dependency of the
-package. The package contributes a target-neutral library composition and
-`PackageDeclaration`; it has no target entrypoint, target adapter, OS,
-architecture, window-system, GPU-backend, or target-triple field.
+The generated crate is a build artifact owned by the target factory. It carries
+target wiring while the package contributes a target-neutral library
+composition and `PackageDeclaration`. Package declarations describe semantic
+requirements; target entrypoints, adapters, OS, architecture, window-system,
+GPU-backend, and target-triple details live in host composition.
 
 This mechanism keeps the first implementation statically typed and supports
-`nworlds run` and `nworlds package` without a plugin ABI, runtime package
-discovery, or game-name branch in target execution. The reusable
+`nworlds run` and `nworlds package` through generated static composition. The reusable
 `nworlds-desktop` host now contains the generic lifecycle and a synthetic
 package compile proof; the historical Caravan executable remains evidence
 until the Caravan client migration remaps that package through the host.
@@ -146,24 +143,24 @@ voxel persistence codec remain separate follow-up claims. No game package
 gains a target entrypoint, target selection, or backend import as part of this
 migration.
 
-`HostContract` is a family of narrow typed abstractions supplied by the host,
-not a broad mutable capabilities object. It covers the environmental things a
-game needs: input, byte storage, lifecycle/resource access, and a minimal
-renderer-agnostic draw vocabulary. Concrete target adapters implement those
-abstractions; game code does not select their implementations.
+`HostContract` is a family of narrow typed abstractions supplied by the host.
+It covers the environmental things a game needs: input, byte storage,
+lifecycle/resource access, and a minimal renderer-agnostic draw vocabulary.
+Concrete target adapters implement those abstractions and the factory composes
+them with the game package.
 
 ## Consumer Inventory
 
 The contract is discovered from concrete consumers. A row records the current
-proof boundary; its candidate abstraction is not a settled API merely because
-the proof uses a particular Rust type.
+proof boundary; its candidate abstraction becomes a settled API when repeated
+consumer evidence supports it.
 
-| Consumer need | Current consumer | Direction | Current owner | Lifetime | Target-neutrality requirement | Candidate abstraction | Not yet settled |
+| Consumer need | Current consumer | Direction | Current owner | Lifetime | Target-neutrality requirement | Candidate abstraction | Open detail |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Semantic input delivery | `ApplicationHost::step`, `InputIngress`, and the Windows `PlatformInputAdapter` | Host -> game | Target adapter translates native events; ingress transports packets; Orchestrator normalizes and retains semantic observations | Ingress lives for one host composition; ordered batches and input windows are owned values per interaction attempt | `InputPacket`, `SemanticInputBatch`, and interaction logic contain no native event, window, device, or target identity | Package-defined neutral observations delivered through an ingress | How a package declares its input vocabulary and how a host maps native events |
-| Encoded persistence transport | `ApplicationHost::save_selected`/`load_selected`, `StorageTransport`, and `MemoryStorage` | Game <-> host | Game persistence codec owns meaning; storage adapter owns bytes | Encoded records are owned across one save/load operation; storage lifetime is host-selected | The game sees owned bytes or a typed codec result, never a file handle, path policy, or platform storage object | Owned bytes in and out | File/package lifetime and user-data location |
+| Encoded persistence transport | `ApplicationHost::save_selected`/`load_selected`, `StorageTransport`, and `MemoryStorage` | Game <-> host | Game persistence codec owns meaning; storage adapter owns bytes | Encoded records are owned across one save/load operation; storage lifetime is host-selected | The game receives owned bytes or a typed codec result; file handles, paths, and platform storage stay with the host | Owned bytes in and out | File/package lifetime and user-data location |
 | Render intent | `CaravanRenderer`, `RenderSinkAdapter`, and the desktop `WgpuRenderSink` | Game -> host | Renderer projects `GameState + Tau`; sink executes or collects the owned frame | `Frame<RenderBatch>` is owned by one submission and may be copied, queued, or discarded; Caravan may retain a semantic `RenderOutput` inspection view before this crossing | Render batch contains no journal, worldline, Orchestrator, input, branch selector, device, or host-clock state | Host-defined owned `RenderBatch` from `GameState + Tau` | Smallest geometry/appearance vocabulary and coordinate semantics |
-| Lifecycle and resource execution | Windows `NativeApplication` and `WgpuRenderSink` | Host -> composition | Target entrypoint owns process/window lifecycle; target sink owns device/surface resources | Process, window, surface, device, and queue lifetimes are target-local | No lifecycle, window, device, backend, or architecture type crosses into game meaning unless a named consumer later requires it | Host-owned launch and execution flow, outside the first game contract | Which lifecycle observations, if any, a game actually consumes |
+| Lifecycle and resource execution | Windows `NativeApplication` and `WgpuRenderSink` | Host -> composition | Target entrypoint owns process/window lifecycle; target sink owns device/surface resources | Process, window, surface, device, and queue lifetimes are target-local | Game meaning uses target-neutral values; named consumers can introduce explicit lifecycle observations through a host port | Host-owned launch and execution flow | Which lifecycle observations a game actually consumes |
 
 There is no current game consumer for a generic asset loader, audio port,
 camera service, widget system, device handle, or runtime-diagnostics port.
@@ -176,8 +173,8 @@ capability.
 The current proof therefore demonstrates three game-facing host crossings:
 neutral input transport, encoded byte transport, and owned render submission.
 `ApplicationHost` is a proof-local convenience bundle around those crossings;
-the generic composition now lives in `nworlds-host` and is not a Caravan-owned
-host abstraction or a public target-selection API.
+the generic composition now lives in `nworlds-host`, while target selection
+remains a factory concern.
 
 ## Implemented Static Composition
 
@@ -201,18 +198,17 @@ RenderSink<Frame> <- owned frame
 
 `nworlds-host::ApplicationHost<P, I, S, R>` drains `I`, delegates input and
 semantic update to `P`, submits the package's current presentation to `R`, and
-transports persistence bytes through `S`. Its `update()` path does not submit a
-frame; its `present()` path does not update authoritative package state. It
-does not know Caravan state, journal facts, logical time, render objects,
-native events, windows, devices, or backends. The package owns interaction,
-publication, state selection, and presentation semantics.
+transports persistence bytes through `S`. Its `update()` path handles package
+updates; its `present()` path handles frame submission. The package owns
+interaction, publication, state selection, and presentation semantics, while
+the target owns native events, windows, devices, and backends.
 
 The intended Caravan mapping is `caravan-sample::CaravanPackage`, a
 target-neutral alias for its existing Stage/Orchestrator/renderer composition.
 The historical desktop proof used `caravan_sample::sample_package()` with the
-generic host; the current generic target uses a synthetic package until the
+generic host; the current generic target uses a synthetic package while the
 Caravan client migration remaps that package. This remains a host-client
-mapping, not a second Caravan game model.
+mapping around one Caravan game model.
 
 The host-owned render vocabulary is the crossing:
 
@@ -226,8 +222,9 @@ GameState + Tau
 
 The game supplies draw intent using the host-defined vocabulary. The target
 sink translates that intent into backend instructions. The render batch is
-owned, fire-and-forget, and has no journal, worldline, Orchestrator, input,
-branch-selection, device, or host-clock state.
+owned, fire-and-forget draw data; Stage retains journal, worldline,
+Orchestrator, input, and branch-selection state while the target retains device
+and host scheduling state.
 
 ## Initial RenderBatch Implementation
 
@@ -243,18 +240,18 @@ Both current sample clients now produce `Frame<RenderBatch>`:
 - `caravan-sample::CaravanRenderer` projects Caravan tile/actor/effect values;
 - `voxel-sample::VoxelRenderer` projects voxel cubes through its sample camera.
 
-The existing Windows proof sink consumes the shared batch rather than
-`CaravanRenderOutput`. The reusable desktop lifecycle/composition remains a
-separate target-host task; this implementation settles the game-to-target
-render vocabulary without prematurely merging target lifecycle code.
+The existing Windows proof sink consumes the shared batch alongside Caravan's
+semantic inspection output. The reusable desktop lifecycle/composition remains
+a separate target-host task; this implementation settles the game-to-target
+render vocabulary before lifecycle composition.
 
 ## Package Declaration
 
 `nworlds-host::PackageDeclaration` is the package-facing declaration consumed
 by target resolution. A `GamePackage` supplies it as a static value through
 `GamePackage::declaration`; `ApplicationHost::package_declaration` exposes the
-same value to a host composition without making package state part of
-resolution.
+same declaration to a host composition while package state remains with the
+package.
 
 The declaration contains only semantic package facts:
 
@@ -266,11 +263,11 @@ The declaration contains only semantic package facts:
 | `HostVersionRequirement` | Minimum target-neutral host contract version | Window system, backend, or device identity |
 | `RenderVocabularyRequirement` | Renderer-agnostic vocabulary capability and version | `wgpu`, GPU, surface, or native draw commands |
 
-The declaration is static and owned by the package type. The target factory may
-reject an incompatible host or render vocabulary before selecting a target
-profile, but it never asks the package to name that profile. The Caravan
-client's declaration is the first concrete instance; its empty asset list is
-an explicit statement that the current proof package has no external assets.
+The declaration is static and owned by the package type. The target factory
+checks host and render vocabulary requirements before selecting a target
+profile, while the package remains independent of profile naming. The Caravan
+client's declaration is the first concrete instance; its empty asset list
+records the current proof package's content shape.
 
 ## Ownership
 
@@ -279,20 +276,20 @@ an explicit statement that the current proof package has no external assets.
 - **TargetFactory** resolves profiles, creates target compositions, and reports
   unsupported environments.
 - **HostContract** supplies the environmental capabilities consumed by a game;
-  its abstractions do not expose target implementation details.
+  its abstractions present target-neutral values.
 - **TargetProfile** records host-internal OS, architecture, runtime, and backend
-  choices; it is not visible to game logic.
+  choices at the factory boundary.
 - **TargetArtifact** is the build or distribution result for one resolved
   environment.
 - **RenderSink** receives the renderer-agnostic render batch and translates it
   into target/backend instructions; its runtime role is defined by the
   [presentation-host proposal](presentation-host.md).
 - **Platform matrix** records which profiles are supported and what evidence
-  exists; it does not require each game to assemble those profiles.
+  exists; the factory assembles those profiles for packages.
 
 The generated static composition is the factory's target-specific product. It
 owns the target entrypoint and adapter wiring for one resolved package/profile
-pair; it is not a second game package implementation.
+pair around the game package.
 
 The [presentation-host proposal](presentation-host.md) owns the reusable
 desktop lifecycle contract; this proposal owns when the factory selects or
@@ -318,17 +315,16 @@ inputs and outputs:
 | Distribution-time artifact selection | Package identity/version and available artifact metadata | One compatible named `TargetArtifact` or a missing-artifact result | Target factory/distribution machinery |
 | Runtime capability resolution | Selected `TargetProfile` and observed `RuntimeCapabilities` | `TargetResolution::Supported` with host adapters, or `TargetResolution::Unsupported` | Host boundary |
 
-The stages may share identifiers and metadata, but they do not substitute for
-one another. Building an artifact does not prove that a local device can run
-it; selecting an artifact does not detect the local display or device; and
-runtime detection does not mint or mutate a package.
+The stages share identifiers and metadata while retaining separate evidence
+roles. Build creates an artifact, distribution selects a named artifact, and
+runtime resolution observes the local environment before launch.
 
 ### Host-owned resolution vocabulary
 
 `TargetProfile` is a static host recipe. It records target triple, operating
 system, architecture, runtime/entrypoint, backend choices, build conditions,
-and the host capabilities required to execute the generated composition. It is
-never passed to game logic or embedded in `PackageDeclaration`.
+and the host capabilities required to execute the generated composition. It
+remains host metadata alongside `PackageDeclaration`.
 
 `RuntimeCapabilities` is an observation of the environment at the host
 boundary. It may record the actual target triple, host/runtime version,
@@ -356,15 +352,15 @@ The unsupported result is explicit and inspectable at the host boundary. Its
 required and available capability records explain the mismatch and its
 remediation tells the caller whether to install a host dependency, select a
 different supported artifact/profile, or use a target with the required
-runtime/device conditions. It does not become a game error and it does not
-ask game code to branch on target identity.
+runtime/device conditions. Game code receives the host result through the
+target composition rather than branching on target identity.
 
 ## TargetArtifact and Evidence
 
 `TargetArtifact` is the immutable host/distribution result for one package
 source and one resolved `TargetProfile`. It contains the generated static
-composition, the package linkage, and an artifact manifest; it does not alter
-the package contract or carry authoritative game state.
+composition, the package linkage, and an artifact manifest. Package contract
+and authoritative game state remain with the package.
 
 The artifact identity is the tuple of:
 
@@ -384,8 +380,8 @@ consumer must verify the manifest and artifact checksum before reuse. The
 manifest records the package identity/version, declaration and source
 digests, resolved profile, composition/generator version, toolchain/build
 inputs, artifact format, checksum, creation metadata, and evidence references.
-Profile identity is artifact metadata; it is never added to package source or
-game logic.
+Profile identity is artifact metadata held by the factory and distribution
+records.
 
 Artifact retention has two host-owned forms:
 
@@ -395,80 +391,75 @@ Artifact retention has two host-owned forms:
   with metadata and checksums retained long enough to reproduce or audit the
   publication.
 
-Neither path, policy, or retention decision crosses into `GamePackage`.
+The cache and distribution store keep path, policy, and retention decisions at
+the host/distribution boundary while `GamePackage` remains package-owned.
 
 ### Separate evidence claims
 
 Every artifact and support row records these evidence classes independently:
 
-| Evidence class | Proves | Does not prove |
+| Evidence class | Establishes | Separate evidence still required |
 | --- | --- | --- |
-| Compile | The generated composition and target adapter build for the resolved profile with locked inputs | A runnable window, display, GPU, input path, or physical device result |
-| Runtime | The artifact launches in a declared environment and observes lifecycle, input, resize, render, storage, and shutdown behavior | Physical-device coverage or support for another profile/environment |
-| Device | The declared physical or profile-specific device/display/backend path works under the recorded conditions | Reproducible compilation or every runtime environment |
+| Compile | The generated composition and target adapter build for the resolved profile with locked inputs | Runtime and device observations |
+| Runtime | The artifact launches in a declared environment and observes lifecycle, input, resize, render, storage, and shutdown behavior | Physical-device observations and other profiles |
+| Device | The declared physical or profile-specific device/display/backend path works under the recorded conditions | Reproducible compilation and other runtime environments |
 
-CI may mint and inspect an artifact using only the package declaration,
-generated composition, generic host/target code, and profile recipe. The mint
-job must verify the manifest/checksum and profile mapping without importing
-Caravan, voxel, or any other application type into target-host production
-code. Runtime and device jobs consume the artifact as a separate step and
-attach their observations to the manifest/evidence record; a compile-only job
-cannot upgrade a support row to `complete`.
+CI may mint and inspect an artifact using the package declaration, generated
+composition, generic host/target code, and profile recipe. The mint job
+verifies the manifest/checksum and profile mapping with generic host/target
+code. Runtime and device jobs consume the artifact as separate steps and
+attach their observations to the manifest/evidence record; each support row
+reaches `complete` through its required evidence classes.
 
 The current workflow provides reusable-library, workspace, Windows-host, and
 Arch-host compile evidence. Generic artifact mint/manifest inspection and
 profile-specific runtime/device publication are downstream implementation and
-CI work; their absence is recorded as a gap rather than inferred from the
-existing compile lanes.
+CI work; support records identify those next evidence steps.
 
 ## CLI Contract
 
 The public command surface is intentionally small. Commands are run from a
 project root or an explicitly selected package source; package selection is a
-source/discovery concern, not a target selector. Discovery must find exactly
-one package declaration for the requested operation. Zero matches and
-ambiguous matches are host-owned discovery failures that report the paths
-examined and the corrective action.
+source/discovery concern. Discovery resolves exactly one package declaration
+for the requested operation and reports zero-match or ambiguous paths with
+corrective action.
 
 | Command | Host behavior | Success result |
 | --- | --- | --- |
-| `nworlds test` | Discover the package, validate its `PackageDeclaration`, run package semantic tests and generic host-boundary checks, and report any missing contract evidence. It does not select a target or mint a distributable artifact. | A passing semantic/evidence result for the discovered package. |
+| `nworlds test` | Discover the package, validate its `PackageDeclaration`, run package semantic tests and generic host-boundary checks, and report any missing contract evidence. | A passing semantic/evidence result for the discovered package. |
 | `nworlds run` | Discover and validate the package, observe local `RuntimeCapabilities`, resolve a compatible `TargetProfile`, mint or reuse the matching `TargetArtifact`, and launch its generated static composition. | The selected artifact is launched through the host; target details stay in host diagnostics. |
 | `nworlds package` | Discover and validate the package, enumerate profiles permitted by host/distribution policy, mint or reuse one artifact per selected supported profile, and write artifact metadata to the host distribution output. | A named artifact set with profile metadata, checksums, and evidence state. |
 
-Normal use does not require an operating-system, architecture, target-triple,
-window-system, GPU-backend, or device flag. A package source selector, test
-filter, verbosity setting, or output-directory setting may affect discovery,
-validation, logging, or storage without selecting a target. Raw target/profile
-commands remain internal maintenance and debugging interfaces; they are not
-the game developer workflow.
+Normal use presents one command surface. Package source selectors, test
+filters, verbosity settings, and output directories affect discovery,
+validation, logging, or storage, while target-profile resolution remains a
+host decision. Raw target/profile commands serve maintenance and debugging.
 
 ### Discovery and cache
 
 Discovery starts at the project root, follows the project/package manifest's
 declared package entry, and loads the package's static `GamePackage` and
-`PackageDeclaration` composition. The command must reject a package that
-cannot be loaded, declares an incompatible host/render vocabulary, or has
-multiple competing package entries. Discovery never scans arbitrary workspace
-crates and never infers a target from a game-domain type.
+`PackageDeclaration` composition. Discovery reports load, host/render
+vocabulary, and package-entry errors with the paths examined. It follows the
+declared package entry and reads target selection from host resolution.
 
 The host-local artifact cache is keyed by the package identity and version,
 package source/dependency digest, `PackageDeclaration`, selected
 `TargetProfile`, host contract/generator version, and relevant toolchain/build
 inputs. `nworlds run` and `nworlds package` may reuse an artifact only when all
 identity inputs match and its metadata/checksum is valid. Cache paths and
-retention policy are host/distribution concerns and do not enter package code.
+retention policy remain host/distribution concerns around package code.
 
 ### Phases, logs, and failures
 
 Every command reports stable host phases in this order where applicable:
 `discover`, `validate`, `resolve`, `artifact`, and `launch`. Logs identify the
-package identity and command phase; they do not require the user to understand
-the target profile during a successful run. Detailed profile, backend, and
+package identity and command phase; successful runs present the package result
+through the target-neutral command surface. Detailed profile, backend, and
 device information is available in host diagnostics for maintenance and
 failure analysis.
 
-Failures are non-success results and retain their owning boundary:
+Each failure result retains its owning boundary:
 
 - discovery failures identify missing or ambiguous package declarations;
 - validation failures identify package, declaration, semantic-test, or host
@@ -479,15 +470,14 @@ Failures are non-success results and retain their owning boundary:
   problems; and
 - launch failures identify host lifecycle, adapter, device, or process errors.
 
-The CLI does not translate these into game facts, assign logical time, or ask a
-package to recover from a target failure. The command surface is a transport
-for the factory contract, not a second package or target API.
+The CLI reports these through the factory contract. Game facts and logical time
+remain package-owned, while target failures remain host resolution results.
 
 ## Remaining Decision
 
 The game contract, package declaration, first render vocabulary, generated
 composition, resolution stages, artifact identity/evidence classes, and public
-CLI behavior are described here. They are not shipped factory behavior. The
+CLI behavior are described here. The
 remaining target-factory decision is:
 
 1. **CI and artifacts**: Specify how CI mints, names, tests, publishes, and
@@ -496,15 +486,14 @@ remaining target-factory decision is:
 
 ## Constraints
 
-- Game code contains no target-selection branch and does not depend on a
-  platform crate.
-- Game code consumes host capabilities through target-neutral abstractions; it
-  does not construct platform resources or target adapters.
-- Target support is a host/distribution capability, not a per-game design task.
+- Game code uses target-neutral abstractions for host capabilities.
+- Target composition constructs platform resources and target adapters around
+  the game package.
+- Target support is a host/distribution capability maintained by the factory.
 - Runtime adapter ownership remains separate from target artifact minting.
 - The target RenderSink translates renderer-agnostic render abstractions into
-  backend instructions; the game never emits `wgpu` or platform commands.
-- A compile result is not runtime or device support evidence.
-- Unsupported environments fail at the host boundary with an explicit result.
-- Existing Caravan composition remains a client of this contract; it is not
-  the contract itself.
+  backend instructions; the game supplies the renderer-agnostic values.
+- Compile, runtime, and device evidence retain separate support meanings.
+- Unsupported environments return an explicit host-boundary result.
+- Existing Caravan composition remains a client of this contract and provides
+  its reference-game evidence.

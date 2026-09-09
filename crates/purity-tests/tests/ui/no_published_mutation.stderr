@@ -4,7 +4,7 @@ error[E0599]: no method named `push` found for struct `engine_api::Journal<P>` i
 9 |     journal.push(());
   |             ^^^^ method not found in `engine_api::Journal<()>`
 
-error[E0599]: no method named `journal_mut` found for struct `Branch<C, P>` in the current scope
+error[E0599]: no method named `journal_mut` found for struct `engine_api::Branch<C, P>` in the current scope
   --> tests/ui/no_published_mutation.rs:12:15
    |
 12 |     worldline.journal_mut().clear();

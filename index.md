@@ -19,6 +19,8 @@ it does not advance or mutate a hidden current state.
 
 ## Start Here
 
+- [GameSurface work](game-surface.vine) - reusable agent observation,
+  authoring, and speculative branch control through MCP.
 - [Game developer guide](game-developer-guide.md) - the implemented engine
   features and the path from game facts to a target-neutral package.
 - [Initial specification](spec/initial.md) - vocabulary, invariants, journal
@@ -74,6 +76,9 @@ These crates provide the generic temporal engine and its public boundaries.
 | [`engine-index`](crates/engine-index) | Direct indexed-query kernel plus engine-neutral discontinuity breakpoints and half-open pieces. |
 | [`engine-controls`](crates/engine-controls) | Target-neutral timeline sliders, directional step controls, pointer mapping, automatic/manual mode, and owned control geometry. |
 | [`engine-presentation`](crates/engine-presentation) | State-plus-`Tau` render composition and frame values. |
+| [`engine-observation`](crates/engine-observation) | Generic explicit-time render-source observation and deterministic PNG snapshots. |
+| [`engine-surface`](crates/engine-surface) | Generic immutable branch sessions and GameSurface authoring values. |
+| [`engine-observation-mcp`](crates/engine-observation-mcp) | Generic MCP tools for observation metadata and PNG image results. |
 | [`engine-api`](crates/engine-api) | Generic facade for the supported temporal query, journal, branch, time, and presentation APIs. |
 | [`nworlds-host`](crates/nworlds-host) | Target-neutral `GamePackage` contract, independent host ports, and generic package/port composition. |
 

@@ -3,8 +3,7 @@
 This document is the working register for the library-first boundary. It records
 the current repository facts and the
 contract decisions that constrain remediation. The core-contract task will
-settle any remaining public type or crate-name choices; this register does not
-promote current implementation convenience into a library obligation.
+settle remaining public type or crate-name choices; this register distinguishes durable boundaries from implementation convenience.
 
 The all-up cross-boundary redundancy and canonical-owner map is
 [redundancy-register.md](redundancy-register.md); this document owns the
@@ -12,9 +11,13 @@ library boundary and its dependency direction.
 
 ## Product Boundary
 
-The reusable library is the product. A reference game, sample application,
-target adapter, test, or benchmark may consume the library, but the library
-must not acquire a dependency on those consumers to make the sample work.
+The reusable library is the product. Reference games, sample applications,
+target adapters, tests, and benchmarks consume it through a one-way dependency
+direction:
+
+```text
+reusable library -> game consumer -> target adapter
+```
 
 The temporal library owns the following conceptual path:
 
@@ -26,20 +29,20 @@ GameState + Tau
 ```
 
 The host library is adjacent to that path. It transports already-owned input,
-bytes, and frames; it does not define game meaning, authoritative time, or
-target selection.
+bytes, and frames. Stage owns game meaning and authoritative time; the target
+factory owns target selection.
 
 ## Ownership Classes
 
-| Class | Owns | Does not own |
+| Class | Primary responsibility | Adjacent responsibilities |
 | --- | --- | --- |
-| Temporal library | Fixed-point time, opaque SDK envelopes, immutable journals and branches, direct query mechanics, lookahead, persistence mechanics, and state-first presentation contracts | Caravan rules, target identity, native events, device state, or application loop policy |
-| Host library | Target-neutral package and passive input, storage, lifecycle/resource, and render-sink ports | Game semantics, journal timestamps, worldline selection, target resolution, or backend types |
-| Caravan reference implementation | Caravan geometry, journal vocabulary, rules, projection, fixtures, and game-specific persistence/reference APIs | Generic engine contract or target lifecycle |
-| Sample application | Demonstrates a complete public-library composition and user-visible behavior | Requirements that exist only to make the sample convenient |
-| Target adapter | Native lifecycle, event translation, backend/device execution, and target-local resources | Game meaning, authoritative state, or generic library semantics |
-| Evidence | Tests, snapshots, benchmarks, reports, and dependency guards that consume the other classes | A production API or ownership decision hidden in a fixture |
-| Planning/tooling | Specifications, proposals, VINE graphs, manifests, and CI orchestration | Runtime game or library state |
+| Temporal library | Fixed-point time, opaque SDK envelopes, immutable journals and branches, direct query mechanics, lookahead, persistence mechanics, and state-first presentation contracts | Caravan meaning is authored by the reference game; target identity and loop policy are authored by host/application layers. |
+| Host library | Target-neutral package and passive input, storage, lifecycle/resource, and render-sink ports | Stage supplies game semantics and journal time; target adapters supply concrete execution. |
+| Caravan reference implementation | Caravan geometry, journal vocabulary, rules, projection, fixtures, and game-specific persistence/reference APIs | The generic engine supplies reusable contracts; target compositions supply lifecycle. |
+| Sample application | Complete public-library composition and user-visible behavior | Reusable boundaries are promoted from repeated consumer evidence. |
+| Target adapter | Native lifecycle, event translation, backend/device execution, and target-local resources | Stage supplies game meaning and authoritative state. |
+| Evidence | Tests, snapshots, benchmarks, reports, and dependency guards that consume the other classes | Production contracts remain in their owning implementation or design record. |
+| Planning/tooling | Specifications, proposals, VINE graphs, manifests, and CI orchestration | Runtime values remain in game and library implementations. |
 
 ## Current Component Map
 
@@ -66,7 +69,7 @@ target selection.
 | `purity-tests` | Evidence | Compiler and runtime checks for immutable/data-only boundaries. |
 | `tests/conformance` | Evidence | Separate executable catalog for the Caravan anchor and library behavior. |
 | `README.md`, `index.md`, `roadmap.md`, `spec/**`, `proposals/**`, `*.vine` | Planning/tooling | Design truth, ownership records, execution graphs, and repository navigation. |
-| `target/**` | Generated output | Build artifacts; not a library or consumer boundary. |
+| `target/**` | Generated output | Build artifacts held in the generated-output boundary. |
 
 ## Remediated Production Dependency Register
 
@@ -82,61 +85,56 @@ execution and were removed by the core-remediation task:
 | `engine-persistence` | `caravan-domain`, `caravan-reference` | Removed: the Caravan codec moved to `caravan-persistence`. |
 | `engine-api` | `caravan-domain`, `caravan-reference` | Removed: the facade now re-exports only generic surfaces. |
 
-Current production contamination register: **empty**. The remaining Caravan
-references in engine manifests are dev-dependencies for reference fixtures and
-are guarded separately.
+Current production dependency set: **generic**. Caravan references in engine
+manifests serve reference fixtures as dev-dependencies and are guarded
+separately.
 
 The following references are dev-dependencies rather than production edges:
 
 | Source test surface | Dev-dependencies | Treatment |
 | --- | --- | --- |
-| `engine-presentation` tests | `caravan-domain`, `caravan-reference`, `engine-journal` | Allowed only as reference fixtures; must not shape the production renderer contract. |
-| `engine-benchmarks` and `tests/conformance` | Engine and Caravan crates | Evidence consumers; not library production dependencies. |
+| `engine-presentation` tests | `caravan-domain`, `caravan-reference`, `engine-journal` | Reference fixtures that exercise the production renderer contract. |
+| `engine-benchmarks` and `tests/conformance` | Engine and Caravan crates | Evidence consumers with their own executable scope. |
 | `caravan-sample` | Engine, Caravan, and `nworlds-host` crates | Sample consumer; its dependency direction is expected. |
 | `nworlds-desktop` | Host, engine, and backend crates | Generic target consumer; no Caravan or voxel production dependency is permitted. |
 
-## Forbidden Production Directions
+## Production Dependency Direction
 
-These rules are the remediation test, independent of crate names:
+The remediation test follows this dependency direction, independent of crate
+names:
 
 ```text
-temporal library  -X-> Caravan reference implementation
-temporal library  -X-> sample application
-temporal library  -X-> host library or target adapter
-temporal library  -X-> operating-system, window, device, or backend crate
-host library      -X-> Caravan reference implementation or target adapter
-host library      -X-> operating-system, window, device, or backend crate
+temporal library  --> generic temporal consumers
+generic consumer  --> target-neutral host and target adapter
 sample/target     -->  approved library and host surfaces
-evidence          -->  the surfaces it measures, without defining them
+evidence          -->  the surfaces it measures
 ```
 
-Dev-dependencies from an evidence or consumer crate may point at a reference
-implementation when the test names that reference scope. They do not create a
-public library contract and may not be copied into `[dependencies]` to avoid
-designing a generic API.
+Evidence and consumer crates may use reference implementations as
+dev-dependencies when a test names that reference scope. Those fixtures remain
+test consumers while the public library stays generic.
 
 ## Contract Items To Settle Next
 
-The following are constraints for the next graph tasks, not alternate designs:
+The next graph tasks use this contract map:
 
 - Generic payloads remain opaque at the SDK boundary; Caravan journal payloads
   remain owned by the Caravan reference implementation.
 - `JournalWriter` owns authoritative timestamp assignment; query and
-  presentation never mutate a worldline.
+  presentation operate on immutable worldlines.
 - Actual, counterfactual, and corrected histories remain immutable values.
 - Direct state queries accept arbitrary logical times and remain independent of
   query order.
-- Presentation accepts only `GameState` and `Tau`, then returns owned output.
-- Screen-control state remains explicit presentation/control state; it does not
-  become authoritative game state or a hidden renderer clock.
-- Host ports transport values and bytes but do not add host clock or device
-  state to game-state or render production.
-- The public facade must be consumable without importing `caravan-sample`,
-  `nworlds-desktop`, or private implementation modules.
+- Presentation accepts `GameState` and `Tau`, then returns owned output.
+- Screen-control state remains explicit presentation/control state; authoritative
+  game state carries game meaning and renderer inputs remain explicit.
+- Host ports transport values and bytes; Stage owns game time and target
+  adapters own device state.
+- External game consumers reach the temporal library through generic exports.
 
-The core-contract task must turn these constraints into one public crate/type
-map. The remediation tasks must then move or parameterize production code
-according to that map rather than inventing a second generic engine.
+The core-contract task turns these constraints into one public crate/type map.
+Remediation tasks move or parameterize production code according to that map,
+keeping one generic engine.
 
 ## Settled Temporal Library Surface
 
@@ -144,30 +142,28 @@ The first isolated library surface is deliberately small:
 
 | Crate | Public responsibility | Payload policy |
 | --- | --- | --- |
-| `engine-time` | `LogicalTime`, `Tau`, checked arithmetic, and game-tick conversion | No game or host types. |
+| `engine-time` | `LogicalTime`, `Tau`, checked arithmetic, and game-tick conversion | Time values remain generic. |
 | `engine-sdk` | `Context<C>`, `JournalEntry<P>`, `Journal<P>`, `Worldline<C, P>`, `GameState<S>`, `Frame<F>`, and query result envelopes | `C`, `P`, `S`, and `F` are opaque caller-owned values. |
-| `engine-journal` | `Journal<P>` and `JournalWriter<P>` with monotonic authoring and immutable publication | `P` is generic; timestamp assignment is library-owned. Branching requires a cloneable payload. |
-| `engine-branches` | `Branch<C, P>`, `Worldline<C, P>`, branch kind, immutable inclusive-prefix construction, and branch errors | `C` and `P` are generic; no game entry conversion. |
+| `engine-journal` | `Journal<P>` and `JournalWriter<P>` with monotonic authoring and immutable publication | `P` is generic; timestamp assignment is library-owned. Branching uses cloneable payloads. |
+| `engine-branches` | `Branch<C, P>`, `Worldline<C, P>`, branch kind, immutable inclusive-prefix construction, and branch errors | `C` and `P` are generic. |
 | `engine-index` | `JournalSource`, `QueryInput<C, P>`, `IndexedQuery<C, P>`, direct indexed state evaluation, and generic discontinuity pieces | Breakpoint payloads and query results are opaque. |
-| `engine-controls` | Explicit screen units, normalized control geometry, timeline slider/step mapping, typed `LogicalTime`/`Tau` deltas, fixed-focus parabolic time reprojection, viewport layout scaling, and automatic/manual control values | No game, worldline, journal, host, or backend types. |
-| `engine-presentation` | `Renderer<S>` and `present(GameState<S>, Tau) -> Frame<F>` | Renderer output is owned; only state and `Tau` enter production. |
-| `engine-api` | A generic re-export facade for the supported temporal surface, if it removes real consumer friction | It may not re-export Caravan types. |
+| `engine-controls` | Explicit screen units, normalized control geometry, timeline slider/step mapping, typed `LogicalTime`/`Tau` deltas, fixed-focus parabolic time reprojection, viewport layout scaling, and automatic/manual control values | Control values remain independent of game and host types. |
+| `engine-presentation` | `Renderer<S>` and `present(GameState<S>, Tau) -> Frame<F>` | Renderer output is owned from state and `Tau`. |
+| `engine-api` | Generic re-export facade for the supported temporal surface | Exports remain generic. |
 
-The public contract does not require a separate generic lookahead crate. A
-future observation is the same direct query against an unchanged immutable
-worldline. The former Caravan-only lookahead aliases now live in
-`caravan-reference::lookahead`; no generic lookahead crate is retained.
+Lookahead uses the same direct query against an unchanged immutable worldline.
+The former Caravan-only lookahead aliases live in
+`caravan-reference::lookahead`, while the generic surface stays focused on
+direct queries.
 
-The public contract does not require a generic binary persistence format for
-opaque values. Persistence is split into two boundaries: a package-owned codec
-that understands the package's context and journal payloads, and a host-owned
-transport of encoded bytes. The current Caravan codec is therefore rehomed as
-Caravan persistence rather than retained as a misleading generic engine crate.
+Persistence is split into two boundaries: a package-owned codec that
+understands the package's context and journal payloads, and a host-owned
+transport of encoded bytes. The current Caravan codec lives in
+`caravan-persistence` as the concrete reference implementation.
 
-The generic library must be usable by a consumer that supplies its own context,
-journal payload, indexed query, and renderer. A Caravan reference alias may
-make the same surface convenient for the sample, but it must be defined
-outside the generic crates.
+The generic library serves consumers that supply their own context, journal
+payload, indexed query, and renderer. Caravan reference aliases make the same
+surface convenient for the sample while remaining consumer-layer types.
 
 ## Reference-Game Boundary
 
@@ -175,14 +171,13 @@ The Caravan layer owns the closed `GameJournalEntry` vocabulary, Caravan
 geometry and values, actor/vegetation/hazard rules, discontinuity meanings,
 reference projection, seeded fixtures, and any codec that serializes those
 values. `caravan-reference` may expose convenience aliases such as
-`ReferenceWorldline` and `State`, but those aliases are game-owned and must be
-built from the generic library types.
+`ReferenceWorldline` and `State`; those aliases are game-owned specializations
+of the generic library types.
 
 `caravan-sample` owns the developer-authored `Stage`, `Orchestrator`, input
 interpretation, Caravan transformations, and the sample renderer. It is a
 consumer of the library and host contracts. Its existence is justified by the
-complete public-library path it demonstrates, not by any type that the generic
-crates need to import.
+complete public-library path it demonstrates.
 
 ## Host-Library Boundary
 
@@ -197,17 +192,14 @@ PlatformInputAdapter       native event -> package packet translation
 GamePackage                package-owned semantic step and save/load hooks
 ```
 
-`ApplicationHost` is a composition convenience around those ports. It may
-drain input, delegate one package step, submit one owned frame, and transport
-bytes, but it may not assign game time, interpret packets, select branches,
-construct game state, or inspect target metadata. A target adapter constructs
-the host; a game package supplies the meaning.
+`ApplicationHost` is a composition convenience around those ports. It drains
+input, delegates one package step, submits one owned frame, and transports
+bytes. The target adapter constructs the host; the game package supplies game
+time, packet meaning, branch selection, and state semantics.
 
 ## Facade Boundary
 
-`engine-api` is retained only if it reduces friction for external temporal
-library consumers. Its supported exports are generic time, SDK envelopes,
-journal/branch/index mechanics, and state-first presentation. It must not
-re-export `GameJournalEntry`, `ReferenceWorldline`, `Snapshot`, Caravan rules,
-or target/host types. If a generic facade cannot provide that value without
-duplicating the crate map, it is removed rather than kept as a Caravan facade.
+`engine-api` serves external temporal library consumers through generic time,
+SDK envelopes, journal/branch/index mechanics, controls, and state-first
+presentation. Caravan values and target/host types remain in their consumer
+layers, keeping the facade aligned with the generic crate map.
