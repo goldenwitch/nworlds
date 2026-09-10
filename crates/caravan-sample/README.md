@@ -88,14 +88,16 @@ The same package can run through the generic GameSurface MCP adapter. The
 the local `CaravanGameSession` owns its in-memory branches and view:
 
 ```text
-cargo run --quiet --manifest-path crates/caravan-sample/Cargo.toml --bin caravan-observer-mcp --
+pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File tools/mcp-launch.ps1 `
+  -ManifestPath crates/caravan-sample/Cargo.toml -BinaryName caravan-observer-mcp
 ```
 
 VS Code Chat can select the `caravan-observation` workspace server and use the
 shared manifest, ordered `surface_batch`, journal, branch, authoring, view,
 comparison, discard, and PNG snapshot tools. This is a standalone in-memory
-Caravan session that shares the game implementation with the desktop sample;
-it does not attach to the desktop process.
+Caravan session launched from a temporary executable copy, so the Cargo target
+remains rebuildable while Chat is connected. It shares the game implementation
+with the desktop sample but does not attach to the desktop process.
 
 The deterministic console evidence is a separate binary:
 

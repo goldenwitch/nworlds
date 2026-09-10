@@ -2,28 +2,34 @@
   "servers": {
     "nworlds-observation": {
       "type": "stdio",
-      "command": "cargo",
+      "command": "pwsh",
       "args": [
-        "run",
-        "--quiet",
-        "--manifest-path",
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/tools/mcp-launch.ps1",
+        "-ManifestPath",
         "${workspaceFolder}/crates/voxel-sample/Cargo.toml",
-        "--bin",
-        "voxel-observer-mcp",
-        "--"
+        "-BinaryName",
+        "voxel-observer-mcp"
       ]
     },
     "caravan-observation": {
       "type": "stdio",
-      "command": "cargo",
+      "command": "pwsh",
       "args": [
-        "run",
-        "--quiet",
-        "--manifest-path",
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/tools/mcp-launch.ps1",
+        "-ManifestPath",
         "${workspaceFolder}/crates/caravan-sample/Cargo.toml",
-        "--bin",
-        "caravan-observer-mcp",
-        "--"
+        "-BinaryName",
+        "caravan-observer-mcp"
       ]
     }
   }

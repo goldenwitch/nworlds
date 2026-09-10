@@ -54,10 +54,12 @@ preview, speculative and actual append, branch comparison, discard, and
 the actual line and the observer consumes `Frame<RenderBatch>` without
 entering package game state.
 
-The configured MCP server is a standalone stdio development session. It
-constructs a `VoxelSurface` definition and a local session over an in-memory
-worldline; it shares the sample's game code with the desktop executable but
-does not attach to that executable's live state. The complete protocol workflow is documented in the
+The configured MCP server is a standalone stdio development session. The
+workspace launcher runs a temporary copy of the built MCP executable, so the
+Cargo target remains rebuildable while Chat is connected. It constructs a
+`VoxelSurface` definition and a local session over an in-memory worldline; it
+shares the sample's game code with the desktop executable but does not attach
+to that executable's live state. The complete protocol workflow is documented in the
 [Game Developer Guide](../../game-developer-guide.md).
 
 The same surface exposes `view_read` and `view_update` for the disposable

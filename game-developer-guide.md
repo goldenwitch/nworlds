@@ -193,12 +193,17 @@ change subsequent snapshots while leaving branches, revisions, and journal
 facts unchanged. A game supplies view semantics and schema; the engine supplies
 the camera value and projection math.
 
-The workspace MCP configuration starts the sample adapters as stdio child
-processes:
+The workspace MCP configuration starts the sample adapters through
+`tools/mcp-launch.ps1`. The launcher builds the selected binary, copies it to a
+unique temporary path, and runs that copy as the stdio child process. This
+keeps the Cargo target binary replaceable while VS Code Chat holds the MCP
+session open:
 
 ```text
-cargo run --quiet --manifest-path crates/voxel-sample/Cargo.toml --bin voxel-observer-mcp --
-cargo run --quiet --manifest-path crates/caravan-sample/Cargo.toml --bin caravan-observer-mcp --
+pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File tools/mcp-launch.ps1 `
+  -ManifestPath crates/voxel-sample/Cargo.toml -BinaryName voxel-observer-mcp
+pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File tools/mcp-launch.ps1 `
+  -ManifestPath crates/caravan-sample/Cargo.toml -BinaryName caravan-observer-mcp
 ```
 
 Each MCP adapter constructs one package-owned definition and one local
